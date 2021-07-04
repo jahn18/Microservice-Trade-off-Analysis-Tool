@@ -22,54 +22,49 @@ class DiffTool extends React.Component {
             },
             isOpen: false
         }
+        this.changeRelationshipType = this.changeRelationshipType.bind(this);
+        this.getEdgeDependencies = this.getEdgeDependencies.bind(this);
     }
 
     toggleOpen = () => this.setState({ isOpen: !this.state.isOpen });
 
-    showEdgeDependencies = (relationshipType) => {
-        let elements = []
+    // When the user clicks on a tab it changes the relationship type.
+    changeRelationshipType = (common_elements, relationshipType) => {
+        let edge_graph = []
         const {graphData} = this.state;
-
-        console.log(elements);
 
         switch(relationshipType) {
             case 'static':
                 let static_graph = graphData.data.static_graph.links;
-                for(let i = 0; i < static_graph.length; i++) {
-                    let edge = static_graph[i];
-                    elements.push({
-                        group: 'edges', 
-                        data: {
-                            //id: `static_${i}`,
-                            source: `graph_1_${edge.source}`,
-                            target: `graph_1_${edge.target}`,
-                            weight: edge.weight
-                        } 
-                    });
-                }
+                edge_graph = this.getEdgeDependencies(static_graph, graphData, common_elements);
                 break; 
             case 'class name':
                 let class_name_graph = graphData.data.class_name_graph.links;
-                for(let i = 0; i < class_name_graph.length; i++) {
-                    let edge = class_name_graph[i];
-                    elements.push({
-                        group: 'edges', 
-                        data: {
-                            //id: `class_name_${i}`,
-                            source: edge.source,
-                            target: edge.target,
-                            weight: edge.weight
-                        } 
-                    });
-                }
+                edge_graph = this.getEdgeDependencies(class_name_graph, graphData, common_elements);
                 break;
             default: 
                 break;
         }
-        return elements;
+        this.setState({data: {edges: edge_graph}});
     }
 
-    setUpPartitions = (graph_nodes, element_list, partition_num, graph_num, isCoreElement) => {              
+    getEdgeDependencies = (graph, json_graph_data, common_elements) => {
+        let edge_dependencies = [];
+        for(let i = 0; i < graph.length; i++) {
+            let edge = graph[i];
+            edge_dependencies.push({
+                group: 'edges', 
+                data: {
+                    source: (common_elements.includes(edge.source)) ? `graph_0_${edge.source}` : `graph_1_${edge.source}`,
+                    target: (common_elements.includes(edge.target)) ? `graph_0_${edge.target}` : `graph_1_${edge.target}`,
+                    weight: edge.weight
+                } 
+            }); 
+        }
+        return edge_dependencies;
+    }    
+
+    setUpPartitions = (graph_nodes, element_list, partition_num, graph_num, isCoreElement) => {   
         let color;
         if(graph_num == 1) {
             color = '#4169e1';
@@ -94,15 +89,19 @@ class DiffTool extends React.Component {
         }
     }
 
+
     render() {
         const {graphData} = this.state;
+        const {edges} = this.state.data;
         let diffGraph = graphData.data.diff_graph;
         var num_of_partitions = Object.keys(diffGraph).length;
-        var elements = []
+        var elements = [];
+        var common_elements = [];
 
-        const menuClass = `dropdown-menu${this.state.isOpen ? " show" : ""}`;
+        elements = [].concat(elements, edges);
 
         for(let i = 0; i < num_of_partitions; i++) {
+            common_elements = [].concat(common_elements, diffGraph[i].common);
             elements.push({
                 data: {
                     id: `partition${i}`,
@@ -118,20 +117,22 @@ class DiffTool extends React.Component {
                     colored: true
                 } 
             });
-            this.setUpPartitions(diffGraph[i].common, elements, i, null, true);
+            this.setUpPartitions(diffGraph[i].common, elements, i, 0, true);
             this.setUpPartitions(diffGraph[i].graph_one_diff, elements, i, 1, false);
             this.setUpPartitions(diffGraph[i].graph_two_diff, elements, i, 2, false);
         }
 
-        elements = [].concat(elements, this.showEdgeDependencies('static'));
-
-        console.log(elements)
-
         return (
-            <div id='container' style={{position: 'relative'}}>
+            <div>
+                <button
+                className="btn btn-default"
+                // You have to set a function here. 
+                onClick={() => this.changeRelationshipType(common_elements, 'static')}> 
+                    Click me! 
+                </button>
                 <CytoscapeComponent
                     elements={elements} 
-                    style={{width: "100%", height: "1250px", position: 'absolute'}} 
+                    style={{width: "100%", height: "2250px"}} 
                     stylesheet={[
                         {
                             'selector': 'node',
@@ -229,28 +230,6 @@ class DiffTool extends React.Component {
 
                     }}
                 />
-                <div className="dropdown" onClick={this.toggleOpen}>
-                    <button
-                    className="btn btn-secondary dropdown-toggle"
-                    type="button"
-                    id="dropdownMenuButton"
-                    data-toggle="dropdown"
-                    aria-haspopup="true"
-                    >
-                        Menu
-                    </button>
-                    {/* <div className={menuClass} aria-labelledby="dropdownMenuButton">
-                        <button className="dropdown-item" href="#nogo" onClick={this.showEdgeDependencies("static")}>
-                            Static
-                        </button>
-                        <button className="dropdown-item" href="#nogo" onClick={this.showEdgeDependencies("class name")}>
-                            Class Name
-                        </button>
-                        <button className="dropdown-item" href="#nogo">
-                            Custom
-                        </button>
-                    </div> */}
-                </div>
             </div>
         );
     }
