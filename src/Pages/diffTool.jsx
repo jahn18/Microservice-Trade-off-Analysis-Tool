@@ -4,8 +4,10 @@ import Cytoscape from 'cytoscape';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
-import $ from 'jquery';
-import Popper from 'popper.js';
+import Paper from "@material-ui/core/Paper";
+import Tab from "@material-ui/core/Tab";
+import Tabs from "@material-ui/core/Tabs";
+
 // import compoundDragAndDrop from 'cytoscape-compound-drag-and-drop';
 
 // Cytoscape.use(compoundDragAndDrop);
@@ -13,42 +15,66 @@ import Popper from 'popper.js';
 class DiffTool extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            graphData: this.props.location.state,
-            selectedRelationshipType: 'static',
-            data: {
-                edges: [],
-                nodes: []
-            },
-            isOpen: false
+
+        let json_graph_data = this.props.location.state; 
+        let diffGraph = json_graph_data.data.diff_graph; 
+        let num_of_partitions = Object.keys(diffGraph).length;
+
+        let default_nodes = []; 
+        let common_elements = [];
+        for(let i = 0; i < num_of_partitions; i++) {
+            common_elements = [].concat(common_elements, diffGraph[i].common);
+            default_nodes = [].concat(default_nodes, this.setUpPartitions(diffGraph[i].graph_one_diff, i, 1, false));
         }
+        
+        this.state = {
+            graphData: json_graph_data,
+            diffGraph: diffGraph,
+            selectedRelationshipType: 'static',
+            num_of_partitions: num_of_partitions,
+            data: {
+                common_elements: common_elements,
+                edges: this.getEdgeDependencies(json_graph_data.data.static_graph.links, common_elements),
+                nodes: default_nodes
+            }
+        }
+
         this.changeRelationshipType = this.changeRelationshipType.bind(this);
         this.getEdgeDependencies = this.getEdgeDependencies.bind(this);
     }
 
-    toggleOpen = () => this.setState({ isOpen: !this.state.isOpen });
-
     // When the user clicks on a tab it changes the relationship type.
     changeRelationshipType = (common_elements, relationshipType) => {
-        let edge_graph = []
-        const {graphData} = this.state;
+        let edge_graph = [];
+        let node_graph = [];
+        const {graphData, num_of_partitions, diffGraph} = this.state;
 
         switch(relationshipType) {
             case 'static':
                 let static_graph = graphData.data.static_graph.links;
-                edge_graph = this.getEdgeDependencies(static_graph, graphData, common_elements);
+                edge_graph = this.getEdgeDependencies(static_graph, common_elements);
+                for(let i = 0; i < num_of_partitions; i++) {
+                    node_graph = [].concat(node_graph, this.setUpPartitions(diffGraph[i].graph_one_diff, i, 1, false));
+                }
                 break; 
             case 'class name':
                 let class_name_graph = graphData.data.class_name_graph.links;
-                edge_graph = this.getEdgeDependencies(class_name_graph, graphData, common_elements);
+                edge_graph = this.getEdgeDependencies(class_name_graph, common_elements);
+                for(let i = 0; i < num_of_partitions; i++) {
+                    node_graph = [].concat(node_graph, this.setUpPartitions(diffGraph[i].graph_two_diff, i, 2, false));
+                }
                 break;
             default: 
+                for(let i = 0; i < num_of_partitions; i++) {
+                    node_graph = [].concat(node_graph, this.setUpPartitions(diffGraph[i].graph_one_diff, i, 1, false), 
+                                    this.setUpPartitions(diffGraph[i].graph_two_diff, i, 2, false));
+                }
                 break;
         }
-        this.setState({data: {edges: edge_graph}});
+        this.setState({data: {edges: edge_graph, nodes: node_graph}});
     }
 
-    getEdgeDependencies = (graph, json_graph_data, common_elements) => {
+    getEdgeDependencies = (graph, common_elements) => {
         let edge_dependencies = [];
         for(let i = 0; i < graph.length; i++) {
             let edge = graph[i];
@@ -64,8 +90,10 @@ class DiffTool extends React.Component {
         return edge_dependencies;
     }    
 
-    setUpPartitions = (graph_nodes, element_list, partition_num, graph_num, isCoreElement) => {   
+    setUpPartitions = (graph_nodes, partition_num, graph_num, isCoreElement) => {  
         let color;
+        let element_list = [];
+
         if(graph_num == 1) {
             color = '#4169e1';
         } else if (graph_num == 2) {
@@ -87,18 +115,17 @@ class DiffTool extends React.Component {
                 } 
             });
         }
+
+        return element_list;
     }
 
 
     render() {
-        const {graphData} = this.state;
-        const {edges} = this.state.data;
-        let diffGraph = graphData.data.diff_graph;
-        var num_of_partitions = Object.keys(diffGraph).length;
-        var elements = [];
-        var common_elements = [];
+        const {graphData, num_of_partitions, diffGraph} = this.state;
+        const {edges, nodes} = this.state.data;
 
-        elements = [].concat(elements, edges);
+        var elements = [].concat(nodes, edges);
+        var common_elements = [];
 
         for(let i = 0; i < num_of_partitions; i++) {
             common_elements = [].concat(common_elements, diffGraph[i].common);
@@ -108,8 +135,8 @@ class DiffTool extends React.Component {
                     background_color: 'white',
                     colored: false
                 } 
-            });
-            elements.push({
+            },
+            {
                 data: {
                     id: `core${i}`, 
                     parent: `partition${i}`,
@@ -117,19 +144,27 @@ class DiffTool extends React.Component {
                     colored: true
                 } 
             });
-            this.setUpPartitions(diffGraph[i].common, elements, i, 0, true);
-            this.setUpPartitions(diffGraph[i].graph_one_diff, elements, i, 1, false);
-            this.setUpPartitions(diffGraph[i].graph_two_diff, elements, i, 2, false);
+            elements = [].concat(elements, this.setUpPartitions(diffGraph[i].common, i, 0, true));
         }
 
         return (
             <div>
-                <button
-                className="btn btn-default"
-                // You have to set a function here. 
-                onClick={() => this.changeRelationshipType(common_elements, 'static')}> 
-                    Click me! 
-                </button>
+                <Paper square>
+                    <Tabs
+                    value={this.state.selectedRelationshipType}
+                    textColor="primary"
+                    indicatorColor="primary"
+                    onChange={(event, newValue) => {
+                        this.setState({selectedRelationshipType: newValue});
+                        this.changeRelationshipType(common_elements, newValue);
+                    }}
+                    >
+                    <Tab label="static" value="static"/>
+                    <Tab label="class name" value="class name"/>
+                    <Tab label="diff" value="diff"/>
+                    <Tab label="Custom" disabled />
+                    </Tabs>
+                </Paper>
                 <CytoscapeComponent
                     elements={elements} 
                     style={{width: "100%", height: "2250px"}} 
