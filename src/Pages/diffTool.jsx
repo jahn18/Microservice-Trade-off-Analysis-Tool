@@ -7,6 +7,7 @@ import 'bootstrap/dist/js/bootstrap.js';
 import Paper from "@material-ui/core/Paper";
 import Tab from "@material-ui/core/Tab";
 import Tabs from "@material-ui/core/Tabs";
+import { unstable_renderSubtreeIntoContainer } from "react-dom";
 
 // import compoundDragAndDrop from 'cytoscape-compound-drag-and-drop';
 
@@ -21,9 +22,9 @@ class DiffTool extends React.Component {
         let num_of_partitions = Object.keys(diffGraph).length;
 
         let default_nodes = []; 
-        let common_elements = [];
+        let common = [];
         for(let i = 0; i < num_of_partitions; i++) {
-            common_elements = [].concat(common_elements, diffGraph[i].common);
+            common = [].concat(common, diffGraph[i].common);
             default_nodes = [].concat(default_nodes, this.setUpPartitions(diffGraph[i].graph_one_diff, i, 1, false));
         }
         
@@ -33,15 +34,15 @@ class DiffTool extends React.Component {
             selectedRelationshipType: 'static',
             num_of_partitions: num_of_partitions,
             data: {
-                common_elements: common_elements,
-                edges: this.getEdgeDependencies(json_graph_data.data.static_graph.links, common_elements),
+                common_elements: common,
+                edges: this.getEdgeDependencies(json_graph_data.data.static_graph.links, common),
                 nodes: default_nodes
             }
         }
 
         this.changeRelationshipType = this.changeRelationshipType.bind(this);
         this.getEdgeDependencies = this.getEdgeDependencies.bind(this);
-    }
+    };
 
     // When the user clicks on a tab it changes the relationship type.
     changeRelationshipType = (common_elements, relationshipType) => {
@@ -72,7 +73,7 @@ class DiffTool extends React.Component {
                 break;
         }
         this.setState({data: {edges: edge_graph, nodes: node_graph}});
-    }
+    };
 
     getEdgeDependencies = (graph, common_elements) => {
         let edge_dependencies = [];
@@ -88,7 +89,7 @@ class DiffTool extends React.Component {
             }); 
         }
         return edge_dependencies;
-    }    
+    };  
 
     setUpPartitions = (graph_nodes, partition_num, graph_num, isCoreElement) => {  
         let color;
@@ -117,15 +118,19 @@ class DiffTool extends React.Component {
         }
 
         return element_list;
+    };
+
+    highlightEdge = () => {
+        
     }
 
 
     render() {
-        const {graphData, num_of_partitions, diffGraph} = this.state;
+        const {num_of_partitions, diffGraph} = this.state;
         const {edges, nodes} = this.state.data;
 
         var elements = [].concat(nodes, edges);
-        var common_elements = [];
+        let common_elements = [];
 
         for(let i = 0; i < num_of_partitions; i++) {
             common_elements = [].concat(common_elements, diffGraph[i].common);
@@ -167,7 +172,7 @@ class DiffTool extends React.Component {
                 </Paper>
                 <CytoscapeComponent
                     elements={elements} 
-                    style={{width: "100%", height: "2250px"}} 
+                    style={{width: "100%", height: "100%", position: 'fixed'}} 
                     stylesheet={[
                         {
                             'selector': 'node',
@@ -189,9 +194,9 @@ class DiffTool extends React.Component {
                                 'text-halign': 'center',
                                 'background-color': function(node) {
                                     if (node.data("colored"))
-                                    return "#e9e9e9";
+                                        return "#e9e9e9";
                                     else
-                                    return "white";
+                                        return "white";
                                 },
                                 'label': ""
                             }
@@ -204,6 +209,34 @@ class DiffTool extends React.Component {
                                 'target-arrow-color': '#c4c4c4',
                                 'target-arrow-shape': 'vee',
                                 'curve-style': 'bezier'
+                            }
+                        },
+                        {
+                            'selector': 'node.highlight',
+                            'style': {
+                                'opacity': 1.0
+                            }
+                        },
+                        {
+                            'selector': 'node.deactivate',
+                            'style': {
+                                'opacity': 0.05
+                            }
+                        },
+                        {
+                            'selector': 'edge.highlight',
+                            'style': {
+                                'mid-target-arrow-color': 'black',
+                                'width': '3',
+                                'label': 'data(weight)',
+                                'text-outline-width': '3',
+                                'text-outline-color': 'white',
+                            }
+                        },
+                        { 
+                            'selector': 'edge.deactivate',
+                            'style': {
+                                'opacity': 0.1
                             }
                         }
                     ]}
@@ -258,6 +291,26 @@ class DiffTool extends React.Component {
                             }).run();
                         }
                         
+                        cy.on('tap', 'node', function(e) {
+                            var sel = e.target; 
+                            let selected_elements = sel.outgoers().union(sel.incomers()); 
+                            for(let i = 0; i < num_of_partitions; i++) {
+                                selected_elements = selected_elements.union(cy.elements().getElementById(`partition${i}`))
+                                selected_elements = selected_elements.union(cy.elements().getElementById(`core${i}`))
+                            }
+
+                            let unselected_elements = cy.elements().not(sel).difference(selected_elements);
+                            
+                            unselected_elements.addClass('deactivate');
+                            selected_elements.addClass('highlight');
+                            sel.addClass('highlight');
+                        });
+
+                        cy.on('click', function(e){
+                            cy.elements().removeClass('deactivate');
+                            cy.elements().removeClass('highlight');
+                        });
+
                         cy.collection(partitions).layout({
                             name: 'cose',
                             randomize: false
@@ -268,6 +321,6 @@ class DiffTool extends React.Component {
             </div>
         );
     }
-}
+};
 
 export default DiffTool;
