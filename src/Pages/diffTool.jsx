@@ -39,6 +39,7 @@ class DiffTool extends React.Component {
             selectedRelationshipType: 'static',
             // I have to change this when the two decompositions have a different number of partitions.
             num_of_partitions: num_of_partitions,
+            highlightEdges: true,
             data: {
                 common_elements: common,
                 edges: this.getEdgeDependencies(json_graph_data.data.static_graph.links, common),
@@ -48,6 +49,7 @@ class DiffTool extends React.Component {
 
         this.changeRelationshipType = this.changeRelationshipType.bind(this);
         this.getEdgeDependencies = this.getEdgeDependencies.bind(this);
+        this.highlightEdge = this.highlightEdge.bind(this);
     };
 
     calculateNormalizedTurboMQ = (diffGraph, common_elements, graph_num) => {
@@ -166,12 +168,13 @@ class DiffTool extends React.Component {
         return element_list;
     };
 
-    // highlightEdge = () => {
-        
-    // }
+    highlightEdge = (boolean) => {
+        this.setState({highlightEdge: boolean});
+    }
 
     render() {
-        const {num_of_partitions, diffGraph} = this.state;
+        //Boolean
+        const {num_of_partitions, diffGraph, highlightEdges, selectedRelationshipType} = this.state;
         const {edges, nodes} = this.state.data;
 
         var elements = [].concat(nodes, edges);
@@ -204,7 +207,7 @@ class DiffTool extends React.Component {
             <div>
                 <Paper square>
                     <Tabs
-                    value={this.state.selectedRelationshipType}
+                    value={selectedRelationshipType}
                     textColor="primary"
                     indicatorColor="primary"
                     onChange={(event, newValue) => {
@@ -246,7 +249,6 @@ class DiffTool extends React.Component {
                                     else
                                         return "white";
                                 },
-                                'label': ""
                             }
                         },
                         {
@@ -268,13 +270,14 @@ class DiffTool extends React.Component {
                         {
                             'selector': 'node.deactivate',
                             'style': {
-                                'opacity': 0.05
+                                'opacity': 0.075
                             }
                         },
                         {
                             'selector': 'edge.highlight',
                             'style': {
                                 'mid-target-arrow-color': 'black',
+                                'target-arrow-color': 'grey',
                                 'width': '3',
                                 'label': 'data(weight)',
                                 'text-outline-width': '3',
@@ -284,7 +287,8 @@ class DiffTool extends React.Component {
                         { 
                             'selector': 'edge.deactivate',
                             'style': {
-                                'opacity': 0.1
+                                'opacity': 0.2,
+                                'target-arrow-shape': 'none'
                             }
                         }
                     ]}
@@ -338,10 +342,20 @@ class DiffTool extends React.Component {
                                 } 
                             }).run();
                         }
-                        
+
                         cy.on('tap', 'node', function(e) {
-                            var sel = e.target; 
+                            let sel = e.target; 
                             let selected_elements = sel.outgoers().union(sel.incomers()); 
+
+                            if(sel.data().element_type != 'common') {
+                                if(sel.data().element_type == 'graph_1') {
+                                    selected_elements = selected_elements.union(cy.elements().getElementById(`graph_2_${sel.data().label}`));
+                                } else {
+                                    selected_elements = selected_elements.union(cy.elements().getElementById(`graph_1_${sel.data().label}`));
+                                }
+                            }
+
+
                             for(let i = 0; i < num_of_partitions; i++) {
                                 selected_elements = selected_elements.union(cy.elements().getElementById(`partition${i}`))
                                 selected_elements = selected_elements.union(cy.elements().getElementById(`core${i}`))
@@ -358,6 +372,15 @@ class DiffTool extends React.Component {
                             cy.elements().removeClass('deactivate');
                             cy.elements().removeClass('highlight');
                         });
+
+                        // if(highlightEdges) {
+                        //     cy.on('mouseover', 'edge', function(e) {
+                        //         e.target.addClass('highlight');
+                        //     });
+                        //     cy.on('mouseout', 'edge', function(e) {
+                        //         e.target.removeClass('highlight');
+                        //     });
+                        // }
 
                         cy.collection(partitions).layout({
                             name: 'cose',
@@ -387,20 +410,21 @@ class DiffTool extends React.Component {
                         </TableRow>
                         </TableHead>
                         <TableBody>
-                            <TableRow key={'static'}>
+                            {(selectedRelationshipType == 'static' || selectedRelationshipType == 'diff') && <TableRow key={'static'}>
                             <TableCell component="th" scope="row">
                                 {'STATIC'}
                             </TableCell>
                             <TableCell align="center">{static_turboMQ[0].toFixed(2)}</TableCell>
                             <TableCell align="center">{static_turboMQ[1].toFixed(2)}</TableCell>
-                            </TableRow>
+                            </TableRow>}
+                            {(selectedRelationshipType == 'class name' || selectedRelationshipType == 'diff') &&
                             <TableRow key={'class name'}>
                             <TableCell component="th" scope="row">
                                 {'CLASS NAME'}
                             </TableCell>
                             <TableCell align="center">{class_name_turboMQ[1].toFixed(2)}</TableCell>
                             <TableCell align="center">{class_name_turboMQ[0].toFixed(2)}</TableCell>
-                            </TableRow>
+                            </TableRow>}
                         </TableBody>
                     </Table>
                 </TableContainer>
