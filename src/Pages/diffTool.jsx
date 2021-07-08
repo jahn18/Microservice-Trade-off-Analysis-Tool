@@ -1,6 +1,6 @@
 import React from "react";
 import CytoscapeComponent from 'react-cytoscapejs';
-import Cytoscape from 'cytoscape';
+import cytoscape from 'cytoscape';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
@@ -13,47 +13,137 @@ import TableCell from '@material-ui/core/TableCell';
 import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
+import coseBilkent from 'cytoscape-cose-bilkent';
 
 // import compoundDragAndDrop from 'cytoscape-compound-drag-and-drop';
 
-// Cytoscape.use(compoundDragAndDrop);
+/* 
+    TODO: 
+    - Fix the initial starting view.  
+*/
+
+// Cytoscape.use(compoundDragAndDrop);\
+cytoscape.use( coseBilkent );
 
 class DiffTool extends React.Component {
     constructor(props) {
         super(props);
 
         let json_graph_data = this.props.location.state; 
-        let diffGraph = json_graph_data.data.diff_graph; 
+        let diffGraph = this.props.location.state.data.diff_graph; 
         let num_of_partitions = Object.keys(diffGraph).length;
 
         let default_nodes = []; 
         let common = [];
         for(let i = 0; i < num_of_partitions; i++) {
             common = [].concat(common, diffGraph[i].common);
-            default_nodes = [].concat(default_nodes, this.setUpPartitions(diffGraph[i].graph_one_diff, i, 1, false));
+            default_nodes = [].concat(default_nodes, this.setUpPartitions(diffGraph[i].common, i, 0, true), this.setUpPartitions(diffGraph[i].graph_one_diff, i, 1, false), 
+                                    this.setUpPartitions(diffGraph[i].graph_two_diff, i, 2, false));
         }
-        
+
+        let core_elements = [];
+        for(let i = 0; i < num_of_partitions; i++) {
+            core_elements.push({
+                data: {
+                    id: `partition${i}`,
+                    label: `partition${i}`,
+                    background_color: 'white',
+                    colored: false,
+                    element_type: 'partition'
+                } 
+            },
+            {
+                data: {
+                    id: `core${i}`, 
+                    parent: `partition${i}`,
+                    background_color: 'white',
+                    colored: true,
+                    element_type: 'core'
+                } 
+            });
+        }
+
+        let static_graph = json_graph_data.data.static_graph.links;
+        let static_edge_graph = this.getEdgeDependencies(static_graph, common, 'graph_1');
+
+        core_elements = [].concat(core_elements, default_nodes);
+
+        let cy = cytoscape({
+            elements: core_elements,
+            style: {width: "100%", height: "100%", position: 'fixed'} 
+        });
+
+        let w = window.innerWidth;
+        let h = window.innerHeight;
+        let partitions = [];
+        let orbits = [];
+
+        for(let i = 0; i < num_of_partitions; i++) {
+            partitions.push(cy.elements().getElementById(`partition${i}`));
+            orbits.push(
+                cy.collection(
+                    partitions[i].children()).union(
+                        cy.elements().getElementById(`core${i}`).children()
+                    )
+            );
+
+            let npos = cy.elements().getElementById(`core${i}`).position();
+            orbits[i].layout({
+                name: 'concentric',
+                spacingFactor: 15,
+                boundingBox: {
+                    x1: npos.x - w/2,
+                    x2: npos.x + w/2,
+                    y1: npos.y - w/2,
+                    y2: npos.y + w/2 
+                },
+                fit: true,
+                concentric: function(n) {
+                    switch(n.data().element_type) {
+                        case "common": 
+                            return 2;
+                        case "graph_1":
+                            return 0;
+                        case "graph_2": 
+                            return 1;
+                        default:
+                            return 1;
+                    }
+                },
+                levelWidth: function() {
+                    return 1;
+                } 
+            }).run();
+        }
+
+        cy.collection(partitions).layout({
+            name: 'cose',
+            randomize: true,
+            fit: true,
+            nodeRepulsion: 80000,
+            gravity: 0.75
+        }).run();
+
         this.state = {
-            graphData: json_graph_data,
-            diffGraph: diffGraph,
+            graph: cy,
             selectedRelationshipType: 'static',
             // I have to change this when the two decompositions have a different number of partitions.
             num_of_partitions: num_of_partitions,
-            highlightEdges: true,
-            data: {
-                common_elements: common,
-                edges: this.getEdgeDependencies(json_graph_data.data.static_graph.links, common),
-                nodes: default_nodes
-            }
+            nodes: cy.elements().forEach((ele) => {
+                                if(ele.data().element_type == 'graph_2') {
+                                    ele.addClass('hide');
+                                }
+                            }).jsons(),
+            edges: static_edge_graph, 
+            common_elements: common
         }
 
         this.changeRelationshipType = this.changeRelationshipType.bind(this);
         this.getEdgeDependencies = this.getEdgeDependencies.bind(this);
-        this.highlightEdge = this.highlightEdge.bind(this);
     };
 
     calculateNormalizedTurboMQ = (diffGraph, common_elements, graph_num) => {
-        const {num_of_partitions, graphData} = this.state;
+        const {num_of_partitions} = this.state;
         let CF_0 = 0.0;
         let CF_1 = 0.0;
         for(let i = 0; i < num_of_partitions; i++) {
@@ -65,7 +155,7 @@ class DiffTool extends React.Component {
                                         [].concat(diffGraph[i].common, diffGraph[i].graph_two_diff); 
             let internal_edges = 0.0;
             let external_edges = 0.0; 
-            let edge_graph = graphData.data.static_graph.links;
+            let edge_graph = this.props.location.state.data.static_graph.links;
             for(let j = 0; j < edge_graph.length; j++) {
                 let edge = edge_graph[j];
                 if(partition_classes.includes(edge.source) && partition_classes.includes(edge.target)) {
@@ -78,7 +168,7 @@ class DiffTool extends React.Component {
 
             internal_edges = 0.0;
             external_edges = 0.0; 
-            edge_graph = graphData.data.class_name_graph.links;
+            edge_graph = this.props.location.state.data.class_name_graph.links;
             for(let j = 0; j < edge_graph.length; j++) {
                 let edge = edge_graph[j];
                 if(partition_classes.includes(edge.source) && partition_classes.includes(edge.target)) {
@@ -93,46 +183,53 @@ class DiffTool extends React.Component {
     };
 
     // When the user clicks on a tab it changes the relationship type.
-    changeRelationshipType = (common_elements, relationshipType) => {
-        let edge_graph = [];
-        let node_graph = [];
-        const {graphData, num_of_partitions, diffGraph} = this.state;
+    changeRelationshipType = (relationshipType, common_elements) => {
+        const {graph} = this.state;
+        let renderedGraph = [];
+        let edges = [];
+        graph.elements().removeClass('hide');
 
         switch(relationshipType) {
             case 'static':
-                let static_graph = graphData.data.static_graph.links;
-                edge_graph = this.getEdgeDependencies(static_graph, common_elements);
-                for(let i = 0; i < num_of_partitions; i++) {
-                    node_graph = [].concat(node_graph, this.setUpPartitions(diffGraph[i].graph_one_diff, i, 1, false));
-                }
+                renderedGraph = graph.elements().forEach((ele) => {
+                    if(ele.data().element_type == 'graph_2') {
+                        if(ele.group() == 'nodes') {
+                            ele.addClass('hide');
+                        } 
+                    }
+                }).jsons()
+                let static_graph = this.props.location.state.data.static_graph.links;
+                edges = this.getEdgeDependencies(static_graph, common_elements, 'graph_1');
                 break; 
             case 'class name':
-                let class_name_graph = graphData.data.class_name_graph.links;
-                edge_graph = this.getEdgeDependencies(class_name_graph, common_elements);
-                for(let i = 0; i < num_of_partitions; i++) {
-                    node_graph = [].concat(node_graph, this.setUpPartitions(diffGraph[i].graph_two_diff, i, 2, false));
-                }
+                renderedGraph = graph.elements().forEach((ele) => {
+                    if(ele.data().element_type == 'graph_1') {
+                        if(ele.group() == 'nodes') {
+                            ele.addClass('hide');
+                        } 
+                    }
+                }).jsons()
+                let class_name_graph = this.props.location.state.data.class_name_graph.links;
+                edges = this.getEdgeDependencies(class_name_graph, common_elements, 'graph_2');
                 break;
             default: 
-                for(let i = 0; i < num_of_partitions; i++) {
-                    node_graph = [].concat(node_graph, this.setUpPartitions(diffGraph[i].graph_one_diff, i, 1, false), 
-                                    this.setUpPartitions(diffGraph[i].graph_two_diff, i, 2, false));
-                }
+                renderedGraph = graph.nodes().jsons();
                 break;
         }
-        this.setState({data: {edges: edge_graph, nodes: node_graph}});
+        this.setState({nodes: renderedGraph, edges: edges});
     };
 
-    getEdgeDependencies = (graph, common_elements) => {
+    getEdgeDependencies = (graph, common_elements, graph_type) => {
         let edge_dependencies = [];
         for(let i = 0; i < graph.length; i++) {
             let edge = graph[i];
             edge_dependencies.push({
                 group: 'edges', 
                 data: {
-                    source: (common_elements.includes(edge.source)) ? `graph_0_${edge.source}` : `graph_1_${edge.source}`,
-                    target: (common_elements.includes(edge.target)) ? `graph_0_${edge.target}` : `graph_1_${edge.target}`,
-                    weight: edge.weight
+                    source: (common_elements.includes(edge.source)) ? `graph_0_${edge.source}` : `${graph_type}_${edge.source}`,
+                    target: (common_elements.includes(edge.target)) ? `graph_0_${edge.target}` : `${graph_type}_${edge.target}`,
+                    weight: edge.weight,
+                    element_type: graph_type
                 } 
             }); 
         }
@@ -168,37 +265,13 @@ class DiffTool extends React.Component {
         return element_list;
     };
 
-    highlightEdge = (boolean) => {
-        this.setState({highlightEdge: boolean});
-    }
-
     render() {
-        //Boolean
-        const {num_of_partitions, diffGraph, highlightEdges, selectedRelationshipType} = this.state;
-        const {edges, nodes} = this.state.data;
+        const {num_of_partitions, selectedRelationshipType, graph, nodes, common_elements, edges} = this.state;
 
-        var elements = [].concat(nodes, edges);
-        let common_elements = [];
+        // Update the graph if elements are moved. 
+        graph.json(nodes);
 
-        for(let i = 0; i < num_of_partitions; i++) {
-            common_elements = [].concat(common_elements, diffGraph[i].common);
-            elements.push({
-                data: {
-                    id: `partition${i}`,
-                    background_color: 'white',
-                    colored: false
-                } 
-            },
-            {
-                data: {
-                    id: `core${i}`, 
-                    parent: `partition${i}`,
-                    background_color: 'white',
-                    colored: true
-                } 
-            });
-            elements = [].concat(elements, this.setUpPartitions(diffGraph[i].common, i, 0, true));
-        }
+        let diffGraph = this.props.location.state.data.diff_graph; 
 
         let static_turboMQ = this.calculateNormalizedTurboMQ(diffGraph, common_elements, 1);
         let class_name_turboMQ = this.calculateNormalizedTurboMQ(diffGraph, common_elements, 2);
@@ -212,7 +285,7 @@ class DiffTool extends React.Component {
                     indicatorColor="primary"
                     onChange={(event, newValue) => {
                         this.setState({selectedRelationshipType: newValue});
-                        this.changeRelationshipType(common_elements, newValue);
+                        this.changeRelationshipType(newValue, common_elements);
                     }}
                     >
                     <Tab label="static" value="static"/>
@@ -222,7 +295,10 @@ class DiffTool extends React.Component {
                     </Tabs>
                 </Paper>
                 <CytoscapeComponent
-                    elements={elements} 
+                    elements={CytoscapeComponent.normalizeElements({
+                        nodes: nodes,
+                        edges: edges
+                    })} 
                     style={{width: "100%", height: "100%", position: 'fixed'}} 
                     stylesheet={[
                         {
@@ -270,7 +346,7 @@ class DiffTool extends React.Component {
                         {
                             'selector': 'node.deactivate',
                             'style': {
-                                'opacity': 0.075
+                                'opacity': 0.035
                             }
                         },
                         {
@@ -290,58 +366,23 @@ class DiffTool extends React.Component {
                                 'opacity': 0.2,
                                 'target-arrow-shape': 'none'
                             }
+                        },
+                        {
+                            'selector': 'node.hide',
+                            'style': {
+                                'opacity': 0
+                            }
+                        },
+                        {
+                            'selector': 'edge.hide',
+                            'style': {
+                                'opacity': 0
+                            }
                         }
                     ]}
                     cy={(cy) => { 
                         // Orbit View
                         this.cy = cy;
-
-                        var w = window.innerWidth;
-                        var h = window.innerHeight;
-
-                        let partitions = [];
-
-                        let orbits = [];
-
-                        for(let i = 0; i < num_of_partitions; i++) {
-                            partitions.push(this.cy.elements().getElementById(`partition${i}`));
-
-                            orbits.push(
-                                this.cy.collection(
-                                    partitions[i].children()
-                                    ).union(
-                                        this.cy.elements().getElementById(`core${i}`).children()
-                                    )
-                            );
-
-                            let npos = this.cy.elements().getElementById(`core${i}`).position();
-                            orbits[i].layout({
-                                name: 'concentric',
-                                spacingFactor: 3.5,
-                                boundingBox: {
-                                    x1: npos.x - w/2,
-                                    x2: npos.x + w/2,
-                                    y1: npos.y - w/2,
-                                    y2: npos.y + w/2 
-                                },
-                                fit: true,
-                                concentric: function(n) {
-                                    switch(n.data().element_type) {
-                                        case "common": 
-                                            return 2;
-                                        case "graph_1":
-                                            return 0;
-                                        case "graph_2": 
-                                            return 1;
-                                        default:
-                                            return 1;
-                                    }
-                                },
-                                levelWidth: function() {
-                                    return 1;
-                                } 
-                            }).run();
-                        }
 
                         cy.on('tap', 'node', function(e) {
                             let sel = e.target; 
@@ -355,13 +396,13 @@ class DiffTool extends React.Component {
                                 }
                             }
 
-
                             for(let i = 0; i < num_of_partitions; i++) {
                                 selected_elements = selected_elements.union(cy.elements().getElementById(`partition${i}`))
                                 selected_elements = selected_elements.union(cy.elements().getElementById(`core${i}`))
                             }
 
                             let unselected_elements = cy.elements().not(sel).difference(selected_elements);
+
                             
                             unselected_elements.addClass('deactivate');
                             selected_elements.addClass('highlight');
@@ -372,21 +413,27 @@ class DiffTool extends React.Component {
                             cy.elements().removeClass('deactivate');
                             cy.elements().removeClass('highlight');
                         });
+                        
+                        /* 
+                            Need to have a more efficient design to prevent nodes from being dragged 
+                            when the window isn't on its respective relationship type tab. 
+                            Right now, there are areas that can't be grabbed, which makes the UI a little
+                            frustrating...
+                        */
+                        cy.on('mousedown', 'node', function(e) {
+                            let sel = e.target;
+                            if(selectedRelationshipType == 'static' && sel.data().element_type == 'graph_2') {
+                                sel.ungrabify();
+                            } else if (selectedRelationshipType == 'class name' && sel.data().element_type == 'graph_1') {
+                                sel.ungrabify();
+                            } else {
+                                sel.grabify();
+                            }
+                        })
 
-                        // if(highlightEdges) {
-                        //     cy.on('mouseover', 'edge', function(e) {
-                        //         e.target.addClass('highlight');
-                        //     });
-                        //     cy.on('mouseout', 'edge', function(e) {
-                        //         e.target.removeClass('highlight');
-                        //     });
-                        // }
-
-                        cy.collection(partitions).layout({
-                            name: 'cose',
-                            randomize: false
-                        }).run();
-
+                        cy.on('mouseup', 'node', function(e) {
+                            cy.elements().grabify();
+                        })
                     }}
                 />
                 <TableContainer 
