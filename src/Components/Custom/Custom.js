@@ -20,7 +20,9 @@ class Custom extends React.Component {
     constructor(props) {
         super(props);
 
-        let diffGraph = this.props.location.state.data.diff_graph; 
+        // let diffGraph = this.props.location.state.data.diff_graph; 
+        let diffGraph = this.props.graphData.data.diff_graph; 
+        console.log(diffGraph);
         let num_of_partitions = Object.keys(diffGraph).length;
 
         let default_nodes = []; 
@@ -39,7 +41,7 @@ class Custom extends React.Component {
                         label: `partition${i}`,
                         background_color: 'grey',
                         colored: true,
-                        element_type: 'core',
+                        element_type: 'partition',
                         hide: false 
                     }
                 }] 
@@ -141,7 +143,7 @@ class Custom extends React.Component {
 
         return (
             <div>
-                <Paper square>
+                {/* <Paper square>
                     <Tabs
                     value={selectedRelationshipType}
                     textColor="primary"
@@ -154,8 +156,8 @@ class Custom extends React.Component {
                     //disabled 
                     />
                     </Tabs>
-                </Paper>
-                <Metrics />
+                </Paper> */}
+                {/* <Metrics /> */}
                 <CytoscapeComponent
                     elements={CytoscapeComponent.normalizeElements({
                         nodes: nodes
@@ -405,12 +407,18 @@ class Custom extends React.Component {
                                     selected_elements = selected_elements.union(cy.elements().getElementById(sel.data().prev_partition));
                                 }
                             }
-                            else if(sel.data().element_type !== 'common') {
-                                if(sel.data().element_type === 'graph_1') {
-                                    selected_elements = selected_elements.union(cy.elements().getElementById(`graph_2_${sel.data().label}`));
-                                } else {
-                                    selected_elements = selected_elements.union(cy.elements().getElementById(`graph_1_${sel.data().label}`));
-                                }
+                            else if (sel.data().element_type === 'graph_1') {
+                                selected_elements = selected_elements.union(cy.elements().getElementById(`graph_2_${sel.data().label}`));
+                            } 
+                            else if (sel.data().element_type === 'graph_2') {
+                                selected_elements = selected_elements.union(cy.elements().getElementById(`graph_1_${sel.data().label}`));
+                            } 
+                            else if (sel.data().element_type === 'partition') {
+                                selected_elements = selected_elements.union(sel.children()).union(
+                                    cy.elements().filter((ele)=> {
+                                        return ele.data().partition === sel.id();
+                                    }),
+                                )
                             }
 
                             let unselected_elements = cy.elements().not(sel).difference(selected_elements);
