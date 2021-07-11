@@ -1,3 +1,3 @@
-import Graph from './Custom';
+import Custom from './Custom';
 
-export default Graph; 
+export default Custom; 

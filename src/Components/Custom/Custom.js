@@ -10,6 +10,7 @@ import Tabs from "@material-ui/core/Tabs";
 import edgehandles from 'cytoscape-edgehandles';
 import automove from 'cytoscape-automove';
 import nodeHtmlLabel from 'cytoscape-node-html-label';
+import Metrics from './../Metrics';
 
 cytoscape.use( nodeHtmlLabel );
 cytoscape.use( automove );
@@ -38,7 +39,8 @@ class Custom extends React.Component {
                         label: `partition${i}`,
                         background_color: 'grey',
                         colored: true,
-                        element_type: 'core'
+                        element_type: 'core',
+                        hide: false 
                     }
                 }] 
             );
@@ -121,7 +123,8 @@ class Custom extends React.Component {
                     element_type: (isCoreElement) ? 'common' : `graph_${graph_num}`,
                     parent: (isCoreElement) ? `partition${partition_num}` : null,
                     partition: `partition${partition_num}`,
-                    background_color: color
+                    background_color: color,
+                    hide: false
                 }
             });
         }
@@ -152,6 +155,7 @@ class Custom extends React.Component {
                     />
                     </Tabs>
                 </Paper>
+                <Metrics />
                 <CytoscapeComponent
                     elements={CytoscapeComponent.normalizeElements({
                         nodes: nodes
@@ -198,13 +202,13 @@ class Custom extends React.Component {
                         {
                             'selector': 'node.hide',
                             'style': {
-                                'opacity': 0.05
+                                'opacity': 0.0
                             }
                         },
                         {
                             'selector': 'node.deactivate',
                             'style': {
-                                'opacity': 0
+                                'opacity': 0.025
                             }
                         },
                         {
@@ -262,7 +266,7 @@ class Custom extends React.Component {
                         // Orbit View
                         this.cy = cy;
                         let partitions = []
-
+                        
                         cy.nodeHtmlLabel([{
                                 query: 'node',
                                 halign: 'center',
@@ -270,8 +274,10 @@ class Custom extends React.Component {
                                 halignBox: 'center',
                                 valignBox: 'center',
                                 tpl: (data) => {
-                                    if(data.element_type === 'common*') {
+                                    if(data.element_type === 'common*' && data.hide === false) {
                                         return '<h1 style="color:white;">' + '+' + '</h1>';
+                                    } else if ((data.element_type === 'graph_1' || data.element_type === 'graph_2') && data.hide === true) {
+                                        return '<h1 style="color:white;">' + '-' + '</h1>';
                                     }
                                 }
                         }]);
@@ -291,12 +297,18 @@ class Custom extends React.Component {
                         let eh = cy.edgehandles();
 
                         cy.on('ehcomplete', (event, sourceNode, targetNode, addedEles) => {
-                            if(partitions.includes(targetNode.id())) {
-                                // Fix this where if the node is moved, then it is removed.
-                                // The id is variable in case we move another common node, without this, then id can become 'ex**' rather than '*'
+                            console.log(sourceNode)
+                            if(sourceNode.data().hide === false 
+                                && partitions.includes(targetNode.id())) {
                                 // Fix if a common element is moved.
+                                // Implement a way to add an additional partition. 
+                                let prev_element = sourceNode.data().element_type;
+                                let prev_partition = sourceNode.data().partition; 
+
                                 if(sourceNode.data().element_type === 'common*') {
                                     cy.remove(sourceNode);
+                                    prev_element = sourceNode.data().prev_element_type;
+                                    prev_partition = sourceNode.data().prev_partition;
                                 }
 
                                 cy.add({
@@ -306,8 +318,11 @@ class Custom extends React.Component {
                                         label: sourceNode.data().label,
                                         parent: targetNode.id(),
                                         element_type: 'common*',
+                                        prev_element_type: prev_element,
                                         background_color: 'grey',
-                                        partition: targetNode.id()    
+                                        partition: targetNode.id(),
+                                        prev_partition: prev_partition,
+                                        hide: false
                                     },
                                 })
 
@@ -346,8 +361,12 @@ class Custom extends React.Component {
                                 }).run();
 
                                 // Should also hide common elements if they get moved. 
-                                cy.elements().getElementById(`graph_1_${sourceNode.data().label}`).addClass('hide');
-                                cy.elements().getElementById(`graph_2_${sourceNode.data().label}`).addClass('hide');
+                                if(sourceNode.data().element_type === 'common') {
+                                    cy.remove(sourceNode);
+                                } else {
+                                    cy.elements().getElementById(`graph_1_${sourceNode.data().label}`).addClass('hide');
+                                    cy.elements().getElementById(`graph_2_${sourceNode.data().label}`).addClass('hide');
+                                }
                             }
                             cy.remove(addedEles);
                         })
@@ -366,40 +385,25 @@ class Custom extends React.Component {
                         cy.on('tap', 'node', function(e) {
                             let sel = e.target; 
                             let selected_elements = cy.collection().union(sel).union(cy.elements().getElementById(sel.data().partition)); 
-                            console.log(sel)
 
                             if(sel.data().element_type === 'common*') {
-                                selected_elements = selected_elements.union(cy.elements().getElementById(`graph_2_${sel.id()}`));
-                                selected_elements = selected_elements.union(cy.elements().getElementById(`graph_1_${sel.id()}`));
-                                let graph_1_partition = cy.elements().getElementById(`graph_1_${sel.id()}`).data().partition
-                                let graph_2_partition = cy.elements().getElementById(`graph_2_${sel.id()}`).data().partition
+                                if(sel.data().prev_element_type !== 'common') {
+                                    selected_elements = selected_elements.union(cy.elements().getElementById(`graph_2_${sel.id()}`));
+                                    selected_elements = selected_elements.union(cy.elements().getElementById(`graph_1_${sel.id()}`));
+                                    let graph_1_partition = cy.elements().getElementById(`graph_1_${sel.id()}`).data().partition
+                                    let graph_2_partition = cy.elements().getElementById(`graph_2_${sel.id()}`).data().partition
 
-                                selected_elements = selected_elements.union(
-                                    cy.elements().getElementById(graph_1_partition)
-                                );
-                                selected_elements = selected_elements.union(
-                                    cy.elements().getElementById(graph_2_partition)
-                                );
-
-                                //Add edges
-                                // cy.add(
-                                //     {
-                                //         group: 'edges',
-                                //         data: {
-                                //             source: `graph_2_${sel.id()}`,
-                                //             target: sel.id(),
-                                //             element_type: 'edge'
-                                //         }
-                                //     },
-                                //     {
-                                //         group: 'edges',
-                                //         data: {
-                                //             source: `graph_1_${sel.id()}`,
-                                //             target: sel.id(),
-                                //             element_type: 'edge'
-                                //         }
-                                //     }
-                                // ) 
+                                    selected_elements = selected_elements.union(
+                                        cy.elements().getElementById(graph_1_partition)
+                                    );
+                                    selected_elements = selected_elements.union(
+                                        cy.elements().getElementById(graph_2_partition)
+                                    );
+                                    cy.elements().getElementById(`graph_1_${sel.id()}`).data().hide = true;
+                                    cy.elements().getElementById(`graph_2_${sel.id()}`).data().hide = true;
+                                } else {
+                                    selected_elements = selected_elements.union(cy.elements().getElementById(sel.data().prev_partition));
+                                }
                             }
                             else if(sel.data().element_type !== 'common') {
                                 if(sel.data().element_type === 'graph_1') {
@@ -410,6 +414,11 @@ class Custom extends React.Component {
                             }
 
                             let unselected_elements = cy.elements().not(sel).difference(selected_elements);
+                            unselected_elements.forEach((ele) => {
+                                if(ele.data().element_type !== 'graph_1' && ele.data().element_type !== 'graph_2') {
+                                    ele.data().hide = true; 
+                                }
+                            })
                             
                             unselected_elements.addClass('deactivate');
                             selected_elements.removeClass('hide');
@@ -419,9 +428,14 @@ class Custom extends React.Component {
                             cy.elements().removeClass('deactivate');
                             cy.elements().forEach((ele) => {
                                 if(ele.data().element_type === 'common*') {
-                                    cy.elements().getElementById(`graph_1_${ele.id()}`).addClass('hide');
-                                    cy.elements().getElementById(`graph_2_${ele.id()}`).addClass('hide');
-                                } 
+                                    if(ele.data().prev_element_type !== 'common') {
+                                        cy.elements().getElementById(`graph_1_${ele.id()}`).addClass('hide');
+                                        cy.elements().getElementById(`graph_2_${ele.id()}`).addClass('hide');
+                                        // cy.elements().getElementById(`graph_1_${ele.id()}`).data().hide = false;
+                                        // cy.elements().getElementById(`graph_2_${ele.id()}`).data().hide = false;
+                                    } 
+                                }
+                                ele.data().hide = false;
                             })
                         });
                         
