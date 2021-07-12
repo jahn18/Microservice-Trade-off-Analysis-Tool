@@ -20,11 +20,11 @@ import AntSwitch from './../Components/Switch';
     TODO: 
     - Fix the initial starting view.  
     - Improve dragging partitions. 
-    - Make an extra grey box if no common elements exist.
+    ** - Make an extra grey box if no common elements exist.
     ***THREE MAIN THINGS:
     1. Have the positions be consistent with the custom view.
     2. Update the metrics for the custom view. 
-    3. Toggle edges for the DIFF View. 
+    ** 3. Toggle edges for the DIFF View. 
     4. Location not saving when changing to custom view. 
 */
 
@@ -58,8 +58,9 @@ class DiffTool extends React.Component {
             {
                 data: {
                     id: `core${i}`, 
+                    label: `core${i}`,
                     parent: `partition${i}`,
-                    background_color: 'white',
+                    background_color: 'grey',
                     colored: true,
                     element_type: 'core'
                 } 
@@ -107,7 +108,7 @@ class DiffTool extends React.Component {
                         case "graph_2": 
                             return 1;
                         default:
-                            return 1;
+                            return 2;
                     }
                 },
                 levelWidth: function() {
@@ -337,7 +338,7 @@ class DiffTool extends React.Component {
                     </Tabs>
                 </Paper>
                 {(selectedRelationshipType === 'custom') && 
-                    <Custom graphData={this.props.location.state} />
+                    <Custom graphData={this.props.location.state} nodes={nodes}/>
                 }
                 {(selectedRelationshipType !== 'custom') && 
                 <CytoscapeComponent
@@ -429,6 +430,7 @@ class DiffTool extends React.Component {
                     cy={(cy) => { 
                         // Orbit View
                         this.cy = cy;
+                        console.log(cy.viewport())
 
                         cy.on('tap', 'node', function(e) {
                             let sel = e.target; 

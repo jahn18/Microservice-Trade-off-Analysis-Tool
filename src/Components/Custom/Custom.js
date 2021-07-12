@@ -4,13 +4,9 @@ import cytoscape from 'cytoscape';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
-import Paper from "@material-ui/core/Paper";
-import Tab from "@material-ui/core/Tab";
-import Tabs from "@material-ui/core/Tabs";
 import edgehandles from 'cytoscape-edgehandles';
 import automove from 'cytoscape-automove';
 import nodeHtmlLabel from 'cytoscape-node-html-label';
-import Metrics from './../Metrics';
 
 cytoscape.use( nodeHtmlLabel );
 cytoscape.use( automove );
@@ -22,11 +18,15 @@ class Custom extends React.Component {
 
         // let diffGraph = this.props.location.state.data.diff_graph; 
         let diffGraph = this.props.graphData.data.diff_graph; 
-        console.log(diffGraph);
         let num_of_partitions = Object.keys(diffGraph).length;
 
         let default_nodes = []; 
         let common = [];
+
+        let set_graph_positions = {};
+        for(let node in this.props.nodes) {
+            set_graph_positions[this.props.nodes[node].data.id] = this.props.nodes[node].position;
+        }
 
         for(let i = 0; i < num_of_partitions; i++) {
             common = [].concat(common, diffGraph[i].common);
@@ -43,7 +43,7 @@ class Custom extends React.Component {
                         colored: true,
                         element_type: 'partition',
                         hide: false 
-                    }
+                    },
                 }] 
             );
         }
@@ -55,6 +55,13 @@ class Custom extends React.Component {
 
         let w = window.innerWidth;
         let orbits = [];
+
+        cy.layout({
+            name: 'preset',
+            positions: function(node) {
+                return (set_graph_positions[node.id()]);   
+            }
+        }).run();
 
         for(let i = 0; i < num_of_partitions; i++) {
             orbits.push(
@@ -93,12 +100,10 @@ class Custom extends React.Component {
             }).run();
         }
 
-
         this.state = {
             graph: cy,
             num_of_partitions: num_of_partitions,
             nodes: cy.elements().jsons(),
-            selectedRelationshipType: 'custom',
             partitions: orbits
         }
     };
@@ -133,31 +138,20 @@ class Custom extends React.Component {
         return element_list;
     };
 
+    updateGraph = (nodes) => {
+        this.setState({nodes: nodes});
+    }
+
     render() {
-        const {num_of_partitions, selectedRelationshipType, graph, nodes, orbits} = this.state;
+        const {num_of_partitions, graph, nodes} = this.state;
 
         let w = window.innerWidth;
 
         // Update the graph if elements are moved. 
-        graph.json(nodes);
+        // graph.json(nodes);
 
         return (
             <div>
-                {/* <Paper square>
-                    <Tabs
-                    value={selectedRelationshipType}
-                    textColor="primary"
-                    indicatorColor="primary"
-                    onChange={(event, newValue) => {
-                        this.setState({selectedRelationshipType: newValue});
-                    }}
-                    >
-                    <Tab label="custom" value="custom"
-                    //disabled 
-                    />
-                    </Tabs>
-                </Paper> */}
-                {/* <Metrics /> */}
                 <CytoscapeComponent
                     elements={CytoscapeComponent.normalizeElements({
                         nodes: nodes
@@ -210,7 +204,7 @@ class Custom extends React.Component {
                         {
                             'selector': 'node.deactivate',
                             'style': {
-                                'opacity': 0.025
+                                'opacity': 0.3
                             }
                         },
                         {
@@ -299,7 +293,6 @@ class Custom extends React.Component {
                         let eh = cy.edgehandles();
 
                         cy.on('ehcomplete', (event, sourceNode, targetNode, addedEles) => {
-                            console.log(sourceNode)
                             if(sourceNode.data().hide === false 
                                 && partitions.includes(targetNode.id())) {
                                 // Fix if a common element is moved.
@@ -416,7 +409,7 @@ class Custom extends React.Component {
                             else if (sel.data().element_type === 'partition') {
                                 selected_elements = selected_elements.union(sel.children()).union(
                                     cy.elements().filter((ele)=> {
-                                        return ele.data().partition === sel.id();
+                                        return (ele.data().partition === sel.id() && !ele.hasClass('hide'));
                                     }),
                                 )
                             }
@@ -432,21 +425,18 @@ class Custom extends React.Component {
                             selected_elements.removeClass('hide');
                         });
 
-                        cy.on('click', function(e){
+                        cy.on('click', function(e) {
                             cy.elements().removeClass('deactivate');
                             cy.elements().forEach((ele) => {
                                 if(ele.data().element_type === 'common*') {
                                     if(ele.data().prev_element_type !== 'common') {
                                         cy.elements().getElementById(`graph_1_${ele.id()}`).addClass('hide');
                                         cy.elements().getElementById(`graph_2_${ele.id()}`).addClass('hide');
-                                        // cy.elements().getElementById(`graph_1_${ele.id()}`).data().hide = false;
-                                        // cy.elements().getElementById(`graph_2_${ele.id()}`).data().hide = false;
                                     } 
                                 }
                                 ele.data().hide = false;
                             })
                         });
-                        
                     }}
                 />
             </div>
