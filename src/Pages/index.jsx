@@ -10,7 +10,7 @@ import {
   } from "react-router-dom";
 
 
-const FilePage = () => {
+const FilePage = (props) => {
     let fileReader;
     const [data, setData] = useState(null);
 
@@ -32,8 +32,6 @@ const FilePage = () => {
         fileReader.readAsText(file);
     };
 
-    let fileRead = <Link to={{ pathname: "/tool", state: data}}/>;
-
     return(
         <div className='upload-file'>
             <h3>Input JSON File</h3>
@@ -45,7 +43,7 @@ const FilePage = () => {
             />
             <Link to={{
                 pathname: '/tool',
-                state: {data}
+                state: {data},
             }}> Diff Tool </Link>
         </div>
     );

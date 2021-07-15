@@ -1,4 +1,4 @@
-import React from "react";
+import React, {createRef, useLayoutEffect} from "react";
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from 'cytoscape';
 import 'bootstrap';
@@ -7,16 +7,30 @@ import 'bootstrap/dist/js/bootstrap.js';
 import edgehandles from 'cytoscape-edgehandles';
 import automove from 'cytoscape-automove';
 import nodeHtmlLabel from 'cytoscape-node-html-label';
+import {connect} from 'react-redux';
+import {updateCustomGraph} from './../../Actions';
+import storeProvider from './../../storeProvider';
+import Paper from "@material-ui/core/Paper";
+import Tab from "@material-ui/core/Tab";
+import Tabs from "@material-ui/core/Tabs";
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableContainer from '@material-ui/core/TableContainer';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import Metrics from './../Metrics/Metrics'
 
 cytoscape.use( nodeHtmlLabel );
 cytoscape.use( automove );
 cytoscape.use( edgehandles );
 
+
 class Custom extends React.Component {
     constructor(props) {
         super(props);
+        this.myRef = React.createRef();
 
-        // let diffGraph = this.props.location.state.data.diff_graph; 
         let diffGraph = this.props.graphData.data.diff_graph; 
         let num_of_partitions = Object.keys(diffGraph).length;
 
@@ -104,7 +118,9 @@ class Custom extends React.Component {
             graph: cy,
             num_of_partitions: num_of_partitions,
             nodes: cy.elements().jsons(),
-            partitions: orbits
+            partitions: orbits,
+            static_metrics: [],
+            class_name_metrics: []
         }
     };
 
@@ -138,21 +154,128 @@ class Custom extends React.Component {
         return element_list;
     };
 
-    updateGraph = (nodes) => {
-        this.setState({nodes: nodes});
+    /*
+        This is used to update the state in redux 
+    */
+    handleUpdateGraph = (graph) => {
+        this.props.updateCustomGraph(graph);
+    }
+
+    handleClick = () => {
+        let movedNodes = []; 
+        let partitions = {}
+        let updatedGraph = this.myRef.current._cy.nodes().jsons();
+
+        for(let i in updatedGraph) {
+            let node = updatedGraph[i].data;
+            if(node.element_type === 'common*') {
+                movedNodes.push(`graph_1_${node.id}`, `graph_2_${node.id}`);
+            } 
+        }
+
+        for(let i in updatedGraph) {
+            let node = updatedGraph[i].data;
+            if(!movedNodes.includes(node.id) && node.element_type !== 'partition') {
+                if(partitions[node.partition] === undefined) {
+                    partitions[node.partition] = {
+                        graph_1: [],
+                        graph_2: []
+                    };
+                } 
+                if(node.element_type === 'common' || node.element_type === 'common*') {
+                    partitions[node.partition]['graph_1'].push(node.label);
+                    partitions[node.partition]['graph_2'].push(node.label);
+                } else if (node.element_type === 'graph_1' || node.element_type === 'graph_2') {
+                    partitions[node.partition][node.element_type].push(node.label);
+                }
+            }    
+        }
+
+        let static_edge_graph = this.props.graphData.data.static_graph.links;
+        let class_name_edge_graph = this.props.graphData.data.class_name_graph.links;
+
+        let static_TurboMQ_value = [0, 0];
+        let class_name_TurboMQ_value = [0, 0];
+
+        for(let j in partitions) {
+            let sie = 0.0;
+            let see = 0.0; 
+            let cie = 0.0;
+            let cee = 0.0;
+
+            for(let i in static_edge_graph) {
+                let edge = static_edge_graph[i];
+                if(partitions[j]['graph_1'].includes(edge.source) && partitions[j]['graph_1'].includes(edge.target)) {
+                    sie += parseFloat(edge.weight);
+                }
+                else if (partitions[j]['graph_1'].includes(edge.source) || partitions[j]['graph_1'].includes(edge.target)) {
+                    see += parseFloat(edge.weight); 
+                }
+                
+                if(partitions[j]['graph_2'].includes(edge.source) && partitions[j]['graph_2'].includes(edge.target)) {
+                    cie += parseFloat(edge.weight);
+                }
+                else if (partitions[j]['graph_2'].includes(edge.source) || partitions[j]['graph_2'].includes(edge.target)) {
+                    cee += parseFloat(edge.weight); 
+                }
+            }
+            class_name_TurboMQ_value[0] += (cie !== 0) ? ((2*cie) / ( (2*cie) + cee)) : 0; 
+            static_TurboMQ_value[0] += (sie !== 0) ? ((2*sie) / ( (2*sie) + see)) : 0; 
+
+            sie = 0.0;
+            see = 0.0; 
+            cie = 0.0;
+            cee = 0.0;
+            for(let i in class_name_edge_graph) {
+                let edge = class_name_edge_graph[i];
+                if(partitions[j]['graph_1'].includes(edge.source) && partitions[j]['graph_1'].includes(edge.target)) {
+                    sie += parseFloat(edge.weight);
+                }
+                else if (partitions[j]['graph_1'].includes(edge.source) || partitions[j]['graph_1'].includes(edge.target)) {
+                    see += parseFloat(edge.weight); 
+                }
+
+                if(partitions[j]['graph_2'].includes(edge.source) && partitions[j]['graph_2'].includes(edge.target)) {
+                    cie += parseFloat(edge.weight);
+                }
+                else if (partitions[j]['graph_2'].includes(edge.source) || partitions[j]['graph_2'].includes(edge.target)) {
+                    cee += parseFloat(edge.weight); 
+                }
+            }
+            class_name_TurboMQ_value[1] += (cie !== 0) ? ((2*cie) / ( (2*cie) + cee)) : 0; 
+            static_TurboMQ_value[1] += (sie !== 0) ? ((2*sie) / ( (2*sie) + see)) : 0; 
+
+        }
+
+        let num_of_partitions = Object.keys(partitions).length;
+        static_TurboMQ_value[0] = static_TurboMQ_value[0] / num_of_partitions;
+        static_TurboMQ_value[1] = static_TurboMQ_value[1] / num_of_partitions;
+        class_name_TurboMQ_value[0] = class_name_TurboMQ_value[0] / num_of_partitions;
+        class_name_TurboMQ_value[1] = class_name_TurboMQ_value[1] / num_of_partitions;
+
+        let static_g = static_TurboMQ_value;
+        let class_name_g = class_name_TurboMQ_value;
+        this.setState({
+            static_metrics: static_g,
+            class_name_metrics: class_name_g
+        })
+    }
+
+    componentDidUpdate() {
+        console.log('componenet updated!');
     }
 
     render() {
-        const {num_of_partitions, graph, nodes} = this.state;
+        const {num_of_partitions, nodes} = this.state;
 
         let w = window.innerWidth;
-
-        // Update the graph if elements are moved. 
-        // graph.json(nodes);
+        let state = storeProvider.getStore().getState();
 
         return (
             <div>
+                <button onClick={this.handleClick}>Show real name</button>
                 <CytoscapeComponent
+                    ref={this.myRef}
                     elements={CytoscapeComponent.normalizeElements({
                         nodes: nodes
                     })} 
@@ -204,7 +327,7 @@ class Custom extends React.Component {
                         {
                             'selector': 'node.deactivate',
                             'style': {
-                                'opacity': 0.3
+                                'opacity': 0.03
                             }
                         },
                         {
@@ -258,10 +381,16 @@ class Custom extends React.Component {
                             }
                           }
                     ]}
-                    cy={(cy) => { 
-                        // Orbit View
+                    cy={
+                        (cy) => { 
+                        //Orbit View
                         this.cy = cy;
                         let partitions = []
+
+                        cy.viewport({
+                            zoom: this.props.diffGraph.zoom,
+                            pan: this.props.diffGraph.pan
+                        });
                         
                         cy.nodeHtmlLabel([{
                                 query: 'node',
@@ -294,7 +423,8 @@ class Custom extends React.Component {
 
                         cy.on('ehcomplete', (event, sourceNode, targetNode, addedEles) => {
                             if(sourceNode.data().hide === false 
-                                && partitions.includes(targetNode.id())) {
+                                && partitions.includes(targetNode.id())
+                                && !sourceNode.hasClass('deactivate')) {
                                 // Fix if a common element is moved.
                                 // Implement a way to add an additional partition. 
                                 let prev_element = sourceNode.data().element_type;
@@ -305,6 +435,8 @@ class Custom extends React.Component {
                                     prev_element = sourceNode.data().prev_element_type;
                                     prev_partition = sourceNode.data().prev_partition;
                                 }
+
+                                let npos = cy.elements().getElementById(targetNode.id()).position();
 
                                 cy.add({
                                     group: 'nodes',
@@ -321,7 +453,6 @@ class Custom extends React.Component {
                                     },
                                 })
 
-                                let npos = cy.elements().getElementById(targetNode.id()).position();
                                 cy.elements().getElementById(targetNode.id()).children().union(
                                     cy.elements().filter((ele)=> {
                                         return ele.data().partition === targetNode.id();
@@ -362,13 +493,13 @@ class Custom extends React.Component {
                                     cy.elements().getElementById(`graph_1_${sourceNode.data().label}`).addClass('hide');
                                     cy.elements().getElementById(`graph_2_${sourceNode.data().label}`).addClass('hide');
                                 }
-                            }
+                            } 
                             cy.remove(addedEles);
                         })
 
                         cy.on('mouseover', 'node', function(e) {
                             let sel = e.target;
-                            if(!partitions.includes(sel.id())) {
+                            if(!partitions.includes(sel.id()) && sel.data().element_type !== 'common*' && sel.data().element_type !== 'common') {
                                 eh.enableDrawMode();
                             }
                         })
@@ -396,15 +527,32 @@ class Custom extends React.Component {
                                     );
                                     cy.elements().getElementById(`graph_1_${sel.id()}`).data().hide = true;
                                     cy.elements().getElementById(`graph_2_${sel.id()}`).data().hide = true;
+
+                                    cy.add([{
+                                        group: 'edges',
+                                        data: {
+                                            target: sel.id(),
+                                            source: `graph_1_${sel.id()}`
+                                        }
+                                    },
+                                    {
+                                        group: 'edges',
+                                        data: {
+                                            target: sel.id(),
+                                            source: `graph_2_${sel.id()}`
+                                        }
+                                    }]);
                                 } else {
                                     selected_elements = selected_elements.union(cy.elements().getElementById(sel.data().prev_partition));
                                 }
                             }
                             else if (sel.data().element_type === 'graph_1') {
-                                selected_elements = selected_elements.union(cy.elements().getElementById(`graph_2_${sel.data().label}`));
+                                let graph_2 = cy.elements().getElementById(`graph_2_${sel.data().label}`)
+                                selected_elements = selected_elements.union(graph_2).union(cy.elements().getElementById(graph_2.data().partition));
                             } 
                             else if (sel.data().element_type === 'graph_2') {
-                                selected_elements = selected_elements.union(cy.elements().getElementById(`graph_1_${sel.data().label}`));
+                                let graph_1 = cy.elements().getElementById(`graph_1_${sel.data().label}`)
+                                selected_elements = selected_elements.union(graph_1).union(cy.elements().getElementById(graph_1.data().partition));
                             } 
                             else if (sel.data().element_type === 'partition') {
                                 selected_elements = selected_elements.union(sel.children()).union(
@@ -436,12 +584,14 @@ class Custom extends React.Component {
                                 }
                                 ele.data().hide = false;
                             })
+                            cy.remove('edge');
                         });
                     }}
                 />
+                <Metrics/>
             </div>
         );
     }
 };
 
-export default Custom;
+export default connect(null, { updateCustomGraph })(Custom);

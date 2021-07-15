@@ -2,11 +2,8 @@ import React from 'react';
 import {
   BrowserRouter as Router,
   Route,
-  Switch,
-  Link,
-  Redirect
 } from "react-router-dom";
-
+import {connect} from 'react-redux';
 //Pages
 import FilePage from "./Pages";
 import DiffTool from "./Pages/diffTool";
@@ -14,15 +11,6 @@ import DiffTool from "./Pages/diffTool";
 class App extends React.Component {
   constructor(props){
     super(props);
-    // this.state = { 
-    //   nodes: [],
-    //   edges: {
-    //     static: [],
-    //     classNames: []
-    //   },
-    //   decomposition_one: {},
-    //   decomposition_two: {}  
-    // }
   }
 
   render() {

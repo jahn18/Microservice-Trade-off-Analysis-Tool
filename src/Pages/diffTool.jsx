@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useRef} from "react";
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from 'cytoscape';
 import 'bootstrap';
@@ -15,17 +15,19 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Custom from './../Components/Custom';
 import AntSwitch from './../Components/Switch';
+import {connect} from 'react-redux';
+import {updateDiffGraph} from './../Actions';
+import storeProvider from './../storeProvider';
+import Metrics from './../Components/Metrics';
+import 'react-pro-sidebar/dist/css/styles.css';
+
 
 /* 
     TODO: 
     - Fix the initial starting view.  
-    - Improve dragging partitions. 
-    ** - Make an extra grey box if no common elements exist.
-    ***THREE MAIN THINGS:
-    1. Have the positions be consistent with the custom view.
-    2. Update the metrics for the custom view. 
-    ** 3. Toggle edges for the DIFF View. 
-    4. Location not saving when changing to custom view. 
+    - Update the metrics for the custom view. 
+    - Location not saving when changing to custom view. 
+    - Add functionality to 
 */
 
 class DiffTool extends React.Component {
@@ -67,9 +69,6 @@ class DiffTool extends React.Component {
             });
         }
 
-        let static_graph = json_graph_data.data.static_graph.links;
-        let static_edge_graph = this.getEdgeDependencies(static_graph, common, 'graph_1');
-
         core_elements = [].concat(core_elements, default_nodes);
 
         let cy = cytoscape({
@@ -83,6 +82,17 @@ class DiffTool extends React.Component {
 
         for(let i = 0; i < num_of_partitions; i++) {
             partitions.push(cy.elements().getElementById(`partition${i}`));
+        }
+
+        cy.collection(partitions).layout({
+            name: 'cose',
+            randomize: true,
+            fit: true,
+            nodeRepulsion: 80000,
+            gravity: 0.75
+        }).run();
+
+        for(let i = 0; i < num_of_partitions; i++) {
             orbits.push(
                 cy.collection(partitions[i].children())
                     .union(cy.elements().getElementById(`core${i}`).children())
@@ -117,26 +127,16 @@ class DiffTool extends React.Component {
             }).run();
         }
 
-        cy.collection(partitions).layout({
-            name: 'cose',
-            randomize: true,
-            fit: true,
-            nodeRepulsion: 80000,
-            gravity: 0.75
-        }).run();
-
-
         this.state = {
-            graph: cy,
+            cy: cy,
             selectedRelationshipType: 'static',
             // I have to change this when the two decompositions have a different number of partitions.
             num_of_partitions: num_of_partitions,
-            nodes: cy.elements().forEach((ele) => {
-                                if(ele.data().element_type === 'graph_2') {
-                                    ele.addClass('hide');
-                                }
-                            }).jsons(),
-            edges: static_edge_graph, 
+            nodes: cy.nodes().forEach((ele) => {
+                if(ele.data().element_type === 'graph_2') {
+                    ele.addClass('hide');
+                }
+            }).jsons(),
             common_elements: common,
             static_checked: false,
             class_name_checked: false
@@ -144,9 +144,11 @@ class DiffTool extends React.Component {
 
         this.changeRelationshipType = this.changeRelationshipType.bind(this);
         this.getEdgeDependencies = this.getEdgeDependencies.bind(this);
+        this.handleUpdateGraph = this.handleUpdateGraph.bind(this);
+        this.toggleSwitch = this.toggleSwitch.bind(this);
     };
 
-    calculateNormalizedTurboMQ = (diffGraph, common_elements, graph_num) => {
+    calculateNormalizedTurboMQ = (diffGraph, graph_num) => {
         const {num_of_partitions} = this.state;
         let CF_0 = 0.0;
         let CF_1 = 0.0;
@@ -189,42 +191,39 @@ class DiffTool extends React.Component {
     // When the user clicks on a tab it changes the relationship type.
     changeRelationshipType = (relationshipType, common_elements) => {
         const {
-            graph,
+            cy,
         } = this.state;
+
         let renderedGraph = [];
         let edges = [];
-        graph.elements().removeClass('hide');
+        cy.elements().removeClass('hide');
 
         switch(relationshipType) {
             case 'static':
-                renderedGraph = graph.elements().forEach((ele) => {
+                renderedGraph = cy.nodes().forEach((ele) => {
                     if(ele.data().element_type === 'graph_2') {
                         if(ele.group() === 'nodes') {
                             ele.addClass('hide');
                         } 
                     }
                 }).jsons()
-                let static_graph = this.props.location.state.data.static_graph.links;
-                edges = this.getEdgeDependencies(static_graph, common_elements, 'graph_1');
                 break; 
             case 'class name':
-                renderedGraph = graph.elements().forEach((ele) => {
+                renderedGraph = cy.nodes().forEach((ele) => {
                     if(ele.data().element_type === 'graph_1') {
                         if(ele.group() === 'nodes') {
                             ele.addClass('hide');
                         } 
                     }
                 }).jsons()
-                let class_name_graph = this.props.location.state.data.class_name_graph.links;
-                edges = this.getEdgeDependencies(class_name_graph, common_elements, 'graph_2');
                 break;
             default: 
-                renderedGraph = graph.nodes().jsons();
+                renderedGraph = cy.nodes().jsons();
                 break;
         }
+
         this.setState({
             nodes: renderedGraph, 
-            edges: edges, 
             static_checked: false,
             class_name_checked: false
         });
@@ -280,42 +279,53 @@ class DiffTool extends React.Component {
         const {
             class_name_checked, 
             static_checked,
-            common_elements
+            common_elements,
+            selectedRelationshipType
         } = this.state;
 
         let class_name_graph = this.props.location.state.data.class_name_graph.links;
         let static_graph = this.props.location.state.data.static_graph.links;
         let edges = []
 
-        if(class_name_checked) {
-            edges = this.getEdgeDependencies(class_name_graph, common_elements, 'graph_2');
-        }
-
-        if(static_checked) {
-            edges = [].concat(edges, this.getEdgeDependencies(static_graph, common_elements, 'graph_1'))
+        switch(selectedRelationshipType) {
+            case 'static':
+                if(class_name_checked) {
+                    edges = this.getEdgeDependencies(class_name_graph, common_elements, 'graph_1');
+                }
+                if(static_checked) {
+                    edges = [].concat(edges, this.getEdgeDependencies(static_graph, common_elements, 'graph_1'))
+                }
+                break;
+            case 'class name':
+                if(class_name_checked) {
+                    edges = this.getEdgeDependencies(class_name_graph, common_elements, 'graph_2');
+                }
+                if(static_checked) {
+                    edges = [].concat(edges, this.getEdgeDependencies(static_graph, common_elements, 'graph_2'))
+                }
+                break;
+            case 'default':
         }
         return edges;
+    }
+
+    handleUpdateGraph = (graph) => {
+        this.props.updateDiffGraph(graph);
     }
 
     render() {
         const {
             num_of_partitions, 
             selectedRelationshipType, 
-            graph, 
             nodes, 
             common_elements, 
-            edges,
         } = this.state;
-
-        // Update the graph if elements are moved. 
-        graph.json(nodes);
+        
+        let state = storeProvider.getStore().getState();
 
         let diffGraph = this.props.location.state.data.diff_graph; 
-
-        let static_turboMQ = this.calculateNormalizedTurboMQ(diffGraph, common_elements, 1);
-        let class_name_turboMQ = this.calculateNormalizedTurboMQ(diffGraph, common_elements, 2);
-
-        let graph_edges = (this.toggleSwitch().length !== 0) ? this.toggleSwitch() : edges;
+        let static_turboMQ = this.calculateNormalizedTurboMQ(diffGraph, 1);
+        let class_name_turboMQ = this.calculateNormalizedTurboMQ(diffGraph, 2);
 
         return (
             <div>
@@ -331,20 +341,23 @@ class DiffTool extends React.Component {
                     >
                     <Tab label="static" value="static"/>
                     <Tab label="class name" value="class name"/>
-                    <Tab label="diff" value="diff"/>
                     <Tab label="custom" value="custom"
                     //disabled 
                     />
                     </Tabs>
                 </Paper>
                 {(selectedRelationshipType === 'custom') && 
-                    <Custom graphData={this.props.location.state} nodes={nodes}/>
+                    <Custom 
+                    graphData={this.props.location.state} 
+                    nodes={state.diff_graph.elements.nodes} 
+                    diffGraph={state.diff_graph}    
+                    />
                 }
                 {(selectedRelationshipType !== 'custom') && 
                 <CytoscapeComponent
                     elements={CytoscapeComponent.normalizeElements({
                         nodes: nodes,
-                        edges: graph_edges
+                        edges: this.toggleSwitch(selectedRelationshipType)
                     })} 
                     style={{width: "100%", height: "100%", position: 'fixed'}} 
                     stylesheet={[
@@ -429,8 +442,8 @@ class DiffTool extends React.Component {
                     ]}
                     cy={(cy) => { 
                         // Orbit View
-                        this.cy = cy;
-                        console.log(cy.viewport())
+                        
+                        this.handleUpdateGraph(cy.json());
 
                         cy.on('tap', 'node', function(e) {
                             let sel = e.target; 
@@ -441,9 +454,6 @@ class DiffTool extends React.Component {
                             } else if (sel.data().element_type === 'graph_2') {
                                 selected_elements = selected_elements.union(cy.elements().getElementById(`graph_1_${sel.data().label}`));
                             } 
-                            // else if (sel.data().element_type === 'partition') {
-                            //     selected_elements = selected_elements.union(sel.children());
-                            // }
 
                             for(let i = 0; i < num_of_partitions; i++) {
                                 selected_elements = selected_elements.union(cy.elements().getElementById(`partition${i}`))
@@ -451,8 +461,7 @@ class DiffTool extends React.Component {
                             }
 
                             let unselected_elements = cy.elements().not(sel).difference(selected_elements);
-
-                            
+   
                             unselected_elements.addClass('deactivate');
                             selected_elements.addClass('highlight');
                             sel.addClass('highlight');
@@ -483,16 +492,17 @@ class DiffTool extends React.Component {
                         cy.on('mouseup', 'node', function(e) {
                             cy.elements().grabify();
                         })
-
                     }}
-                />}
+                /> 
+                }
+                {(selectedRelationshipType !== 'custom') && 
                 <TableContainer 
                 component={Paper} 
                 style={
                         {
-                            width: '25%',
+                            width: '30%',
                             border: '1px solid grey',
-                            'left': '74%',
+                            'left': '68%',
                             'margin-top': '1%',
                             position: 'fixed',
                         }
@@ -500,42 +510,55 @@ class DiffTool extends React.Component {
                 size="small">
                     <Table aria-label="simple table">
                         <TableHead>
-                        <TableRow>
-                            <TableCell>Coupling & Cohesion (0-100%)</TableCell>
-                            <TableCell align="center">Static Dependencies</TableCell>
-                            <TableCell align="center">Class Name Dependencies</TableCell>
-                        </TableRow>
+                            <TableRow>
+                                <TableCell align="" colSpan={3} style={{'font-weight': 'bold'}}>
+                                    Coupling & Cohesion (0-100%)
+                                </TableCell>
+                            </TableRow>
                         </TableHead>
                         <TableBody>
-                            {(selectedRelationshipType === 'static' || selectedRelationshipType === 'diff') && <TableRow key={'static'}>
+                            <TableRow>
+                                <TableCell style={{'font-size': 'small'}}>Decomposition</TableCell>
+                                <TableCell style={{'font-size': 'small'}}>
+                                    Static Dependencies
+                                    {(selectedRelationshipType !== 'custom') 
+                                    && <AntSwitch onChange={(event, status) => {
+                                        this.setState({static_checked: status});
+                                    }}/>}
+                                </TableCell>
+                                <TableCell style={{'font-size': 'small'}}>
+                                    Class Name Dependencies
+                                    {(selectedRelationshipType !== 'custom') && 
+                                    <AntSwitch onChange={(event, status) => {
+                                        this.setState({class_name_checked: status});
+                                    }}/>}
+                                </TableCell>
+                            </TableRow>
+                            {(selectedRelationshipType === 'static' || 
+                            selectedRelationshipType === 'custom') && 
+                            <TableRow key={'static'}>
                             <TableCell component="th" scope="row" style={{color:'#4169e1'}}>
-                                {'STATIC'}
-                                {(selectedRelationshipType === 'diff') 
-                                && <AntSwitch onChange={(event, status) => {
-                                    this.setState({static_checked: status});
-                                }}/>}
+                                {'VER 1 (by STATIC)'}
                             </TableCell>
                             <TableCell align="center">{static_turboMQ[0].toFixed(2)}</TableCell>
                             <TableCell align="center">{static_turboMQ[1].toFixed(2)}</TableCell>
                             </TableRow>}
-                            {(selectedRelationshipType === 'class name' || selectedRelationshipType === 'diff') &&
+                            {(selectedRelationshipType === 'class name' 
+                            || selectedRelationshipType === 'custom') &&
                             <TableRow key={'class name'}>
                             <TableCell component="th" scope="row" style={{color: '#e9253e'}}>
-                                {'CLASS NAME'}
-                                {(selectedRelationshipType === 'diff') && 
-                                <AntSwitch onChange={(event, status) => {
-                                    this.setState({class_name_checked: status});
-                                }}/>}
+                                {'VER 2 (by CLASS NAME)'}
                             </TableCell>
-                            <TableCell align="center">{class_name_turboMQ[1].toFixed(2)}</TableCell>
                             <TableCell align="center">{class_name_turboMQ[0].toFixed(2)}</TableCell>
+                            <TableCell align="center">{class_name_turboMQ[1].toFixed(2)}</TableCell>
                             </TableRow>}
                         </TableBody>
                     </Table>
-                </TableContainer>
+                </TableContainer>}
             </div>
         );
     }
 };
 
-export default DiffTool;
+
+export default connect(null, { updateDiffGraph })(DiffTool);
