@@ -8,7 +8,6 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 
 const Metrics = (props) => {
-
     return(
         <div>
             <TableContainer 
@@ -18,7 +17,7 @@ const Metrics = (props) => {
                         width: '30%',
                         border: '1px solid grey',
                         'left': '68%',
-                        'margin-top': '-1.5%',
+                        'margin-top': '1%',
                         position: 'fixed',
                     }
                 } 
@@ -45,15 +44,15 @@ const Metrics = (props) => {
                         <TableCell component="th" scope="row" style={{color:'#4169e1'}}>
                             {'VER 1 (by STATIC)'}
                         </TableCell>
-                        <TableCell align="center">{0}</TableCell>
-                        <TableCell align="center">{0}</TableCell>
+                        <TableCell align="center">{props.static[0].toFixed(2)}</TableCell>
+                        <TableCell align="center">{props.static[1].toFixed(2)}</TableCell>
                         </TableRow>
                         <TableRow key={'class name'}>
                         <TableCell component="th" scope="row" style={{color: '#e9253e'}}>
                             {'VER 2 (by CLASS NAME)'}
                         </TableCell>
-                        <TableCell align="center">{0}</TableCell>
-                        <TableCell align="center">{0}</TableCell>
+                        <TableCell align="center">{props.classname[0].toFixed(2)}</TableCell>
+                        <TableCell align="center">{props.classname[1].toFixed(2)}</TableCell>
                         </TableRow>
                     </TableBody>
                 </Table>

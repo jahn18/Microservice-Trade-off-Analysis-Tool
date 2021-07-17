@@ -7,6 +7,8 @@ import {connect} from 'react-redux';
 //Pages
 import FilePage from "./Pages";
 import DiffTool from "./Pages/diffTool";
+import Test from "./Pages/Decompositions";
+import CustomGraph from "./Components/Custom"
 
 class App extends React.Component {
   constructor(props){

@@ -1,41 +1,27 @@
 import React, {useRef} from "react";
-import ReactDOM from "react-dom";
-import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from 'cytoscape';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
 import Paper from "@material-ui/core/Paper";
-import Tab from "@material-ui/core/Tab";
-import Tabs from "@material-ui/core/Tabs";
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import Custom from './../Components/Custom';
-import AntSwitch from './../Components/Switch';
-import {connect} from 'react-redux';
-import {updateDiffGraph} from './../Actions';
-import storeProvider from './../storeProvider';
-import Metrics from './../Components/Metrics';
+import AntSwitch from '../Components/Switch';
 import 'react-pro-sidebar/dist/css/styles.css';
+import {connect} from 'react-redux';
+import {updateDiffGraph} from '../Actions';
+import storeProvider from '../storeProvider';
 
 
-/* 
-    TODO: 
-    - Fix the initial starting view.  
-    - Update the metrics for the custom view. 
-    - Location not saving when changing to custom view. 
-    - Add functionality to 
-*/
-
-class Test extends React.Component {
+class Decompositions extends React.Component {
     constructor(props) {
         super(props);
 
-        let diffGraph = this.props.location.state.data.diff_graph; 
+        let diffGraph = this.props.graphData.diff_graph; 
         let num_of_partitions = Object.keys(diffGraph).length;
 
         let default_nodes = []; 
@@ -72,7 +58,6 @@ class Test extends React.Component {
         core_elements = [].concat(core_elements, default_nodes);
 
         this.state = {
-            selectedRelationshipType: 'static',
             num_of_partitions: num_of_partitions,
             nodes: core_elements,
             common_elements: common,
@@ -179,10 +164,15 @@ class Test extends React.Component {
         let w = window.innerWidth;
         let partitions = [];
         let orbits = [];
-
         for(let i = 0; i < num_of_partitions; i++) {
             partitions.push(cy.elements().getElementById(`partition${i}`));
         }
+
+        cy.collection(partitions).layout({
+            name: 'cose',
+            fit: true,
+            nodeRepulsion: (node) => {return 7500}
+        }).run();
 
 
         for(let i = 0; i < num_of_partitions; i++) {
@@ -220,15 +210,6 @@ class Test extends React.Component {
             }).run();
         }
 
-        cy.collection(partitions).layout({
-            name: 'cose',
-            randomize: true,
-            fit: true,
-            gravity: 0.1,
-            nodeReplusion: 1000,
-            idealEdgeLength: 10
-        }).run();
-
         /*
             All event handlers when interacting with the graph. 
         */       
@@ -245,7 +226,7 @@ class Test extends React.Component {
                         ele.addClass('hide');
                     } 
                 }
-            }).jsons()
+            }).jsons(),
         })
     }
 
@@ -299,6 +280,10 @@ class Test extends React.Component {
 
     // When the user clicks on a tab it changes the relationship type.
     onRelationshipTypeChange(relationshipType) {
+        const {
+            cy
+        } = this.state;
+        this.updateGraphInRedux(cy.elements().nodes().jsons());
         this.setState({nodes: this._updateGraphNodes(relationshipType)});
     }
 
@@ -365,7 +350,7 @@ class Test extends React.Component {
     }
 
     onNonVisibleNode(ele) {
-        const {selectedRelationshipType} = this.state;
+        const selectedRelationshipType = this.props.relationshipType;
 
         let sel = ele.target;
         if(selectedRelationshipType === 'static' && sel.data().element_type === 'graph_2') {
@@ -380,7 +365,9 @@ class Test extends React.Component {
     onToggleSwitch() {
         let {cy} = this.state;
         cy.remove('edge');
-        cy.add(this._updateGraphEdges());
+
+        const edges = this._updateGraphEdges();
+        cy.add(edges);
     }
 
     _updateGraphEdges() {
@@ -388,11 +375,11 @@ class Test extends React.Component {
             class_name_checked, 
             static_checked,
             common_elements,
-            selectedRelationshipType
         } = this.state;
 
-        let class_name_graph = this.props.location.state.data.class_name_graph.links;
-        let static_graph = this.props.location.state.data.static_graph.links;
+        let selectedRelationshipType = this.props.relationshipType;
+        let class_name_graph = this.props.graphData.class_name_graph.links;
+        let static_graph = this.props.graphData.static_graph.links;
         let edges = []
 
         switch(selectedRelationshipType) {
@@ -431,7 +418,7 @@ class Test extends React.Component {
                                         [].concat(diffGraph[i].common, diffGraph[i].graph_two_diff); 
             let internal_edges = 0.0;
             let external_edges = 0.0; 
-            let edge_graph = this.props.location.state.data.static_graph.links;
+            let edge_graph = this.props.graphData.static_graph.links;
             for(let j = 0; j < edge_graph.length; j++) {
                 let edge = edge_graph[j];
                 if(partition_classes.includes(edge.source) && partition_classes.includes(edge.target)) {
@@ -444,7 +431,7 @@ class Test extends React.Component {
 
             internal_edges = 0.0;
             external_edges = 0.0; 
-            edge_graph = this.props.location.state.data.class_name_graph.links;
+            edge_graph = this.props.graphData.class_name_graph.links;
             for(let j = 0; j < edge_graph.length; j++) {
                 let edge = edge_graph[j];
                 if(partition_classes.includes(edge.source) && partition_classes.includes(edge.target)) {
@@ -459,39 +446,40 @@ class Test extends React.Component {
     };
 
     componentDidUpdate(prevProps, prevState, snapshot) {
+        // let {
+        //     cy
+        // } = this.state;
+
+        // let state = storeProvider.getStore().getState();
+        // if(state.diff_graph !== cy.elements().nodes().jsons()) {
+        //     cy.json(state.diff_graph);
+        // }
+        // Check if the user has toggled the switch, which will add edges to the graph. 
         if(JSON.stringify(prevState.edges) !== JSON.stringify(this._updateGraphEdges())) {
             this.onToggleSwitch();
         }
+
+        if(prevProps.relationshipType !== this.props.relationshipType) {
+            this.onRelationshipTypeChange(this.props.relationshipType);
+        }
+    }
+
+    updateGraphInRedux = (graph) => {
+        this.props.updateDiffGraph(graph);
     }
 
     render() {
         const {
-            selectedRelationshipType
+            cy,
         } = this.state; 
 
-        let diffGraph = this.props.location.state.data.diff_graph; 
+        let selectedRelationshipType = this.props.relationshipType; 
+        let diffGraph = this.props.graphData.diff_graph; 
         let static_turboMQ = this.calculateNormalizedTurboMQ(diffGraph, 1);
         let class_name_turboMQ = this.calculateNormalizedTurboMQ(diffGraph, 2);
 
         return (
             <div>
-                <Paper square>
-                    <Tabs
-                    value={selectedRelationshipType}
-                    textColor="primary"
-                    indicatorColor="primary"
-                    onChange={(event, newValue) => {
-                        this.setState({selectedRelationshipType: newValue});
-                        this.onRelationshipTypeChange(newValue);
-                    }}
-                    >
-                    <Tab label="static" value="static"/>
-                    <Tab label="class name" value="class name"/>
-                    <Tab label="custom" value="custom"
-                    //disabled 
-                    />
-                    </Tabs>
-                </Paper>
                 <div className="graph-container">
                     <div style={{height: '100%', width: '100%', position: 'fixed'}} ref={ref => (this.ref = ref)}></div>
                 </div>
@@ -520,21 +508,21 @@ class Test extends React.Component {
                                 <TableCell style={{'font-size': 'small'}}>Decomposition</TableCell>
                                 <TableCell style={{'font-size': 'small'}}>
                                     Static Dependencies
-                                    {(selectedRelationshipType !== 'custom') 
+                                    {(selectedRelationshipType !== 'diff') 
                                     && <AntSwitch onChange={(event, status) => {
                                         this.setState({static_checked: status});
                                     }}/>}
                                 </TableCell>
                                 <TableCell style={{'font-size': 'small'}}>
                                     Class Name Dependencies
-                                    {(selectedRelationshipType !== 'custom') && 
+                                    {(selectedRelationshipType !== 'diff') && 
                                     <AntSwitch onChange={(event, status) => {
                                         this.setState({class_name_checked: status});
                                     }}/>}
                                 </TableCell>
                             </TableRow>
                             {(selectedRelationshipType === 'static' || 
-                            selectedRelationshipType === 'custom') && 
+                            selectedRelationshipType === 'diff') && 
                             <TableRow key={'static'}>
                             <TableCell component="th" scope="row" style={{color:'#4169e1'}}>
                                 {'VER 1 (by STATIC)'}
@@ -543,7 +531,7 @@ class Test extends React.Component {
                             <TableCell align="center">{static_turboMQ[1].toFixed(2)}</TableCell>
                             </TableRow>}
                             {(selectedRelationshipType === 'class name' 
-                            || selectedRelationshipType === 'custom') &&
+                            || selectedRelationshipType === 'diff') &&
                             <TableRow key={'class name'}>
                             <TableCell component="th" scope="row" style={{color: '#e9253e'}}>
                                 {'VER 2 (by CLASS NAME)'}
@@ -559,4 +547,5 @@ class Test extends React.Component {
     }
 };
 
-export default Test;
+// export default Test;
+export default connect(null, { updateDiffGraph })(Decompositions);

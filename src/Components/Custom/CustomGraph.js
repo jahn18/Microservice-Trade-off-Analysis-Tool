@@ -6,14 +6,8 @@ import 'bootstrap/dist/js/bootstrap.js';
 import edgehandles from 'cytoscape-edgehandles';
 import automove from 'cytoscape-automove';
 import nodeHtmlLabel from 'cytoscape-node-html-label';
-import Paper from "@material-ui/core/Paper";
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import Metrics from './../Metrics/Metrics'
+import Metrics from '../Metrics/Metrics'
+import storeProvider from './../../storeProvider';
 
 
 cytoscape.use( nodeHtmlLabel );
@@ -24,7 +18,7 @@ class CustomGraph extends React.Component {
     constructor(props) {
         super(props);
 
-        let diffGraph = this.props.graphData.data.diff_graph; 
+        let diffGraph = this.props.graphData.diff_graph; 
         let num_of_partitions = Object.keys(diffGraph).length;
 
         let default_nodes = []; 
@@ -66,6 +60,12 @@ class CustomGraph extends React.Component {
             nodes,
             num_of_partitions
         } = this.state;
+
+        let decompositionRenderedPanelState = storeProvider.getStore().getState().diff_graph;
+        let set_graph_positions = {};
+        for(let node_i in decompositionRenderedPanelState.graph.elements.nodes) {
+            set_graph_positions[decompositionRenderedPanelState.graph.elements.nodes[node_i].data.id] = decompositionRenderedPanelState.graph.elements.nodes[node_i].position;
+        }
 
         const cy = cytoscape({
             container: this.ref,
@@ -167,23 +167,28 @@ class CustomGraph extends React.Component {
                         'opacity': 0
                     }
                 }
-            ]
+            ],
         });
+
 
         let w = window.innerWidth;
         let orbits = [];
+        let partitions = [];
 
-        let set_graph_positions = {};
 
-        for(let node in this.props.nodes) {
-            set_graph_positions[this.props.nodes[node].data.id] = this.props.nodes[node].position;
-        }
+        cy.nodes().positions((node, i) => {
+            return {
+                x: set_graph_positions[node.id()].x,
+                y: set_graph_positions[node.id()].y,
+            };
+        });
 
         cy.layout({
             name: 'preset',
             positions: function(node) {
                 return (set_graph_positions[node.id()]);   
-            }
+            },
+            fit: true
         }).run();
 
         for(let i = 0; i < num_of_partitions; i++) {
@@ -223,12 +228,8 @@ class CustomGraph extends React.Component {
             }).run();
         }
 
-        let partitions = []
-
-        cy.viewport({
-            zoom: this.props.diffGraph.zoom,
-            pan: this.props.diffGraph.pan
-        });
+        cy.pan(decompositionRenderedPanelState.graph.pan);
+        cy.zoom(decompositionRenderedPanelState.graph.zoom);
         
         cy.nodeHtmlLabel([{
                 query: 'node',
@@ -411,7 +412,12 @@ class CustomGraph extends React.Component {
                 prev_partition = sourceNode.data().prev_partition;
             }
 
-            let npos = cy.elements().getElementById(targetNode.id()).position();
+            const npos = cy.elements().getElementById(targetNode.id()).position();
+            const target_pos = {
+                x: npos.x, 
+                y: npos.y
+            }; 
+
             let w = window.innerWidth;
 
             cy.add({
@@ -427,19 +433,19 @@ class CustomGraph extends React.Component {
                     prev_partition: prev_partition,
                     hide: false
                 },
-            })
+            });
 
             cy.elements().getElementById(targetNode.id()).children().union(
                 cy.elements().filter((ele)=> {
                     return ele.data().partition === targetNode.id();
                 })).layout({
                 name: 'concentric',
-                spacingFactor: 2,
+                spacingFactor: 3.5,
                 boundingBox: {
-                    x1: npos.x - w/2,
-                    x2: npos.x + w/2,
-                    y1: npos.y - w/2,
-                    y2: npos.y + w/2 
+                    x1: target_pos.x - w/2,
+                    x2: target_pos.x + w/2,
+                    y1: target_pos.y - w/2,
+                    y2: target_pos.y + w/2 
                 },
                 fit: true,
                 concentric: function(n) {
@@ -459,7 +465,8 @@ class CustomGraph extends React.Component {
                 levelWidth: function() {
                     return 1;
                 }, 
-                equidistant: true, 
+                minNodeSpacing: 10,
+                equidistant: false, 
             }).run();
 
             // Should also hide common elements if they get moved. 
@@ -508,8 +515,8 @@ class CustomGraph extends React.Component {
             }    
         }
 
-        let static_edge_graph = this.props.graphData.data.static_graph.links;
-        let class_name_edge_graph = this.props.graphData.data.class_name_graph.links;
+        let static_edge_graph = this.props.graphData.static_graph.links;
+        let class_name_edge_graph = this.props.graphData.class_name_graph.links;
 
         let static_TurboMQ_value = [0, 0];
         let class_name_TurboMQ_value = [0, 0];
