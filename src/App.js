@@ -6,7 +6,7 @@ import {
 import {connect} from 'react-redux';
 //Pages
 import FilePage from "./Pages";
-import DiffTool from "./Pages/diffTool";
+import DiffTool from "./Pages/DiffTool";
 import Test from "./Pages/Decompositions";
 import CustomGraph from "./Components/Custom"
 

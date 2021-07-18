@@ -8,6 +8,8 @@ import automove from 'cytoscape-automove';
 import nodeHtmlLabel from 'cytoscape-node-html-label';
 import Metrics from '../Metrics/Metrics'
 import storeProvider from './../../storeProvider';
+import {updateCustomGraph} from './../../Actions';
+import {connect} from 'react-redux';
 
 
 cytoscape.use( nodeHtmlLabel );
@@ -55,17 +57,12 @@ class CustomGraph extends React.Component {
         this.ref = React.createRef();
     };
 
+
     componentDidMount() {
         const {
             nodes,
             num_of_partitions
         } = this.state;
-
-        let decompositionRenderedPanelState = storeProvider.getStore().getState().diff_graph;
-        let set_graph_positions = {};
-        for(let node_i in decompositionRenderedPanelState.graph.elements.nodes) {
-            set_graph_positions[decompositionRenderedPanelState.graph.elements.nodes[node_i].data.id] = decompositionRenderedPanelState.graph.elements.nodes[node_i].position;
-        }
 
         const cy = cytoscape({
             container: this.ref,
@@ -90,12 +87,7 @@ class CustomGraph extends React.Component {
                         'padding-right': '10px',
                         'text-valign': 'top',
                         'text-halign': 'center',
-                        'background-color': function(node) {
-                            if (node.data("colored"))
-                                return "#e9e9e9";
-                            else
-                                return "white";
-                        },
+                        'background-color': "#e9e9e9"
                     }
                 },
                 {
@@ -170,26 +162,43 @@ class CustomGraph extends React.Component {
             ],
         });
 
-
-        let w = window.innerWidth;
-        let orbits = [];
         let partitions = [];
+        let lastRenderedState = storeProvider.getStore().getState().custom_graph;
 
+        // If the custom graph hasn't been loaded yet then load the positions of the current diff-graph. 
+        if(Object.keys(lastRenderedState).length === 0) {
+            lastRenderedState = storeProvider.getStore().getState().diff_graph;
+        } else {
+            cy.json(lastRenderedState);
+        }
+
+        let lastRenderedNodePositions = this._getLastRenderedNodePositions(lastRenderedState);
 
         cy.nodes().positions((node, i) => {
             return {
-                x: set_graph_positions[node.id()].x,
-                y: set_graph_positions[node.id()].y,
+                x: lastRenderedNodePositions[node.id()].x,
+                y: lastRenderedNodePositions[node.id()].y,
             };
         });
 
         cy.layout({
             name: 'preset',
             positions: function(node) {
-                return (set_graph_positions[node.id()]);   
+                return (lastRenderedNodePositions[node.id()]);   
             },
             fit: true
         }).run();
+
+        /*
+            Removes strange red nodes that were added because of the edge handles functionality. 
+        */
+        let collection = cy.elements().filter((ele) => {
+            return (ele.data().element_type === undefined);
+        });
+        cy.remove(collection);
+
+        let w = window.innerWidth;
+        let orbits = [];
 
         for(let i = 0; i < num_of_partitions; i++) {
             orbits.push(
@@ -214,6 +223,8 @@ class CustomGraph extends React.Component {
                     switch(n.data().element_type) {
                         case "common": 
                             return 2;
+                        case "common*":
+                            return 2;
                         case "graph_1":
                             return 0;
                         case "graph_2": 
@@ -228,8 +239,8 @@ class CustomGraph extends React.Component {
             }).run();
         }
 
-        cy.pan(decompositionRenderedPanelState.graph.pan);
-        cy.zoom(decompositionRenderedPanelState.graph.zoom);
+        cy.pan(lastRenderedState.pan);
+        cy.zoom(lastRenderedState.zoom);
         
         cy.nodeHtmlLabel([{
                 query: 'node',
@@ -322,6 +333,14 @@ class CustomGraph extends React.Component {
             }
             return element_list;
     };
+
+    _getLastRenderedNodePositions(lastRenderedGraph) {
+        let previous_graph_positions = {};
+        for(let node_i in lastRenderedGraph.elements.nodes) {
+            previous_graph_positions[lastRenderedGraph.elements.nodes[node_i].data.id] = lastRenderedGraph.elements.nodes[node_i].position;
+        }
+        return previous_graph_positions;
+    }
 
     onClickedNode(ele) {
         let {
@@ -584,6 +603,18 @@ class CustomGraph extends React.Component {
         })
     }
 
+    updateRedux() {
+        let {
+            cy
+        } = this.state;
+
+        this.props.updateCustomGraph(cy.json());
+    }
+
+    componentWillUnmount() {
+        this.updateRedux();
+    }
+
     render() {
         const {
             static_metrics,
@@ -601,4 +632,4 @@ class CustomGraph extends React.Component {
     }
 };
 
-export default CustomGraph;
+export default connect(null, { updateCustomGraph })(CustomGraph);

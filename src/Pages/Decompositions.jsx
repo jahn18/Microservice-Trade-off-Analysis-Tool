@@ -161,53 +161,76 @@ class Decompositions extends React.Component {
             ],
         });
 
-        let w = window.innerWidth;
-        let partitions = [];
-        let orbits = [];
-        for(let i = 0; i < num_of_partitions; i++) {
-            partitions.push(cy.elements().getElementById(`partition${i}`));
-        }
+        let lastRenderedState = storeProvider.getStore().getState().diff_graph;
 
-        cy.collection(partitions).layout({
-            name: 'cose',
-            fit: true,
-            nodeRepulsion: (node) => {return 7500}
-        }).run();
+        if(Object.keys(lastRenderedState).length !== 0) {
+            let previous_graph_positions = this._getLastRenderedNodePositions(lastRenderedState);
 
+            cy.nodes().positions((node, i) => {
+                return {
+                    x: previous_graph_positions[node.id()].x,
+                    y: previous_graph_positions[node.id()].y,
+                };
+            });
 
-        for(let i = 0; i < num_of_partitions; i++) {
-            orbits.push(
-                cy.collection(partitions[i].children())
-                    .union(cy.elements().getElementById(`core${i}`).children())
-            );
-
-            let npos = cy.elements().getElementById(`core${i}`).position();
-            orbits[i].layout({
-                name: 'concentric',
-                spacingFactor: 4,
-                boundingBox: {
-                    x1: npos.x - w/2,
-                    x2: npos.x + w/2,
-                    y1: npos.y - w/2,
-                    y2: npos.y + w/2 
+            cy.layout({
+                name: 'preset',
+                positions: function(node) {
+                    return (previous_graph_positions[node.id()]);   
                 },
-                fit: true,
-                concentric: function(n) {
-                    switch(n.data().element_type) {
-                        case "common": 
-                            return 2;
-                        case "graph_1":
-                            return 0;
-                        case "graph_2": 
-                            return 1;
-                        default:
-                            return 2;
-                    }
-                },
-                levelWidth: function() {
-                    return 1;
-                } 
+                fit: true
             }).run();
+
+            cy.pan(lastRenderedState.pan);
+            cy.zoom(lastRenderedState.zoom);
+        } else {
+            let w = window.innerWidth;
+            let partitions = [];
+            let orbits = [];
+            for(let i = 0; i < num_of_partitions; i++) {
+                partitions.push(cy.elements().getElementById(`partition${i}`));
+            }
+
+            cy.collection(partitions).layout({
+                name: 'cose',
+                fit: true,
+                randomize: true
+            }).run();
+
+            for(let i = 0; i < num_of_partitions; i++) {
+                orbits.push(
+                    cy.collection(partitions[i].children())
+                        .union(cy.elements().getElementById(`core${i}`).children())
+                );
+
+                let npos = cy.elements().getElementById(`core${i}`).position();
+                orbits[i].layout({
+                    name: 'concentric',
+                    spacingFactor: 4,
+                    boundingBox: {
+                        x1: npos.x - w/2,
+                        x2: npos.x + w/2,
+                        y1: npos.y - w/2,
+                        y2: npos.y + w/2 
+                    },
+                    fit: true,
+                    concentric: function(n) {
+                        switch(n.data().element_type) {
+                            case "common": 
+                                return 2;
+                            case "graph_1":
+                                return 0;
+                            case "graph_2": 
+                                return 1;
+                            default:
+                                return 2;
+                        }
+                    },
+                    levelWidth: function() {
+                        return 1;
+                    } 
+                }).run();
+            }
         }
 
         /*
@@ -215,19 +238,39 @@ class Decompositions extends React.Component {
         */       
         cy.on('tap', 'node', (e) => this.onSelectedNode(e));
         cy.on('click', (e) => { cy.elements().removeClass('deactivate').removeClass('highlight'); });
-        cy.on('mousedown', 'node', (e) => this.onNonVisibleNode(e));
-        cy.on('mouseup', 'node', (e) => { cy.elements().grabify(); })
+        cy.on('mousedown', 'node', (e) => this.preventNonVisibleNodeFromMoving(e));
+        cy.on('mouseup', 'node', (e) => { cy.elements().grabify(); });
 
         this.setState({
             cy: cy,
             nodes: cy.nodes().forEach((ele) => {
-                if(ele.data().element_type === 'graph_2') {
-                    if(ele.group() === 'nodes') {
-                        ele.addClass('hide');
-                    } 
+                switch(this.props.relationshipType) {
+                    case 'static': 
+                        if(ele.data().element_type === 'graph_2') {
+                            if(ele.group() === 'nodes') {
+                                ele.addClass('hide');
+                            } 
+                        }
+                        break;
+                    case 'class name':
+                        if(ele.data().element_type === 'graph_1') {
+                            if(ele.group() === 'nodes') {
+                                ele.addClass('hide');
+                            } 
+                        }
+                        break;
+                    default:
                 }
             }).jsons(),
         })
+    }
+
+    _getLastRenderedNodePositions(lastRenderedGraph) {
+        let previous_graph_positions = {};
+        for(let node_i in lastRenderedGraph.elements.nodes) {
+            previous_graph_positions[lastRenderedGraph.elements.nodes[node_i].data.id] = lastRenderedGraph.elements.nodes[node_i].position;
+        }
+        return previous_graph_positions;
     }
 
     // Do this in a different place.
@@ -283,7 +326,6 @@ class Decompositions extends React.Component {
         const {
             cy
         } = this.state;
-        this.updateGraphInRedux(cy.elements().nodes().jsons());
         this.setState({nodes: this._updateGraphNodes(relationshipType)});
     }
 
@@ -349,7 +391,7 @@ class Decompositions extends React.Component {
         sel.addClass('highlight');
     }
 
-    onNonVisibleNode(ele) {
+    preventNonVisibleNodeFromMoving(ele) {
         const selectedRelationshipType = this.props.relationshipType;
 
         let sel = ele.target;
@@ -446,14 +488,6 @@ class Decompositions extends React.Component {
     };
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        // let {
-        //     cy
-        // } = this.state;
-
-        // let state = storeProvider.getStore().getState();
-        // if(state.diff_graph !== cy.elements().nodes().jsons()) {
-        //     cy.json(state.diff_graph);
-        // }
         // Check if the user has toggled the switch, which will add edges to the graph. 
         if(JSON.stringify(prevState.edges) !== JSON.stringify(this._updateGraphEdges())) {
             this.onToggleSwitch();
@@ -464,8 +498,15 @@ class Decompositions extends React.Component {
         }
     }
 
-    updateGraphInRedux = (graph) => {
-        this.props.updateDiffGraph(graph);
+    updateRedux() {
+        let {
+            cy
+        } = this.state;
+        this.props.updateDiffGraph(cy.json());
+    }
+
+    componentWillUnmount() {
+        this.updateRedux();
     }
 
     render() {
