@@ -16,13 +16,10 @@ const Metrics = (props) => {
                     {
                         width: '30%',
                         border: '1px solid grey',
-                        'left': '68%',
-                        'margin-top': '1%',
-                        position: 'fixed',
                     }
                 } 
             size="small">
-                <Table aria-label="simple table">
+                <Table aria-label="simple table" size="small">
                     <TableHead>
                         <TableRow>
                             <TableCell align="" colSpan={3} style={{'font-weight': 'bold'}}>

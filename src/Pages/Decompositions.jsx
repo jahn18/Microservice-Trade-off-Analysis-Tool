@@ -536,7 +536,7 @@ class Decompositions extends React.Component {
                         }
                     } 
                 size="small">
-                    <Table aria-label="simple table">
+                    <Table aria-label="simple table" size="small">
                         <TableHead>
                             <TableRow>
                                 <TableCell align="" colSpan={3} style={{'font-weight': 'bold'}}>

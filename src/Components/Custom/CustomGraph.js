@@ -11,6 +11,15 @@ import storeProvider from './../../storeProvider';
 import {updateCustomGraph} from './../../Actions';
 import {connect} from 'react-redux';
 
+import Paper from "@material-ui/core/Paper";
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableContainer from '@material-ui/core/TableContainer';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import Checkbox from '@material-ui/core/Checkbox';
+
 
 cytoscape.use( nodeHtmlLabel );
 cytoscape.use( automove );
@@ -51,7 +60,8 @@ class CustomGraph extends React.Component {
             nodes: default_nodes,
             common_elements: common,
             static_metrics: [0, 0],
-            class_name_metrics: [0, 0]
+            class_name_metrics: [0, 0],
+            evolutionaryHistory: []
         }
 
         this.ref = React.createRef();
@@ -109,7 +119,7 @@ class CustomGraph extends React.Component {
                 {
                     'selector': 'node.deactivate',
                     'style': {
-                        'opacity': 0.03
+                        'opacity': 0.05
                     }
                 },
                 {
@@ -283,19 +293,7 @@ class CustomGraph extends React.Component {
         })
         cy.on('mouseout', 'node', (e) => { eh.disableDrawMode(); })
         cy.on('tap', 'node', (e) => this.onClickedNode(e)); 
-        cy.on('click', () => {
-            cy.elements().forEach((ele) => {
-                ele.removeClass('deactivate')
-                if(ele.data().element_type === 'common*') {
-                    if(ele.data().prev_element_type !== 'common') {
-                        cy.elements().getElementById(`graph_1_${ele.id()}`).addClass('hide');
-                        cy.elements().getElementById(`graph_2_${ele.id()}`).addClass('hide');
-                    } 
-                }
-                ele.data().hide = false;
-            })
-            cy.remove('edge');
-        });
+        cy.on('click', (e) => this.onUnclickNode(e));
         cy.on('add', 'node', () => this._calculateMetrics());
 
         this.setState({
@@ -411,10 +409,80 @@ class CustomGraph extends React.Component {
         selected_elements.removeClass('hide');
     }
 
+    onUnclickNode(ele) {
+        const {
+            cy
+        } = this.state;
+        cy.elements().forEach((ele) => {
+            ele.removeClass('deactivate')
+            if(ele.data().element_type === 'common*') {
+                if(ele.data().prev_element_type !== 'common') {
+                    cy.elements().getElementById(`graph_1_${ele.id()}`).addClass('hide');
+                    cy.elements().getElementById(`graph_2_${ele.id()}`).addClass('hide');
+                } 
+            }
+            ele.data().hide = false;
+        })
+        cy.remove('edge');
+    }
+
+    onHoverOverTableRow(movedElements) {
+        let {
+            cy
+        } = this.state; 
+
+        let sel = cy.elements().getElementById(movedElements[0].data().label); 
+        let selected_elements = cy.collection().union(sel).union(cy.elements().getElementById(sel.data().partition)); 
+
+        if(sel.data().prev_element_type !== 'common') {
+            selected_elements = selected_elements.union(cy.elements().getElementById(`graph_2_${sel.id()}`));
+            selected_elements = selected_elements.union(cy.elements().getElementById(`graph_1_${sel.id()}`));
+            let graph_1_partition = cy.elements().getElementById(`graph_1_${sel.id()}`).data().partition
+            let graph_2_partition = cy.elements().getElementById(`graph_2_${sel.id()}`).data().partition
+
+            selected_elements = selected_elements.union(
+                cy.elements().getElementById(graph_1_partition)
+            );
+            selected_elements = selected_elements.union(
+                cy.elements().getElementById(graph_2_partition)
+            );
+            cy.elements().getElementById(`graph_1_${sel.id()}`).data().hide = true;
+            cy.elements().getElementById(`graph_2_${sel.id()}`).data().hide = true;
+
+            cy.add([{
+                group: 'edges',
+                data: {
+                    target: sel.id(),
+                    source: `graph_1_${sel.id()}`
+                }
+            },
+            {
+                group: 'edges',
+                data: {
+                    target: sel.id(),
+                    source: `graph_2_${sel.id()}`
+                }
+            }]);
+        } else {
+            selected_elements = selected_elements.union(cy.elements().getElementById(sel.data().prev_partition));
+        }
+
+        let unselected_elements = cy.elements().not(sel).difference(selected_elements);
+        unselected_elements.forEach((ele) => {
+            if(ele.data().element_type !== 'graph_1' && ele.data().element_type !== 'graph_2') {
+                ele.data().hide = true; 
+            }
+        })
+        
+        unselected_elements.addClass('deactivate');
+        selected_elements.removeClass('hide');
+    }
+
     onMovedNode(sourceNode, targetNode, addedEles) { 
         const {
             cy,
-            partitions
+            partitions,
+            evolutionaryHistory
         } = this.state; 
 
         if(sourceNode.data().hide === false 
@@ -495,6 +563,8 @@ class CustomGraph extends React.Component {
                 cy.elements().getElementById(`graph_1_${sourceNode.data().label}`).addClass('hide');
                 cy.elements().getElementById(`graph_2_${sourceNode.data().label}`).addClass('hide');
             }
+
+            evolutionaryHistory.unshift([sourceNode, targetNode]);
         } 
         cy.remove(addedEles);
     }
@@ -618,15 +688,64 @@ class CustomGraph extends React.Component {
     render() {
         const {
             static_metrics,
-            class_name_metrics
+            class_name_metrics,
+            cy,
+            evolutionaryHistory
         } = this.state;
+
+        const evolutionaryHistoryList = evolutionaryHistory.map(
+            moved_element => 
+            <TableRow 
+                hover={true} 
+                onMouseOver={(event) => {
+                    this.onHoverOverTableRow(moved_element);
+                }}
+                onMouseOut={(event) => {
+                    this.onUnclickNode();
+                }}
+            >
+                <TableCell>
+                    <Checkbox
+                        // //   checked={isItemSelected}
+                        //   inputProps={{ 'aria-labelledby': labelId }}
+                    />
+                    {`Moved class '${moved_element[0].data().label}' to ${moved_element[1].id()}`}
+                </TableCell>
+            </TableRow>
+        )
 
         return (
             <div>
                 <div className="custom-graph-container">
                     <div style={{height: '100%', width: '100%', position: 'fixed'}} ref={ref => (this.ref = ref)}></div>
                 </div>
-                <Metrics static={static_metrics} classname={class_name_metrics}/>
+                <div className="table-container" style={{position: 'absolute', left: '68%', width: '100%', 'margin-top': '1%'}}>
+                    <Metrics static={static_metrics} classname={class_name_metrics}/>
+                    <TableContainer 
+                    component={Paper} 
+                    style={
+                            {
+                                width: '30%',
+                                border: '1px solid grey',
+                                'margin-top': '10px',
+                                maxHeight: '300px'
+                            }
+                        } 
+                    >
+                        <Table stickyHeader aria-label="simple table" size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell align="" colSpan={3} style={{'font-weight': 'bold'}}>
+                                        Evolutionary History
+                                    </TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {evolutionaryHistoryList}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </div>
             </div>
         );
     }
