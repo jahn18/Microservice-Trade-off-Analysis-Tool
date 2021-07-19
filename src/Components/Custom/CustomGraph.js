@@ -10,7 +10,6 @@ import Metrics from '../Metrics/Metrics'
 import storeProvider from './../../storeProvider';
 import {updateCustomGraph} from './../../Actions';
 import {connect} from 'react-redux';
-
 import Paper from "@material-ui/core/Paper";
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -49,7 +48,7 @@ class CustomGraph extends React.Component {
                         background_color: 'grey',
                         colored: true,
                         element_type: 'partition',
-                        hide: false 
+                        showMinusSign: false 
                     },
                 }] 
             );
@@ -119,6 +118,12 @@ class CustomGraph extends React.Component {
                 {
                     'selector': 'node.deactivate',
                     'style': {
+                        'opacity': 0.0
+                    }
+                },
+                {
+                    'selector': 'node.dimOut',
+                    'style': {
                         'opacity': 0.05
                     }
                 },
@@ -173,12 +178,16 @@ class CustomGraph extends React.Component {
         });
 
         let partitions = [];
-        let lastRenderedState = storeProvider.getStore().getState().custom_graph;
-
+        let lastRenderedState;
+        let evolutionaryHistory;
+        
         // If the custom graph hasn't been loaded yet then load the positions of the current diff-graph. 
-        if(Object.keys(lastRenderedState).length === 0) {
+        if(Object.keys(storeProvider.getStore().getState().custom_graph).length === 0) {
             lastRenderedState = storeProvider.getStore().getState().diff_graph;
+            evolutionaryHistory = [];
         } else {
+            lastRenderedState = storeProvider.getStore().getState().custom_graph.graph;
+            evolutionaryHistory = storeProvider.getStore().getState().custom_graph.evolutionaryHistory;
             cy.json(lastRenderedState);
         }
 
@@ -259,9 +268,9 @@ class CustomGraph extends React.Component {
                 halignBox: 'center',
                 valignBox: 'center',
                 tpl: (data) => {
-                    if(data.element_type === 'common*' && data.hide === false) {
+                    if(data.element_type === 'common*' && data.showMinusSign === false) {
                         return '<h1 style="color:white;">' + '+' + '</h1>';
-                    } else if ((data.element_type === 'graph_1' || data.element_type === 'graph_2') && data.hide === true) {
+                    } else if ((data.element_type === 'graph_1' || data.element_type === 'graph_2') && data.showMinusSign === true) {
                         return '<h1 style="color:white;">' + '-' + '</h1>';
                     }
                 }
@@ -298,7 +307,8 @@ class CustomGraph extends React.Component {
 
         this.setState({
             cy: cy,
-            partitions: partitions
+            partitions: partitions,
+            evolutionaryHistory: evolutionaryHistory
         });
     }
 
@@ -325,7 +335,7 @@ class CustomGraph extends React.Component {
                         parent: (isCoreElement) ? `partition${partition_num}` : null,
                         partition: `partition${partition_num}`,
                         background_color: color,
-                        hide: false
+                        showMinusSign: false
                     }
                 });
             }
@@ -350,19 +360,30 @@ class CustomGraph extends React.Component {
 
         if(sel.data().element_type === 'common*') {
             if(sel.data().prev_element_type !== 'common') {
-                selected_elements = selected_elements.union(cy.elements().getElementById(`graph_2_${sel.id()}`));
-                selected_elements = selected_elements.union(cy.elements().getElementById(`graph_1_${sel.id()}`));
-                let graph_1_partition = cy.elements().getElementById(`graph_1_${sel.id()}`).data().partition
-                let graph_2_partition = cy.elements().getElementById(`graph_2_${sel.id()}`).data().partition
+                let graph_1_node = cy.elements().getElementById(`graph_1_${sel.id()}`)
+                let graph_2_node = cy.elements().getElementById(`graph_2_${sel.id()}`)
+
+                selected_elements = selected_elements.union(sel.children()).union(
+                    cy.elements().filter((ele)=> {
+                        if ((ele.data().partition === graph_1_node.data().partition 
+                            || ele.data().partition === graph_2_node.data().partition)
+                            && !ele.hasClass('hide')) {
+                                ele.addClass('dimOut');
+                        }
+                    }),
+                )
+                selected_elements = selected_elements.union(graph_1_node);
+                selected_elements = selected_elements.union(graph_2_node);
 
                 selected_elements = selected_elements.union(
-                    cy.elements().getElementById(graph_1_partition)
+                    cy.elements().getElementById(graph_1_node.data().partition)
                 );
                 selected_elements = selected_elements.union(
-                    cy.elements().getElementById(graph_2_partition)
+                    cy.elements().getElementById(graph_2_node.data().partition)
                 );
-                cy.elements().getElementById(`graph_1_${sel.id()}`).data().hide = true;
-                cy.elements().getElementById(`graph_2_${sel.id()}`).data().hide = true;
+
+                graph_1_node.data().showMinusSign = true;
+                graph_2_node.data().showMinusSign = true;
 
                 cy.add([{
                     group: 'edges',
@@ -385,10 +406,30 @@ class CustomGraph extends React.Component {
         else if (sel.data().element_type === 'graph_1') {
             let graph_2 = cy.elements().getElementById(`graph_2_${sel.data().label}`)
             selected_elements = selected_elements.union(graph_2).union(cy.elements().getElementById(graph_2.data().partition));
+            selected_elements = selected_elements.union(sel.children()).union(
+                cy.elements().filter((ele)=> {
+                    if ((ele.data().partition === graph_2.data().partition 
+                        || ele.data().partition === sel.data().partition)
+                        && !ele.hasClass('hide')) {
+                            ele.addClass('dimOut');
+                    }
+                }),
+            )
+            graph_2.removeClass('dimOut');
         } 
         else if (sel.data().element_type === 'graph_2') {
             let graph_1 = cy.elements().getElementById(`graph_1_${sel.data().label}`)
             selected_elements = selected_elements.union(graph_1).union(cy.elements().getElementById(graph_1.data().partition));
+            selected_elements = selected_elements.union(sel.children()).union(
+                cy.elements().filter((ele)=> {
+                    if ((ele.data().partition === graph_1.data().partition 
+                        || ele.data().partition === sel.data().partition)
+                        && !ele.hasClass('hide')) {
+                            ele.addClass('dimOut');
+                    }
+                }),
+            )
+            graph_1.removeClass('dimOut');
         } 
         else if (sel.data().element_type === 'partition') {
             selected_elements = selected_elements.union(sel.children()).union(
@@ -401,11 +442,12 @@ class CustomGraph extends React.Component {
         let unselected_elements = cy.elements().not(sel).difference(selected_elements);
         unselected_elements.forEach((ele) => {
             if(ele.data().element_type !== 'graph_1' && ele.data().element_type !== 'graph_2') {
-                ele.data().hide = true; 
+                ele.data().showMinusSign = true; 
             }
         })
         
         unselected_elements.addClass('deactivate');
+        sel.removeClass('dimOut');
         selected_elements.removeClass('hide');
     }
 
@@ -414,14 +456,14 @@ class CustomGraph extends React.Component {
             cy
         } = this.state;
         cy.elements().forEach((ele) => {
-            ele.removeClass('deactivate')
+            ele.removeClass('deactivate').removeClass('dimOut');
             if(ele.data().element_type === 'common*') {
                 if(ele.data().prev_element_type !== 'common') {
                     cy.elements().getElementById(`graph_1_${ele.id()}`).addClass('hide');
                     cy.elements().getElementById(`graph_2_${ele.id()}`).addClass('hide');
                 } 
             }
-            ele.data().hide = false;
+            ele.data().showMinusSign = false;
         })
         cy.remove('edge');
     }
@@ -435,19 +477,30 @@ class CustomGraph extends React.Component {
         let selected_elements = cy.collection().union(sel).union(cy.elements().getElementById(sel.data().partition)); 
 
         if(sel.data().prev_element_type !== 'common') {
-            selected_elements = selected_elements.union(cy.elements().getElementById(`graph_2_${sel.id()}`));
-            selected_elements = selected_elements.union(cy.elements().getElementById(`graph_1_${sel.id()}`));
-            let graph_1_partition = cy.elements().getElementById(`graph_1_${sel.id()}`).data().partition
-            let graph_2_partition = cy.elements().getElementById(`graph_2_${sel.id()}`).data().partition
+            let graph_1_node = cy.elements().getElementById(`graph_1_${sel.id()}`)
+            let graph_2_node = cy.elements().getElementById(`graph_2_${sel.id()}`)
+
+            selected_elements = selected_elements.union(sel.children()).union(
+                cy.elements().filter((ele)=> {
+                    if ((ele.data().partition === graph_1_node.data().partition 
+                        || ele.data().partition === graph_2_node.data().partition)
+                        && !ele.hasClass('hide')) {
+                            ele.addClass('dimOut');
+                    }
+                }),
+            )
+            selected_elements = selected_elements.union(graph_1_node);
+            selected_elements = selected_elements.union(graph_2_node);
 
             selected_elements = selected_elements.union(
-                cy.elements().getElementById(graph_1_partition)
+                cy.elements().getElementById(graph_1_node.data().partition)
             );
             selected_elements = selected_elements.union(
-                cy.elements().getElementById(graph_2_partition)
+                cy.elements().getElementById(graph_2_node.data().partition)
             );
-            cy.elements().getElementById(`graph_1_${sel.id()}`).data().hide = true;
-            cy.elements().getElementById(`graph_2_${sel.id()}`).data().hide = true;
+
+            graph_1_node.data().showMinusSign = true;
+            graph_2_node.data().showMinusSign = true;
 
             cy.add([{
                 group: 'edges',
@@ -470,12 +523,13 @@ class CustomGraph extends React.Component {
         let unselected_elements = cy.elements().not(sel).difference(selected_elements);
         unselected_elements.forEach((ele) => {
             if(ele.data().element_type !== 'graph_1' && ele.data().element_type !== 'graph_2') {
-                ele.data().hide = true; 
+                ele.data().showMinusSign = true; 
             }
         })
         
         unselected_elements.addClass('deactivate');
         selected_elements.removeClass('hide');
+        sel.removeClass('dimOut');
     }
 
     onMovedNode(sourceNode, targetNode, addedEles) { 
@@ -485,9 +539,10 @@ class CustomGraph extends React.Component {
             evolutionaryHistory
         } = this.state; 
 
-        if(sourceNode.data().hide === false 
+        if(sourceNode.data().showMinusSign === false 
             && partitions.includes(targetNode.id())
-            && !sourceNode.hasClass('deactivate')) {
+            && !sourceNode.hasClass('deactivate')) 
+            {
             // Fix if a common element is moved.
             // Implement a way to add an additional partition. 
             let prev_element = sourceNode.data().element_type;
@@ -518,7 +573,7 @@ class CustomGraph extends React.Component {
                     background_color: 'grey',
                     partition: targetNode.id(),
                     prev_partition: prev_partition,
-                    hide: false
+                    showMinusSign: false
                 },
             });
 
@@ -675,10 +730,16 @@ class CustomGraph extends React.Component {
 
     updateRedux() {
         let {
-            cy
+            cy,
+            evolutionaryHistory
         } = this.state;
 
-        this.props.updateCustomGraph(cy.json());
+        this.props.updateCustomGraph(
+            {
+                graph: cy.json(),
+                evolutionaryHistory: evolutionaryHistory
+            }
+        );
     }
 
     componentWillUnmount() {
@@ -709,7 +770,7 @@ class CustomGraph extends React.Component {
                         // //   checked={isItemSelected}
                         //   inputProps={{ 'aria-labelledby': labelId }}
                     />
-                    {`Moved class '${moved_element[0].data().label}' to ${moved_element[1].id()}`}
+                    {`Moved class '${moved_element[0].data().label}' to ${moved_element[1].id()}` }
                 </TableCell>
             </TableRow>
         )
