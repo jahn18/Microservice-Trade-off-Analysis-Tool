@@ -18,6 +18,10 @@ import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Checkbox from '@material-ui/core/Checkbox';
+import Tooltip from '@material-ui/core/Tooltip';
+import Typography from '@material-ui/core/Typography';
+import DeleteIcon from '@material-ui/icons/Delete';
+import IconButton from '@material-ui/core/IconButton';
 
 
 cytoscape.use( nodeHtmlLabel );
@@ -60,7 +64,9 @@ class CustomGraph extends React.Component {
             common_elements: common,
             static_metrics: [0, 0],
             class_name_metrics: [0, 0],
-            evolutionaryHistory: []
+            evolutionaryHistory: [],
+            elementsSelectedOnTable: [],
+            tableBodyRenderKey: 0
         }
 
         this.ref = React.createRef();
@@ -560,8 +566,6 @@ class CustomGraph extends React.Component {
                 y: npos.y
             }; 
 
-            let w = window.innerWidth;
-
             cy.add({
                 group: 'nodes',
                 data: {
@@ -577,39 +581,13 @@ class CustomGraph extends React.Component {
                 },
             });
 
-            cy.elements().getElementById(targetNode.id()).children().union(
+            this._renderCocentricLayout(
+                cy.elements().getElementById(targetNode.id()).children().union(
                 cy.elements().filter((ele)=> {
                     return ele.data().partition === targetNode.id();
-                })).layout({
-                name: 'concentric',
-                spacingFactor: 3.5,
-                boundingBox: {
-                    x1: target_pos.x - w/2,
-                    x2: target_pos.x + w/2,
-                    y1: target_pos.y - w/2,
-                    y2: target_pos.y + w/2 
-                },
-                fit: true,
-                concentric: function(n) {
-                    switch(n.data().element_type) {
-                        case "common": 
-                            return 2;
-                        case "common*":
-                            return 2;
-                        case "graph_1":
-                            return 0;
-                        case "graph_2": 
-                            return 1;
-                        default:
-                            return 1;
-                    }
-                },
-                levelWidth: function() {
-                    return 1;
-                }, 
-                minNodeSpacing: 10,
-                equidistant: false, 
-            }).run();
+                })),
+                target_pos
+            )
 
             // Should also hide common elements if they get moved. 
             if(sourceNode.data().element_type === 'common') {
@@ -619,7 +597,9 @@ class CustomGraph extends React.Component {
                 cy.elements().getElementById(`graph_2_${sourceNode.data().label}`).addClass('hide');
             }
 
-            evolutionaryHistory.unshift([sourceNode, targetNode]);
+            this.setState((prevState) => ({
+                evolutionaryHistory: [[sourceNode, targetNode], ...prevState.evolutionaryHistory]
+            }));
         } 
         cy.remove(addedEles);
     }
@@ -742,20 +722,122 @@ class CustomGraph extends React.Component {
         );
     }
 
+    _updateSelectedEvolutionaryList(isBoxChecked, element, element_index) {
+        const {
+            elementsSelectedOnTable
+        } = this.state;
+
+        if(isBoxChecked) {
+            this.setState(prevState => ({
+                elementsSelectedOnTable: [...prevState.elementsSelectedOnTable, element]
+            }))
+        } else {
+            this.setState({elementsSelectedOnTable: elementsSelectedOnTable.filter((ele) => {
+                return ele !== element;
+            })});
+        }
+    }
+
+    _onDeleteEvolvedElements() {
+        const {
+            cy,
+            elementsSelectedOnTable, 
+            evolutionaryHistory,
+            partitions,
+            tableBodyRenderKey
+        } = this.state;
+
+        const zoom = cy.zoom();
+        const pan = cy.pan();
+
+        // Remove elements from the table
+        for(let ele in elementsSelectedOnTable) {
+            let movedElement = elementsSelectedOnTable[ele][0];
+
+            if(movedElement.data().element_type === 'common') {
+                cy.add(movedElement);
+            } else {
+                cy.elements().getElementById(`graph_1_${movedElement.data().label}`).removeClass('hide');
+                cy.elements().getElementById(`graph_2_${movedElement.data().label}`).removeClass('hide');
+            }
+            cy.remove(cy.elements().getElementById(movedElement.data().label)); 
+
+            this._renderCocentricLayout(
+                cy.elements().getElementById(movedElement.data().partition).children().union(
+                cy.elements().filter((ele)=> {
+                    return ele.data().partition === movedElement.data().partition;
+                })),
+                cy.elements().getElementById(movedElement.data().partition).position(),
+            )
+        }
+
+
+        cy.pan(pan);
+        cy.zoom(zoom);
+
+        this.setState({
+            evolutionaryHistory: evolutionaryHistory.filter((ele) => {
+                return !elementsSelectedOnTable.includes(ele);
+            }),
+            elementsSelectedOnTable: [],
+            tableBodyRenderKey: tableBodyRenderKey + 1
+        });
+    }
+
+    _renderCocentricLayout(elementCollection, centerElementPosition) {
+        const {
+            cy
+        } = this.state;
+
+        let w = window.innerWidth;
+
+        elementCollection.layout({
+            name: 'concentric',
+            spacingFactor: 3.5,
+            boundingBox: {
+                x1: centerElementPosition.x - w/2,
+                x2: centerElementPosition.x + w/2,
+                y1: centerElementPosition.y - w/2,
+                y2: centerElementPosition.y + w/2 
+            },
+            fit: true,
+            concentric: function(n) {
+                switch(n.data().element_type) {
+                    case "common": 
+                        return 2;
+                    case "common*":
+                        return 2;
+                    case "graph_1":
+                        return 0;
+                    case "graph_2": 
+                        return 1;
+                    default:
+                        return 1;
+                }
+            },
+            levelWidth: function() {
+                return 1;
+            }, 
+            minNodeSpacing: 10,
+            equidistant: false, 
+        }).run();
+    }
+
     componentWillUnmount() {
         this.updateRedux();
     }
 
     render() {
-        const {
+        let {
             static_metrics,
             class_name_metrics,
-            cy,
-            evolutionaryHistory
+            evolutionaryHistory,
+            elementsSelectedOnTable,
+            tableBodyRenderKey
         } = this.state;
 
         const evolutionaryHistoryList = evolutionaryHistory.map(
-            moved_element => 
+            (moved_element, index) => 
             <TableRow 
                 hover={true} 
                 onMouseOver={(event) => {
@@ -767,8 +849,7 @@ class CustomGraph extends React.Component {
             >
                 <TableCell>
                     <Checkbox
-                        // //   checked={isItemSelected}
-                        //   inputProps={{ 'aria-labelledby': labelId }}
+                        onChange={(event, newValue) => this._updateSelectedEvolutionaryList(newValue, moved_element, index)}
                     />
                     {`Moved class '${moved_element[0].data().label}' to ${moved_element[1].id()}` }
                 </TableCell>
@@ -796,12 +877,26 @@ class CustomGraph extends React.Component {
                         <Table stickyHeader aria-label="simple table" size="small">
                             <TableHead>
                                 <TableRow>
-                                    <TableCell align="" colSpan={3} style={{'font-weight': 'bold'}}>
-                                        Evolutionary History
-                                    </TableCell>
+                                    {elementsSelectedOnTable.length > 0 ? (
+                                        <TableCell>
+                                        {elementsSelectedOnTable.length} selected
+                                            <Tooltip title="Delete">
+                                                <IconButton 
+                                                    aria-label="delete" 
+                                                    onClick={(event) => this._onDeleteEvolvedElements()}
+                                                >
+                                                    <DeleteIcon/>
+                                                </IconButton>
+                                            </Tooltip>
+                                        </TableCell>
+                                        ) : (
+                                        <TableCell align="" colSpan={3} style={{'font-weight': 'bold'}}>
+                                            Evolutionary History
+                                        </TableCell> 
+                                    )}
                                 </TableRow>
                             </TableHead>
-                            <TableBody>
+                            <TableBody key={tableBodyRenderKey}>
                                 {evolutionaryHistoryList}
                             </TableBody>
                         </Table>
