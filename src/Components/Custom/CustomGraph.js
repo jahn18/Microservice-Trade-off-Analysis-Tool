@@ -6,6 +6,7 @@ import 'bootstrap/dist/js/bootstrap.js';
 import edgehandles from 'cytoscape-edgehandles';
 import automove from 'cytoscape-automove';
 import nodeHtmlLabel from 'cytoscape-node-html-label';
+import popper from 'cytoscape-popper';
 import Metrics from '../Metrics/Metrics'
 import storeProvider from './../../storeProvider';
 import {updateCustomGraph} from './../../Actions';
@@ -19,14 +20,17 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Checkbox from '@material-ui/core/Checkbox';
 import Tooltip from '@material-ui/core/Tooltip';
-import Typography from '@material-ui/core/Typography';
 import DeleteIcon from '@material-ui/icons/Delete';
 import IconButton from '@material-ui/core/IconButton';
+import Button from '@material-ui/core/Button';
+import "./CustomGraph.css";
+// import 'raphael-min.js';
 
 
 cytoscape.use( nodeHtmlLabel );
 cytoscape.use( automove );
 cytoscape.use( edgehandles );
+cytoscape.use( popper );
 
 class CustomGraph extends React.Component {
     constructor(props) {
@@ -59,6 +63,7 @@ class CustomGraph extends React.Component {
         }
 
         this.state = {
+            num_of_decompositions: 2,
             num_of_partitions: num_of_partitions,
             nodes: default_nodes,
             common_elements: common,
@@ -87,7 +92,7 @@ class CustomGraph extends React.Component {
                     'selector': 'node',
                     'style': {
                         'background-color': 'data(background_color)',
-                        'label': 'data(label)'
+                        'label': 'data(label)',
                     }
                 },
                 {
@@ -109,8 +114,8 @@ class CustomGraph extends React.Component {
                     'selector': 'edge',
                     'style': {
                         'width': 1,
-                        'line-color': '#c4c4c4',
-                        'target-arrow-color': '#c4c4c4',
+                        'line-color': 'grey',
+                        'target-arrow-color': 'grey',
                         'target-arrow-shape': 'vee',
                         'curve-style': 'bezier'
                     }
@@ -234,34 +239,10 @@ class CustomGraph extends React.Component {
                 )
             );
             let npos = cy.elements().getElementById(`partition${i}`).position();
-            orbits[i].layout({
-                name: 'concentric',
-                spacingFactor: 4,
-                boundingBox: {
-                    x1: npos.x - w/2,
-                    x2: npos.x + w/2,
-                    y1: npos.y - w/2,
-                    y2: npos.y + w/2 
-                },
-                fit: true,
-                concentric: function(n) {
-                    switch(n.data().element_type) {
-                        case "common": 
-                            return 2;
-                        case "common*":
-                            return 2;
-                        case "graph_1":
-                            return 0;
-                        case "graph_2": 
-                            return 1;
-                        default:
-                            return 1;
-                    }
-                },
-                levelWidth: function() {
-                    return 1;
-                } 
-            }).run();
+            this._renderCocentricLayout(
+                orbits[i],
+                npos
+            )
         }
 
         cy.pan(lastRenderedState.pan);
@@ -332,18 +313,20 @@ class CustomGraph extends React.Component {
 
             for(let i = 0; i < graph_nodes.length; i++) {
                 let classNode = graph_nodes[i];
-                element_list.push({
-                    group: 'nodes', 
-                    data: {
-                        id: `graph_${graph_num}_${classNode}`, 
-                        label: classNode,
-                        element_type: (isCoreElement) ? 'common' : `graph_${graph_num}`,
-                        parent: (isCoreElement) ? `partition${partition_num}` : null,
-                        partition: `partition${partition_num}`,
-                        background_color: color,
-                        showMinusSign: false
+                element_list.push(
+                    {
+                        group: 'nodes', 
+                        data: {
+                            id: `graph_${graph_num}_${classNode}`, 
+                            label: classNode,
+                            element_type: (isCoreElement) ? 'common' : `graph_${graph_num}`,
+                            parent: (isCoreElement) ? `partition${partition_num}` : null,
+                            partition: `partition${partition_num}`,
+                            background_color: color,
+                            showMinusSign: false
+                        }
                     }
-                });
+                );
             }
             return element_list;
     };
@@ -743,7 +726,6 @@ class CustomGraph extends React.Component {
             cy,
             elementsSelectedOnTable, 
             evolutionaryHistory,
-            partitions,
             tableBodyRenderKey
         } = this.state;
 
@@ -823,7 +805,33 @@ class CustomGraph extends React.Component {
         }).run();
     }
 
+    _printEvolutionaryHistoryText(moved_element) {
+        const {
+            cy,
+            num_of_decompositions
+        } = this.state;
+
+        let target_node = moved_element[0].data().label;
+        let previous_partitions = "";
+        for(let i = 0; i < num_of_decompositions; i++) {
+            previous_partitions = previous_partitions.concat(`V${i + 1}-P${cy.getElementById(`graph_${i + 1}_${moved_element[0].data().label}`).data().partition.match('[0-9]')}`);
+            if(i !== num_of_decompositions - 1) {
+                previous_partitions = previous_partitions.concat(" ᐱ ");
+            }
+        }
+        let target_partition = moved_element[1].id().match('[0-9]');
+        return `${target_node}: (${previous_partitions}) → P${target_partition}`;
+    }
+
     componentWillUnmount() {
+        const {
+            num_of_partitions
+        } = this.state;
+
+        for(let i in num_of_partitions) {
+            let myobj = document.getElementById(`outer-ring${i}`);
+            myobj.remove();
+        }
         this.updateRedux();
     }
 
@@ -833,7 +841,8 @@ class CustomGraph extends React.Component {
             class_name_metrics,
             evolutionaryHistory,
             elementsSelectedOnTable,
-            tableBodyRenderKey
+            tableBodyRenderKey,
+            cy
         } = this.state;
 
         const evolutionaryHistoryList = evolutionaryHistory.map(
@@ -851,7 +860,7 @@ class CustomGraph extends React.Component {
                     <Checkbox
                         onChange={(event, newValue) => this._updateSelectedEvolutionaryList(newValue, moved_element, index)}
                     />
-                    {`Moved class '${moved_element[0].data().label}' to ${moved_element[1].id()}` }
+                    {this._printEvolutionaryHistoryText(moved_element)}
                 </TableCell>
             </TableRow>
         )
@@ -890,7 +899,7 @@ class CustomGraph extends React.Component {
                                             </Tooltip>
                                         </TableCell>
                                         ) : (
-                                        <TableCell align="" colSpan={3} style={{'font-weight': 'bold'}}>
+                                        <TableCell align="left" style={{'font-weight': 'bold'}}>
                                             Evolutionary History
                                         </TableCell> 
                                     )}
