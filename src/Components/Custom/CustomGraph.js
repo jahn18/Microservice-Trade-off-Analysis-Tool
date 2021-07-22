@@ -189,7 +189,6 @@ class CustomGraph extends React.Component {
             ],
         });
 
-        let partitions = [];
         let lastRenderedState;
         let loadedEvolutionaryHistory;
         
@@ -201,24 +200,8 @@ class CustomGraph extends React.Component {
             lastRenderedState = storeProvider.getStore().getState().custom_graph.graph;
             loadedEvolutionaryHistory = storeProvider.getStore().getState().custom_graph.evolutionaryHistory;
             cy.json(lastRenderedState);
+            lastRenderedState = storeProvider.getStore().getState().diff_graph;
         }
-
-        let lastRenderedNodePositions = this._getLastRenderedNodePositions(lastRenderedState);
-
-        cy.nodes().positions((node) => {
-            return {
-                x: lastRenderedNodePositions[node.id()].x,
-                y: lastRenderedNodePositions[node.id()].y,
-            };
-        });
-
-        cy.layout({
-            name: 'preset',
-            positions: function(node) {
-                return (lastRenderedNodePositions[node.id()]);   
-            },
-            fit: true
-        }).run();
 
         /*
             Removes strange red nodes that were added because of the edge handles functionality. 
@@ -228,26 +211,36 @@ class CustomGraph extends React.Component {
         });
         cy.remove(collection);
 
-        let w = window.innerWidth;
-        let orbits = [];
+        let lastRenderedNodePositions = this._getLastRenderedNodePositions(lastRenderedState);
+        for(let i = 0; i < num_of_partitions; i++) {
+            cy.elements().getElementById(`partition${i}`).position(
+                {
+                    x: lastRenderedNodePositions[`core${i}`].x,
+                    y: lastRenderedNodePositions[`core${i}`].y
+                }
+            )
+        }
+
 
         for(let i = 0; i < num_of_partitions; i++) {
-            orbits.push(
+            this._renderCocentricLayout(
                 cy.elements().getElementById(`partition${i}`).children().union(
                     cy.elements().filter((ele)=> {
                         return ele.data().partition === `partition${i}`;
                     })
-                )
-            );
-            let npos = cy.elements().getElementById(`partition${i}`).position();
-            this._renderCocentricLayout(
-                orbits[i],
-                npos
+                ),
+                {
+                    x: lastRenderedNodePositions[`core${i}`].x,
+                    y: lastRenderedNodePositions[`core${i}`].y
+                }
             )
         }
 
         cy.pan(lastRenderedState.pan);
         cy.zoom(lastRenderedState.zoom);
+
+        let eh = cy.edgehandles();
+        let partitions = [];
         
         cy.nodeHtmlLabel([{
                 query: 'node',
@@ -275,8 +268,6 @@ class CustomGraph extends React.Component {
             });
             partitions.push(`partition${i}`);
         }
-
-        let eh = cy.edgehandles();
 
         /*
             All event handlers.
@@ -335,7 +326,8 @@ class CustomGraph extends React.Component {
     _getLastRenderedNodePositions(lastRenderedGraph) {
         let previous_graph_positions = {};
         for(let node_i in lastRenderedGraph.elements.nodes) {
-            previous_graph_positions[lastRenderedGraph.elements.nodes[node_i].data.id] = lastRenderedGraph.elements.nodes[node_i].position;
+            let element_name = lastRenderedGraph.elements.nodes[node_i].data.id;
+            previous_graph_positions[element_name] = lastRenderedGraph.elements.nodes[node_i].position;
         }
         return previous_graph_positions;
     }
@@ -577,7 +569,8 @@ class CustomGraph extends React.Component {
 
         if(sourceNode.data().showMinusSign === false 
             && partitions.includes(targetNode.id())
-            && !sourceNode.hasClass('deactivate')) 
+            && !sourceNode.hasClass('deactivate')
+            && sourceNode.data().element_type !== 'partition') 
             {
             // Fix if a common element is moved.
             // Implement a way to add an additional partition. 

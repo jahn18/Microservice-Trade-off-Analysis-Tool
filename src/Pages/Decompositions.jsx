@@ -160,76 +160,41 @@ class Decompositions extends React.Component {
             ],
         });
 
-        let lastRenderedState = storeProvider.getStore().getState().diff_graph;
+        let partitions = [];
+        for(let i = 0; i < num_of_partitions; i++) {
+            partitions.push(cy.elements().getElementById(`partition${i}`));
+        }
 
-        if(Object.keys(lastRenderedState).length !== 0) {
-            let previous_graph_positions = this._getLastRenderedNodePositions(lastRenderedState);
-
-            cy.nodes().positions((node, i) => {
-                return {
-                    x: previous_graph_positions[node.id()].x,
-                    y: previous_graph_positions[node.id()].y,
-                };
-            });
-
-            cy.layout({
-                name: 'preset',
-                positions: function(node) {
-                    return (previous_graph_positions[node.id()]);   
-                },
-                fit: true
-            }).run();
-
-            cy.pan(lastRenderedState.pan);
-            cy.zoom(lastRenderedState.zoom);
-        } else {
-            let w = window.innerWidth;
-            let partitions = [];
-            let orbits = [];
+        let lastCustomRenderedState = storeProvider.getStore().getState().custom_graph;
+        if(this._canLoadCustomStateGraph(lastCustomRenderedState)) {
+            let previous_graph_positions = this._getLastRenderedNodePositions(lastCustomRenderedState.graph);
             for(let i = 0; i < num_of_partitions; i++) {
-                partitions.push(cy.elements().getElementById(`partition${i}`));
-            }
-
-            for(let i = 0; i < num_of_partitions; i++) {
-                orbits.push(
-                    cy.collection(partitions[i].children())
-                        .union(cy.elements().getElementById(`core${i}`).children())
+                cy.elements().getElementById(`core${i}`).position(
+                    {
+                        x: previous_graph_positions[`partition${i}`].x,
+                        y: previous_graph_positions[`partition${i}`].y
+                    }
                 );
-
-                let npos = cy.elements().getElementById(`core${i}`).position();
-                orbits[i].layout({
-                    name: 'concentric',
-                    spacingFactor: 4,
-                    boundingBox: {
-                        x1: npos.x - w/2,
-                        x2: npos.x + w/2,
-                        y1: npos.y - w/2,
-                        y2: npos.y + w/2 
-                    },
-                    fit: true,
-                    concentric: function(n) {
-                        switch(n.data().element_type) {
-                            case "common": 
-                                return 2;
-                            case "graph_1":
-                                return 0;
-                            case "graph_2": 
-                                return 1;
-                            default:
-                                return 2;
-                        }
-                    },
-                    levelWidth: function() {
-                        return 1;
-                    } 
-                }).run();
-            
-                cy.collection(partitions).layout({
-                    name: 'cose',
-                    fit: true,
-                    randomize: true
-                }).run();
             }
+        } else {
+            cy.collection(partitions).layout({
+                name: 'cose',
+                fit: true,
+                randomize: true
+            }).run();
+        }
+        
+        for(let i = 0; i < num_of_partitions; i++) {
+            this._renderCocentricLayout(
+                cy.collection(partitions[i].children())
+                    .union(cy.elements().getElementById(`core${i}`).children()),
+                cy.elements().getElementById(`core${i}`).position()
+            );
+        }
+
+        if(this._canLoadCustomStateGraph(lastCustomRenderedState)) {
+            cy.pan(lastCustomRenderedState.graph.pan);
+            cy.zoom(lastCustomRenderedState.graph.zoom);
         }
 
         /*
@@ -270,6 +235,46 @@ class Decompositions extends React.Component {
             previous_graph_positions[lastRenderedGraph.elements.nodes[node_i].data.id] = lastRenderedGraph.elements.nodes[node_i].position;
         }
         return previous_graph_positions;
+    }
+
+    _canLoadCustomStateGraph(lastCustomRenderedState) {
+        if(Object.keys(lastCustomRenderedState).length === 0) {
+            return false;
+        }
+        return true;
+    }
+
+    _renderCocentricLayout(elementCollection, centerElementPosition) {
+        let w = window.innerWidth;
+
+        elementCollection.layout({
+            name: 'concentric',
+            spacingFactor: 3.5,
+            boundingBox: {
+                x1: centerElementPosition.x - w/2,
+                x2: centerElementPosition.x + w/2,
+                y1: centerElementPosition.y - w/2,
+                y2: centerElementPosition.y + w/2 
+            },
+            fit: true,
+            concentric: function(n) {
+                switch(n.data().element_type) {
+                    case "common": 
+                        return 2;
+                    case "graph_1":
+                        return 0;
+                    case "graph_2": 
+                        return 1;
+                    default:
+                        return 2;
+                }
+            },
+            levelWidth: function() {
+                return 1;
+            }, 
+            minNodeSpacing: 10,
+            equidistant: false, 
+        }).run();
     }
 
     // Do this in a different place.
@@ -498,9 +503,10 @@ class Decompositions extends React.Component {
     }
 
     updateRedux() {
-        let {
+        const {
             cy
         } = this.state;
+
         this.props.updateDiffGraph(cy.json());
     }
 
