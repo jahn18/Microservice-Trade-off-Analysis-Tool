@@ -45,8 +45,8 @@ export default class DiffTool extends React.Component {
                             this.setState({selectedRelationshipType: newValue});
                         }}
                     >
-                        <Tab label="static" value="static"/>
-                        <Tab label="class name" value="class name"/>
+                        <Tab label="Version 1 (by Static)" value="static"/>
+                        <Tab label="Version 2 (by Class name)" value="class name"/>
                         <Tab label="custom" value="custom"/>
                     </Tabs>
                 </Paper>

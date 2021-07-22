@@ -72,7 +72,6 @@ class Decompositions extends React.Component {
     componentDidMount() {
         const {
             nodes,
-            edges,
             num_of_partitions,
         } = this.state; 
 
@@ -191,12 +190,6 @@ class Decompositions extends React.Component {
                 partitions.push(cy.elements().getElementById(`partition${i}`));
             }
 
-            cy.collection(partitions).layout({
-                name: 'cose',
-                fit: true,
-                randomize: true
-            }).run();
-
             for(let i = 0; i < num_of_partitions; i++) {
                 orbits.push(
                     cy.collection(partitions[i].children())
@@ -229,6 +222,12 @@ class Decompositions extends React.Component {
                     levelWidth: function() {
                         return 1;
                     } 
+                }).run();
+            
+                cy.collection(partitions).layout({
+                    name: 'cose',
+                    fit: true,
+                    randomize: true
                 }).run();
             }
         }

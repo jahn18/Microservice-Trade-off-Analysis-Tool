@@ -22,10 +22,6 @@ import Checkbox from '@material-ui/core/Checkbox';
 import Tooltip from '@material-ui/core/Tooltip';
 import DeleteIcon from '@material-ui/icons/Delete';
 import IconButton from '@material-ui/core/IconButton';
-import Button from '@material-ui/core/Button';
-import "./CustomGraph.css";
-// import 'raphael-min.js';
-
 
 cytoscape.use( nodeHtmlLabel );
 cytoscape.use( automove );
@@ -69,8 +65,12 @@ class CustomGraph extends React.Component {
             common_elements: common,
             static_metrics: [0, 0],
             class_name_metrics: [0, 0],
-            evolutionaryHistory: [],
+            evolutionaryHistory: {
+                table: [],
+                nodeMoveHistory: {}
+            },
             elementsSelectedOnTable: [],
+            removed_node: null,
             tableBodyRenderKey: 0
         }
 
@@ -81,7 +81,8 @@ class CustomGraph extends React.Component {
     componentDidMount() {
         const {
             nodes,
-            num_of_partitions
+            num_of_partitions,
+            evolutionaryHistory
         } = this.state;
 
         const cy = cytoscape({
@@ -190,21 +191,21 @@ class CustomGraph extends React.Component {
 
         let partitions = [];
         let lastRenderedState;
-        let evolutionaryHistory;
+        let loadedEvolutionaryHistory;
         
         // If the custom graph hasn't been loaded yet then load the positions of the current diff-graph. 
         if(Object.keys(storeProvider.getStore().getState().custom_graph).length === 0) {
             lastRenderedState = storeProvider.getStore().getState().diff_graph;
-            evolutionaryHistory = [];
+            loadedEvolutionaryHistory = evolutionaryHistory;
         } else {
             lastRenderedState = storeProvider.getStore().getState().custom_graph.graph;
-            evolutionaryHistory = storeProvider.getStore().getState().custom_graph.evolutionaryHistory;
+            loadedEvolutionaryHistory = storeProvider.getStore().getState().custom_graph.evolutionaryHistory;
             cy.json(lastRenderedState);
         }
 
         let lastRenderedNodePositions = this._getLastRenderedNodePositions(lastRenderedState);
 
-        cy.nodes().positions((node, i) => {
+        cy.nodes().positions((node) => {
             return {
                 x: lastRenderedNodePositions[node.id()].x,
                 y: lastRenderedNodePositions[node.id()].y,
@@ -295,7 +296,7 @@ class CustomGraph extends React.Component {
         this.setState({
             cy: cy,
             partitions: partitions,
-            evolutionaryHistory: evolutionaryHistory
+            evolutionaryHistory: loadedEvolutionaryHistory
         });
     }
 
@@ -442,8 +443,16 @@ class CustomGraph extends React.Component {
 
     onUnclickNode(ele) {
         const {
-            cy
+            cy,
+            removed_node
         } = this.state;
+
+        if(removed_node !== null) {
+            let current_node = cy.elements().getElementById(removed_node.data().label);
+            cy.remove(current_node);
+            cy.add(removed_node);
+        }
+
         cy.elements().forEach((ele) => {
             ele.removeClass('deactivate').removeClass('dimOut');
             if(ele.data().element_type === 'common*') {
@@ -459,57 +468,92 @@ class CustomGraph extends React.Component {
 
     onHoverOverTableRow(movedElements) {
         let {
-            cy
+            cy,
+            evolutionaryHistory
         } = this.state; 
+        const nodeMoveHistory = evolutionaryHistory.nodeMoveHistory;
 
-        let sel = cy.elements().getElementById(movedElements[0].data().label); 
-        let selected_elements = cy.collection().union(sel).union(cy.elements().getElementById(sel.data().partition)); 
+        let selected_elements = cy.collection(); 
+        let sel = cy.elements().getElementById(movedElements[0].data().label);
+        let index = this._findIndexInMoveHistory(movedElements);
+        let removed_node = null;
 
-        if(sel.data().prev_element_type !== 'common') {
-            let graph_1_node = cy.elements().getElementById(`graph_1_${sel.id()}`)
-            let graph_2_node = cy.elements().getElementById(`graph_2_${sel.id()}`)
+        if(!this._checkIfLastMoveForClass(movedElements)) {
+            removed_node = cy.remove(cy.getElementById(movedElements[0].data().label));
+            sel = nodeMoveHistory[movedElements[0].data().label][index + 1][0];
+            sel.position({
+                    x: cy.getElementById(sel.data().partition).position().x,
+                    y: cy.getElementById(sel.data().partition).position().y
+            });
+            selected_elements = selected_elements.union(sel);
+            cy.add(sel);
+        }
 
-            selected_elements = selected_elements.union(sel.children()).union(
-                cy.elements().filter((ele)=> {
-                    if ((ele.data().partition === graph_1_node.data().partition 
-                        || ele.data().partition === graph_2_node.data().partition)
-                        && !ele.hasClass('hide')) {
-                            ele.addClass('dimOut');
+        if(this._checkifFirstMoveForClass(movedElements)) {
+            selected_elements = selected_elements.union(sel).union(movedElements[1]); 
+            if(sel.data().prev_element_type !== 'common') {
+                let graph_1_node = cy.elements().getElementById(`graph_1_${sel.id()}`)
+                let graph_2_node = cy.elements().getElementById(`graph_2_${sel.id()}`)
+
+                selected_elements = selected_elements.union(sel.children()).union(
+                    cy.elements().filter((ele)=> {
+                        if ((ele.data().partition === graph_1_node.data().partition 
+                            || ele.data().partition === graph_2_node.data().partition)
+                            && !ele.hasClass('hide')) {
+                                ele.addClass('dimOut');
+                        }
+                    }),
+                )
+                selected_elements = selected_elements.union(graph_1_node);
+                selected_elements = selected_elements.union(graph_2_node);
+
+                selected_elements = selected_elements.union(
+                    cy.elements().getElementById(graph_1_node.data().partition)
+                );
+                selected_elements = selected_elements.union(
+                    cy.elements().getElementById(graph_2_node.data().partition)
+                );
+
+                graph_1_node.data().showMinusSign = true;
+                graph_2_node.data().showMinusSign = true;
+
+                cy.add([{
+                    group: 'edges',
+                    data: {
+                        target: sel.id(),
+                        source: `graph_1_${sel.id()}`
                     }
-                }),
-            )
-            selected_elements = selected_elements.union(graph_1_node);
-            selected_elements = selected_elements.union(graph_2_node);
-
-            selected_elements = selected_elements.union(
-                cy.elements().getElementById(graph_1_node.data().partition)
-            );
-            selected_elements = selected_elements.union(
-                cy.elements().getElementById(graph_2_node.data().partition)
-            );
-
-            graph_1_node.data().showMinusSign = true;
-            graph_2_node.data().showMinusSign = true;
-
+                },
+                {
+                    group: 'edges',
+                    data: {
+                        target: sel.id(),
+                        source: `graph_2_${sel.id()}`
+                    }
+                }]);
+            } else {
+                selected_elements = selected_elements.union(cy.elements().getElementById(sel.data().prev_partition));
+                cy.add([{
+                    group: 'edges',
+                    data: {
+                        target: sel.id(),
+                        source: sel.data().prev_partition
+                    }
+                }]);
+            }
+        } else {
+            let previous_node = nodeMoveHistory[movedElements[0].data().label][index][0];
+            selected_elements = selected_elements.union(previous_node).union(movedElements[1]).union(cy.getElementById(previous_node.data().partition)); 
             cy.add([{
                 group: 'edges',
                 data: {
-                    target: sel.id(),
-                    source: `graph_1_${sel.id()}`
-                }
-            },
-            {
-                group: 'edges',
-                data: {
-                    target: sel.id(),
-                    source: `graph_2_${sel.id()}`
+                    target: previous_node.id(),
+                    source: previous_node.data().partition
                 }
             }]);
-        } else {
-            selected_elements = selected_elements.union(cy.elements().getElementById(sel.data().prev_partition));
         }
 
-        let unselected_elements = cy.elements().not(sel).difference(selected_elements);
+        let unselected_elements = cy.elements().difference(selected_elements);
         unselected_elements.forEach((ele) => {
             if(ele.data().element_type !== 'graph_1' && ele.data().element_type !== 'graph_2') {
                 ele.data().showMinusSign = true; 
@@ -519,13 +563,16 @@ class CustomGraph extends React.Component {
         unselected_elements.addClass('deactivate');
         selected_elements.removeClass('hide');
         sel.removeClass('dimOut');
+
+        this.setState({
+            removed_node: removed_node
+        })
     }
 
     onMovedNode(sourceNode, targetNode, addedEles) { 
         const {
             cy,
             partitions,
-            evolutionaryHistory
         } = this.state; 
 
         if(sourceNode.data().showMinusSign === false 
@@ -581,7 +628,16 @@ class CustomGraph extends React.Component {
             }
 
             this.setState((prevState) => ({
-                evolutionaryHistory: [[sourceNode, targetNode], ...prevState.evolutionaryHistory]
+                evolutionaryHistory: {
+                    table: [[sourceNode, targetNode], ...prevState.evolutionaryHistory.table],
+                    nodeMoveHistory: !(sourceNode.data().label in prevState.evolutionaryHistory.nodeMoveHistory) ? ({
+                        ...prevState.evolutionaryHistory.nodeMoveHistory,
+                        [sourceNode.data().label]: [[sourceNode, targetNode]]
+                    }) : ({
+                        ...prevState.evolutionaryHistory.nodeMoveHistory,
+                        [sourceNode.data().label]: [...prevState.evolutionaryHistory.nodeMoveHistory[sourceNode.data().label], [sourceNode, targetNode]]
+                    })
+                }
             }));
         } 
         cy.remove(addedEles);
@@ -732,17 +788,22 @@ class CustomGraph extends React.Component {
         const zoom = cy.zoom();
         const pan = cy.pan();
 
+        let nodeMoveHistory = {...evolutionaryHistory.nodeMoveHistory};
+
         // Remove elements from the table
         for(let ele in elementsSelectedOnTable) {
             let movedElement = elementsSelectedOnTable[ele][0];
+            const index = nodeMoveHistory[movedElement.data().label].length - 1;
+            let previous_node = nodeMoveHistory[movedElement.data().label].slice(-1)[0][0]
 
-            if(movedElement.data().element_type === 'common') {
-                cy.add(movedElement);
-            } else {
+            cy.remove(cy.elements().getElementById(movedElement.data().label)); 
+            if(nodeMoveHistory[movedElement.data().label].length === 1 && previous_node.data().element_type !== 'common') {
                 cy.elements().getElementById(`graph_1_${movedElement.data().label}`).removeClass('hide');
                 cy.elements().getElementById(`graph_2_${movedElement.data().label}`).removeClass('hide');
+            } else {
+                cy.add(previous_node);
             }
-            cy.remove(cy.elements().getElementById(movedElement.data().label)); 
+            nodeMoveHistory[movedElement.data().label].splice(index, 1);
 
             this._renderCocentricLayout(
                 cy.elements().getElementById(movedElement.data().partition).children().union(
@@ -751,19 +812,22 @@ class CustomGraph extends React.Component {
                 })),
                 cy.elements().getElementById(movedElement.data().partition).position(),
             )
-        }
 
+        }
 
         cy.pan(pan);
         cy.zoom(zoom);
 
-        this.setState({
-            evolutionaryHistory: evolutionaryHistory.filter((ele) => {
-                return !elementsSelectedOnTable.includes(ele);
-            }),
+        this.setState(() => ({
+            evolutionaryHistory: {
+                table: evolutionaryHistory.table.filter((ele) => {
+                    return !elementsSelectedOnTable.includes(ele);
+                }),
+                nodeMoveHistory: nodeMoveHistory,
+            },
             elementsSelectedOnTable: [],
             tableBodyRenderKey: tableBodyRenderKey + 1
-        });
+        }));
     }
 
     _renderCocentricLayout(elementCollection, centerElementPosition) {
@@ -808,30 +872,65 @@ class CustomGraph extends React.Component {
     _printEvolutionaryHistoryText(moved_element) {
         const {
             cy,
-            num_of_decompositions
+            num_of_decompositions,
+            evolutionaryHistory
         } = this.state;
-
+        const nodeMoveHistory = evolutionaryHistory.nodeMoveHistory;
         let target_node = moved_element[0].data().label;
         let previous_partitions = "";
-        for(let i = 0; i < num_of_decompositions; i++) {
-            previous_partitions = previous_partitions.concat(`V${i + 1}-P${cy.getElementById(`graph_${i + 1}_${moved_element[0].data().label}`).data().partition.match('[0-9]')}`);
-            if(i !== num_of_decompositions - 1) {
-                previous_partitions = previous_partitions.concat(" ᐱ ");
+
+        if(moved_element[0].data().element_type === 'common' || moved_element[0].data().prev_element_type === 'common') {
+            previous_partitions = `P${moved_element[0].data().partition.match('[0-9]')}`;
+        } else if (this._checkifFirstMoveForClass(moved_element)){
+            for(let i = 0; i < num_of_decompositions; i++) {
+                previous_partitions = previous_partitions.concat(`V${i + 1}-P${cy.getElementById(`graph_${i + 1}_${moved_element[0].data().label}`).data().partition.match('[0-9]')}`);
+                if(i !== num_of_decompositions - 1) {
+                    previous_partitions = previous_partitions.concat(" ᐱ ");
+                }
             }
+        } else {
+            let index = this._findIndexInMoveHistory(moved_element);
+            let previous_node = nodeMoveHistory[moved_element[0].data().label][index][0]
+            previous_partitions = `P${previous_node.data().partition.match('[0-9]')}`;
         }
+
         let target_partition = moved_element[1].id().match('[0-9]');
         return `${target_node}: (${previous_partitions}) → P${target_partition}`;
     }
 
-    componentWillUnmount() {
+    _findIndexInMoveHistory(moved_element) {
         const {
-            num_of_partitions
-        } = this.state;
+            nodeMoveHistory
+        } = this.state.evolutionaryHistory;
 
-        for(let i in num_of_partitions) {
-            let myobj = document.getElementById(`outer-ring${i}`);
-            myobj.remove();
-        }
+        const index = nodeMoveHistory[moved_element[0].data().label].findIndex(x => {
+            for(let i = 0; i < moved_element.length; i++) {
+                if(x[i] !== moved_element[i]) {
+                    return false;
+                }
+            }
+            return true;
+        });
+        return index; 
+    }
+
+    _checkIfLastMoveForClass(moved_element) {
+        const {
+            nodeMoveHistory
+        } = this.state.evolutionaryHistory;
+
+        return (nodeMoveHistory[moved_element[0].data().label].length - 1) === this._findIndexInMoveHistory(moved_element);
+    }
+
+    _checkifFirstMoveForClass(moved_element) {
+        const {
+            nodeMoveHistory
+        } = this.state.evolutionaryHistory;
+
+        return this._findIndexInMoveHistory(moved_element) === 0;
+    }
+
+    componentWillUnmount() {
         this.updateRedux();
     }
 
@@ -842,10 +941,9 @@ class CustomGraph extends React.Component {
             evolutionaryHistory,
             elementsSelectedOnTable,
             tableBodyRenderKey,
-            cy
         } = this.state;
 
-        const evolutionaryHistoryList = evolutionaryHistory.map(
+        const evolutionaryHistoryList = evolutionaryHistory.table.map(
             (moved_element, index) => 
             <TableRow 
                 hover={true} 
@@ -859,6 +957,7 @@ class CustomGraph extends React.Component {
                 <TableCell>
                     <Checkbox
                         onChange={(event, newValue) => this._updateSelectedEvolutionaryList(newValue, moved_element, index)}
+                        disabled={!this._checkIfLastMoveForClass(moved_element)}
                     />
                     {this._printEvolutionaryHistoryText(moved_element)}
                 </TableCell>
