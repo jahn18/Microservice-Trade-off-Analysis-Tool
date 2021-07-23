@@ -164,10 +164,11 @@ class Decompositions extends React.Component {
         for(let i = 0; i < num_of_partitions; i++) {
             partitions.push(cy.elements().getElementById(`partition${i}`));
         }
+        let previous_graph_positions = null;
 
         let lastCustomRenderedState = storeProvider.getStore().getState().custom_graph;
         if(this._canLoadCustomStateGraph(lastCustomRenderedState)) {
-            let previous_graph_positions = this._getLastRenderedNodePositions(lastCustomRenderedState.graph);
+            previous_graph_positions = this._getLastRenderedNodePositions(lastCustomRenderedState.graph);
             for(let i = 0; i < num_of_partitions; i++) {
                 cy.elements().getElementById(`core${i}`).position(
                     {
@@ -183,13 +184,24 @@ class Decompositions extends React.Component {
                 randomize: true
             }).run();
         }
-        
+
         for(let i = 0; i < num_of_partitions; i++) {
-            this._renderCocentricLayout(
-                cy.collection(partitions[i].children())
-                    .union(cy.elements().getElementById(`core${i}`).children()),
-                cy.elements().getElementById(`core${i}`).position()
-            );
+            if(!this._canLoadCustomStateGraph(lastCustomRenderedState)) {
+                this._renderCocentricLayout(
+                    cy.collection(partitions[i].children())
+                        .union(cy.elements().getElementById(`core${i}`).children()),
+                    cy.elements().getElementById(`core${i}`).position()
+                );
+            } else {
+                this._renderCocentricLayout(
+                    cy.collection(partitions[i].children())
+                        .union(cy.elements().getElementById(`core${i}`).children()),
+                    {
+                        x: previous_graph_positions[`partition${i}`].x,
+                        y: previous_graph_positions[`partition${i}`].y
+                    }
+                );
+            }
         }
 
         if(this._canLoadCustomStateGraph(lastCustomRenderedState)) {
@@ -297,16 +309,8 @@ class Decompositions extends React.Component {
 
     // Do this is a different place as well. 
     setUpPartitions(graph_nodes, partition_num, graph_num, isCoreElement) {  
-        let color;
+        let color = 'grey';
         let element_list = [];
-
-        if(graph_num === 1) {
-            color = '#4169e1';
-        } else if (graph_num === 2) {
-            color = '#e9253e';
-        } else {
-            color = 'grey';
-        }
 
         for(let i = 0; i < graph_nodes.length; i++) {
             let classNode = graph_nodes[i];
@@ -551,7 +555,6 @@ class Decompositions extends React.Component {
                         </TableHead>
                         <TableBody>
                             <TableRow>
-                                <TableCell style={{'font-size': 'small'}}>Decomposition</TableCell>
                                 <TableCell style={{'font-size': 'small'}}>
                                     Static Dependencies
                                     {(selectedRelationshipType !== 'diff') 
@@ -570,20 +573,14 @@ class Decompositions extends React.Component {
                             {(selectedRelationshipType === 'static' || 
                             selectedRelationshipType === 'diff') && 
                             <TableRow key={'static'}>
-                            <TableCell component="th" scope="row" style={{color:'#4169e1'}}>
-                                {'VER 1 (by STATIC)'}
-                            </TableCell>
-                            <TableCell align="center">{static_turboMQ[0].toFixed(2)}</TableCell>
-                            <TableCell align="center">{static_turboMQ[1].toFixed(2)}</TableCell>
+                            <TableCell>{static_turboMQ[0].toFixed(2)}</TableCell>
+                            <TableCell>{static_turboMQ[1].toFixed(2)}</TableCell>
                             </TableRow>}
                             {(selectedRelationshipType === 'class name' 
                             || selectedRelationshipType === 'diff') &&
                             <TableRow key={'class name'}>
-                            <TableCell component="th" scope="row" style={{color: '#e9253e'}}>
-                                {'VER 2 (by CLASS NAME)'}
-                            </TableCell>
-                            <TableCell align="center">{class_name_turboMQ[0].toFixed(2)}</TableCell>
-                            <TableCell align="center">{class_name_turboMQ[1].toFixed(2)}</TableCell>
+                            <TableCell>{class_name_turboMQ[0].toFixed(2)}</TableCell>
+                            <TableCell>{class_name_turboMQ[1].toFixed(2)}</TableCell>
                             </TableRow>}
                         </TableBody>
                     </Table>
