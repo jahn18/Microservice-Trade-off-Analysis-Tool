@@ -170,8 +170,7 @@ def convertToJSONFile(graph_one, edges_1, graph_two, edges_2, json_file_name):
 
 def confirmAllPartitionsMatched(graph_one, graph_two, matching):
     """
-    Sometimes partitions are not matched. The networkx algorithm doesn't display all matchings, so this algorithm
-    will try to find the partitions that have not been matched.
+    Sometimes partitions are not matched. The networkx algorithm doesn't display all matchings, so this algorithm  will try to find the partitions that have not been matched.
 
     """
     if len(matching) == len(graph_one.keys()):

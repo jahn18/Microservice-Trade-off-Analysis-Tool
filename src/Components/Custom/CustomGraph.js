@@ -1,5 +1,6 @@
 import React, {createRef} from "react";
 import cytoscape from 'cytoscape';
+import Utils from './../Utils'
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
@@ -68,20 +69,31 @@ class CustomGraph extends React.Component {
             );
         }
 
+        let relationshipTypes = {}
+
+        for (const [key, value] of Object.entries(this.props.graphData)) {
+            if("links" in this.props.graphData[key]) {
+                relationshipTypes[key] = {
+                    checked: false,
+                    links: this.props.graphData[key]["links"]
+                }
+            }
+        }
+
         this.state = {
             num_of_decompositions: 2,
             num_of_partitions: num_of_partitions,
             nodes: default_nodes,
             common_elements: common,
-            static_metrics: [0, 0],
-            class_name_metrics: [0, 0],
             evolutionaryHistory: {
                 table: [],
                 nodeMoveHistory: {}
             },
             elementsSelectedOnTable: [],
             removed_node: null,
-            tableBodyRenderKey: 0
+            tableBodyRenderKey: 0,
+            relationshipTypes: relationshipTypes,
+            relationshipTypeTable: []
         }
 
         this.ref = React.createRef();
@@ -91,7 +103,9 @@ class CustomGraph extends React.Component {
         const {
             nodes,
             num_of_partitions,
-            evolutionaryHistory
+            evolutionaryHistory,
+            relationshipTypes,
+            num_of_decompositions
         } = this.state;
 
         const cy = cytoscape({
@@ -294,7 +308,6 @@ class CustomGraph extends React.Component {
         cy.on('mouseout', 'node', (e) => { eh.disableDrawMode(); })
         cy.on('tap', 'node', (e) => this.onClickedNode(e)); 
         cy.on('click', (e) => this.onUnclickNode(e));
-        cy.on('add', 'node', () => this._calculateMetrics());
         cy.on('mouseover', 'node', (e) => { 
             if(e.target.data().element_type === 'invisible') {
                 e.target.ungrabify(); 
@@ -307,10 +320,36 @@ class CustomGraph extends React.Component {
             }
         });
 
+        let relationshipTypeTable = []
+
+        Object.keys(relationshipTypes).map(
+            (key, index) => {
+                relationshipTypeTable.push(<TableRow>
+                    <TableCell style={{'font-size': 'small'}}>
+                        {key}
+                    </TableCell>
+                    {
+                        [...Array(num_of_decompositions)].map((x, i) => 
+                            <TableCell align="left">
+                                {
+                                    Utils.calculateNormalizedTurboMQ(
+                                        relationshipTypes[key]["links"],
+                                        this._getCurrentDecomposition(i + 1, cy)
+                                    ).toFixed(2)
+                                }
+                            </TableCell>
+                        )
+                    }
+                </TableRow>)
+            }
+            )
+
+
         this.setState({
             cy: cy,
             partitions: partitions,
-            evolutionaryHistory: loadedEvolutionaryHistory
+            evolutionaryHistory: loadedEvolutionaryHistory,
+            relationshipTypeTable: relationshipTypeTable
         });
     }
 
@@ -641,108 +680,31 @@ class CustomGraph extends React.Component {
         cy.remove(addedEles);
     }
 
-    _calculateMetrics() {
+    _getCurrentDecomposition(decomposition_version_number, cy) {
         const {
-            cy,
-            num_of_partitions
-        } = this.state;
+            num_of_partitions,
+            num_of_decompositions
+        } = this.state; 
 
-        let movedNodes = []; 
-        let partitions = {}
-        let updatedGraph = cy.nodes().jsons();
-
-        for(let i in updatedGraph) {
-            let node = updatedGraph[i].data;
-            if(node.element_type === 'common*') {
-                movedNodes.push(`graph_1_${node.id}`, `graph_2_${node.id}`);
-            } 
-        }
-
-        for(let i in updatedGraph) {
-            let node = updatedGraph[i].data;
-            if(!movedNodes.includes(node.id) && node.element_type !== 'partition') {
-                if(partitions[node.partition] === undefined) {
-                    partitions[node.partition] = {
-                        graph_1: [],
-                        graph_2: []
-                    };
-                } 
-                if(node.element_type === 'common' || node.element_type === 'common*') {
-                    partitions[node.partition]['graph_1'].push(node.label);
-                    partitions[node.partition]['graph_2'].push(node.label);
-                } else if (node.element_type === 'graph_1' || node.element_type === 'graph_2') {
-                    partitions[node.partition][node.element_type].push(node.label);
-                }
-            }    
-        }
-
-        let static_edge_graph = this.props.graphData.static_graph.links;
-        let class_name_edge_graph = this.props.graphData.class_name_graph.links;
-
-        let static_TurboMQ_value = [0, 0];
-        let class_name_TurboMQ_value = [0, 0];
-
-        for(let j in partitions) {
-            let sie = 0.0;
-            let see = 0.0; 
-            let cie = 0.0;
-            let cee = 0.0;
-
-            for(let i in static_edge_graph) {
-                let edge = static_edge_graph[i];
-                if(partitions[j]['graph_1'].includes(edge.source) && partitions[j]['graph_1'].includes(edge.target)) {
-                    sie += parseFloat(edge.weight);
-                }
-                else if (partitions[j]['graph_1'].includes(edge.source) || partitions[j]['graph_1'].includes(edge.target)) {
-                    see += parseFloat(edge.weight); 
-                }
-                
-                if(partitions[j]['graph_2'].includes(edge.source) && partitions[j]['graph_2'].includes(edge.target)) {
-                    cie += parseFloat(edge.weight);
-                }
-                else if (partitions[j]['graph_2'].includes(edge.source) || partitions[j]['graph_2'].includes(edge.target)) {
-                    cee += parseFloat(edge.weight); 
-                }
+        let decomposition_element_types = [];
+        for(let i = 0; i < num_of_decompositions; i++) {
+            if(i + 1 !== decomposition_version_number) {
+                decomposition_element_types.push(`graph_${i + 1}`);
             }
-            class_name_TurboMQ_value[0] += (cie !== 0) ? ((2*cie) / ( (2*cie) + cee)) : 0; 
-            static_TurboMQ_value[0] += (sie !== 0) ? ((2*sie) / ( (2*sie) + see)) : 0; 
-
-            sie = 0.0;
-            see = 0.0; 
-            cie = 0.0;
-            cee = 0.0;
-            for(let i in class_name_edge_graph) {
-                let edge = class_name_edge_graph[i];
-                if(partitions[j]['graph_1'].includes(edge.source) && partitions[j]['graph_1'].includes(edge.target)) {
-                    sie += parseFloat(edge.weight);
-                }
-                else if (partitions[j]['graph_1'].includes(edge.source) || partitions[j]['graph_1'].includes(edge.target)) {
-                    see += parseFloat(edge.weight); 
-                }
-
-                if(partitions[j]['graph_2'].includes(edge.source) && partitions[j]['graph_2'].includes(edge.target)) {
-                    cie += parseFloat(edge.weight);
-                }
-                else if (partitions[j]['graph_2'].includes(edge.source) || partitions[j]['graph_2'].includes(edge.target)) {
-                    cee += parseFloat(edge.weight); 
-                }
-            }
-            class_name_TurboMQ_value[1] += (cie !== 0) ? ((2*cie) / ( (2*cie) + cee)) : 0; 
-            static_TurboMQ_value[1] += (sie !== 0) ? ((2*sie) / ( (2*sie) + see)) : 0; 
-
         }
 
-        static_TurboMQ_value[0] = (static_TurboMQ_value[0] / num_of_partitions) * 100;
-        static_TurboMQ_value[1] = (static_TurboMQ_value[1] / num_of_partitions) * 100;
-        class_name_TurboMQ_value[0] = (class_name_TurboMQ_value[0] / num_of_partitions) * 100;
-        class_name_TurboMQ_value[1] = (class_name_TurboMQ_value[1] / num_of_partitions) * 100;
+        let decomposition = [];
 
-        let static_g = static_TurboMQ_value;
-        let class_name_g = class_name_TurboMQ_value;
-        this.setState({
-            static_metrics: static_g,
-            class_name_metrics: class_name_g
-        })
+        for(let i = 0; i < num_of_partitions; i++) {
+            let partition = []; 
+            cy.nodes().forEach((ele) => {
+                if(ele.data().partition === `partition${i}` && !decomposition_element_types.includes(ele.data().element_type)) {
+                    partition.push(ele.data().label);
+                }
+            })
+            decomposition.push(partition);
+        }
+        return decomposition;
     }
 
     updateRedux() {
@@ -759,7 +721,7 @@ class CustomGraph extends React.Component {
         );
     }
 
-    _updateSelectedEvolutionaryList(isBoxChecked, element, element_index) {
+    _updateSelectedEvolutionaryList(isBoxChecked, element) {
         const {
             elementsSelectedOnTable
         } = this.state;
@@ -932,17 +894,52 @@ class CustomGraph extends React.Component {
         return this._findIndexInMoveHistory(moved_element) === 0;
     }
 
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        const {
+            relationshipTypes,
+            num_of_decompositions,
+            cy
+        } = this.state;
+
+        let relationshipTypeTable = []
+
+        Object.keys(relationshipTypes).map(
+            (key, index) => {
+                relationshipTypeTable.push(<TableRow>
+                    <TableCell style={{'font-size': 'small'}}>
+                        {key}
+                    </TableCell>
+                    {
+                        [...Array(num_of_decompositions)].map((x, i) => 
+                            <TableCell align="left">
+                                {
+                                    Utils.calculateNormalizedTurboMQ(
+                                        relationshipTypes[key]["links"],
+                                        this._getCurrentDecomposition(i + 1, cy)
+                                    ).toFixed(2)
+                                }
+                            </TableCell>
+                        )
+                    }
+                </TableRow>)
+            }
+            )
+        if(JSON.stringify(prevState.relationshipTypeTable) !== JSON.stringify(relationshipTypeTable)) {
+            this.setState({relationshipTypeTable: relationshipTypeTable});
+        }
+    }
+
     componentWillUnmount() {
         this.updateRedux();
     }
 
     render() {
         let {
-            static_metrics,
-            class_name_metrics,
             evolutionaryHistory,
             elementsSelectedOnTable,
             tableBodyRenderKey,
+            num_of_decompositions,
+            relationshipTypeTable
         } = this.state;
 
         const evolutionaryHistoryList = evolutionaryHistory.table.map(
@@ -972,19 +969,57 @@ class CustomGraph extends React.Component {
                     <div style={{height: '100%', width: '100%', position: 'fixed'}} ref={ref => (this.ref = ref)}></div>
                 </div>
                 <div className="table-container" style={{position: 'absolute', left: '68%', width: '100%', 'margin-top': '1%'}}>
-                    <Metrics static={static_metrics} classname={class_name_metrics}/>
                     <TableContainer 
                     component={Paper} 
                     style={
                             {
                                 width: '30%',
                                 border: '1px solid grey',
-                                'margin-top': '10px',
-                                maxHeight: '300px'
+                                'left': '68%',
+                                'margin-top': '0%',
+                                position: 'fixed',
+                                maxHeight: '290px'
+                            }
+                        } 
+                    size="small">
+                        <Table stickyHeader aria-label="simple table" size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell align="" colSpan={3} style={{'font-weight': 'bold'}}>
+                                        Coupling & Cohesion (0-100%)
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell>
+                                        Dependencies
+                                    </TableCell>
+                                    {
+                                        [...Array(num_of_decompositions)].map((x, i) => 
+                                            <TableCell>
+                                                V{i+1}
+                                            </TableCell>
+                                        )
+                                    }
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {relationshipTypeTable}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                    <TableContainer 
+                    component={Paper} 
+                    style={
+                            {
+                                width: '30%',
+                                border: '1px solid grey',
+                                'margin-top': '295px',
+                                maxHeight: '300px',
+                                position: 'fixed'
                             }
                         } 
                     >
-                        <Table stickyHeader aria-label="simple table" size="small">
+                        <Table stickyHeader aria-label="simple table" size="small" style={{maxHeight: '300px'}}>
                             <TableHead>
                                 <TableRow>
                                     {elementsSelectedOnTable.length > 0 ? (

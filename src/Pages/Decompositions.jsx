@@ -1,5 +1,6 @@
 import React, {useRef} from "react";
 import cytoscape from 'cytoscape';
+import Utils from './../Components/Utils'
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
@@ -10,6 +11,7 @@ import TableCell from '@material-ui/core/TableCell';
 import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
+import Slider from '@material-ui/core/Slider';
 import AntSwitch from '../Components/Switch';
 import 'react-pro-sidebar/dist/css/styles.css';
 import {connect} from 'react-redux';
@@ -64,13 +66,28 @@ class Decompositions extends React.Component {
                 } 
             )
         }
+
+        let colors = ['#ff7f50', '#9b59b6', '#9fe2bf', '#40e0d0', '#6495ed', '#c4c4c4'];
+        let relationshipTypes = {};
+        let i = 0;
+
+        for (const [key, value] of Object.entries(this.props.graphData)) {
+            if("links" in this.props.graphData[key]) {
+                relationshipTypes[key] = {
+                    checked: false,
+                    links: value["links"],
+                    minimumEdgeWeight: 0,
+                    color: colors[i]
+                }
+                i++;
+            }
+        }
         
         this.state = {
             num_of_partitions: num_of_partitions,
             nodes: default_nodes,
             common_elements: common,
-            static_checked: false,
-            class_name_checked: false
+            relationshipTypes: relationshipTypes
         }
 
         this.ref = React.createRef();
@@ -116,9 +133,10 @@ class Decompositions extends React.Component {
                 {
                     'selector': 'edge',
                     'style': {
-                        'width': 1,
-                        'line-color': '#c4c4c4',
-                        'target-arrow-color': '#c4c4c4',
+                        'width': 0.85,
+                        // 'line-color': '#c4c4c4',
+                        'line-color': 'data(color)',
+                        'target-arrow-color': 'data(color)',
                         'target-arrow-shape': 'vee',
                         'curve-style': 'bezier'
                     }
@@ -306,22 +324,37 @@ class Decompositions extends React.Component {
     }
 
     // Do this in a different place.
-    getEdgeDependencies(graph, common_elements, graph_type) {
+    getEdgeDependencies(graph, common_elements, graph_type, minimumEdgeWeight, color) {
         let edge_dependencies = [];
         for(let i = 0; i < graph.length; i++) {
             let edge = graph[i];
-            edge_dependencies.push({
-                group: 'edges', 
-                data: {
-                    source: (common_elements.includes(edge.source)) ? `graph_0_${edge.source}` : `${graph_type}_${edge.source}`,
-                    target: (common_elements.includes(edge.target)) ? `graph_0_${edge.target}` : `${graph_type}_${edge.target}`,
-                    weight: edge.weight,
-                    element_type: graph_type
-                } 
-            }); 
+            if(minimumEdgeWeight <= parseFloat(edge.weight)) {
+                edge_dependencies.push({
+                    group: 'edges', 
+                    data: {
+                        source: (common_elements.includes(edge.source)) ? `graph_0_${edge.source}` : `${graph_type}_${edge.source}`,
+                        target: (common_elements.includes(edge.target)) ? `graph_0_${edge.target}` : `${graph_type}_${edge.target}`,
+                        weight: parseFloat(edge.weight).toFixed(2),
+                        element_type: graph_type,
+                        color: color
+                    } 
+                }); 
+            }
         }
         return edge_dependencies;
     };  
+
+    findMaxEdgeWeight(edge_graph) {
+        let max_edge_weight = 0;
+
+        for(let i = 0; i < edge_graph.length; i++) {
+            let edge = edge_graph[i];
+            if(parseFloat(edge.weight) > max_edge_weight) {
+                max_edge_weight = parseFloat(edge.weight);
+            }
+        }
+        return max_edge_weight.toFixed(0);
+    }
 
     // Do this is a different place as well. 
     setUpPartitions(graph_nodes, partition_num, graph_num, isCoreElement) {  
@@ -442,31 +475,37 @@ class Decompositions extends React.Component {
 
     _updateGraphEdges() {
         const {
-            class_name_checked, 
-            static_checked,
-            common_elements,
+            relationshipTypes,
+            common_elements
         } = this.state;
 
         let selectedRelationshipType = this.props.relationshipType;
-        let class_name_graph = this.props.graphData.class_name_graph.links;
-        let static_graph = this.props.graphData.static_graph.links;
         let edges = []
 
         switch(selectedRelationshipType) {
             case 'static':
-                if(class_name_checked) {
-                    edges = this.getEdgeDependencies(class_name_graph, common_elements, 'graph_1');
-                }
-                if(static_checked) {
-                    edges = [].concat(edges, this.getEdgeDependencies(static_graph, common_elements, 'graph_1'))
+                for(let key in relationshipTypes) {
+                    if(relationshipTypes[key].checked) {
+                        edges = [].concat(edges, this.getEdgeDependencies(
+                            relationshipTypes[key].links, 
+                            common_elements, 
+                            'graph_1',
+                            relationshipTypes[key].minimumEdgeWeight,
+                            relationshipTypes[key].color)
+                        );
+                    }
                 }
                 break;
             case 'class name':
-                if(class_name_checked) {
-                    edges = this.getEdgeDependencies(class_name_graph, common_elements, 'graph_2');
-                }
-                if(static_checked) {
-                    edges = [].concat(edges, this.getEdgeDependencies(static_graph, common_elements, 'graph_2'))
+                for(let key in relationshipTypes) {
+                    if(relationshipTypes[key].checked) {
+                        edges = [].concat(edges, this.getEdgeDependencies(
+                            relationshipTypes[key].links, 
+                            common_elements, 
+                            'graph_2',
+                            relationshipTypes[key].minimumEdgeWeight,
+                            relationshipTypes[key].color));
+                    }
                 }
                 break;
             case 'default':
@@ -474,46 +513,6 @@ class Decompositions extends React.Component {
 
         return edges;
     }
-
-    calculateNormalizedTurboMQ = (diffGraph, graph_num) => {
-        const {num_of_partitions} = this.state;
-        let CF_0 = 0.0;
-        let CF_1 = 0.0;
-        for(let i = 0; i < num_of_partitions; i++) {
-            /* 
-                Later change this so that graph_num is the actual number so it is "graph_${graph_num}_diff" when we have
-                multiple partitions. 
-            */
-            let partition_classes = (graph_num === 1) ? [].concat(diffGraph[i].common, diffGraph[i].graph_one_diff) : 
-                                        [].concat(diffGraph[i].common, diffGraph[i].graph_two_diff); 
-            let internal_edges = 0.0;
-            let external_edges = 0.0; 
-            let edge_graph = this.props.graphData.static_graph.links;
-            for(let j = 0; j < edge_graph.length; j++) {
-                let edge = edge_graph[j];
-                if(partition_classes.includes(edge.source) && partition_classes.includes(edge.target)) {
-                    internal_edges += parseFloat(edge.weight);
-                } else if (partition_classes.includes(edge.source) || partition_classes.includes(edge.target)) {
-                    external_edges += parseFloat(edge.weight); 
-                }
-            }
-            CF_0 += (internal_edges !== 0) ? ((2*internal_edges) / ( (2*internal_edges) + external_edges)) : 0; 
-
-            internal_edges = 0.0;
-            external_edges = 0.0; 
-            edge_graph = this.props.graphData.class_name_graph.links;
-            for(let j = 0; j < edge_graph.length; j++) {
-                let edge = edge_graph[j];
-                if(partition_classes.includes(edge.source) && partition_classes.includes(edge.target)) {
-                    internal_edges += parseFloat(edge.weight);
-                } else if (partition_classes.includes(edge.source) || partition_classes.includes(edge.target)) {
-                    external_edges += parseFloat(edge.weight); 
-                }
-            }
-            CF_1 += (internal_edges !== 0) ? ((2*internal_edges) / ( (2*internal_edges) + external_edges)) : 0; 
-        }
-        return [(CF_0 / num_of_partitions) * 100, (CF_1 / num_of_partitions) * 100];
-    };
 
     componentDidUpdate(prevProps, prevState, snapshot) {
         // Check if the user has toggled the switch, which will add edges to the graph. 
@@ -540,13 +539,69 @@ class Decompositions extends React.Component {
 
     render() {
         const {
-            cy,
+            relationshipTypes,
+            num_of_partitions
         } = this.state; 
 
         let selectedRelationshipType = this.props.relationshipType; 
-        let diffGraph = this.props.graphData.diff_graph; 
-        let static_turboMQ = this.calculateNormalizedTurboMQ(diffGraph, 1);
-        let class_name_turboMQ = this.calculateNormalizedTurboMQ(diffGraph, 2);
+        let diffGraph = this.props.graphData.diff_graph;
+        let decomposition = [];
+        let relationshipTypeTable = []
+
+        for(let i = 0; i < num_of_partitions; i++) {
+            let partition = (selectedRelationshipType === 'static') ? 
+                [].concat(diffGraph[i].common, diffGraph[i].graph_one_diff) : 
+                [].concat(diffGraph[i].common, diffGraph[i].graph_two_diff);
+            decomposition.push(partition);
+        }
+
+        Object.keys(relationshipTypes).map(
+            (key, index) => {
+                relationshipTypeTable.push(<TableRow>
+                    <TableCell style={{'font-size': 'small'}}>
+                        {key}
+                    </TableCell>
+                    <TableCell align="left">
+                        {
+                            Utils.calculateNormalizedTurboMQ(
+                                relationshipTypes[key]["links"],
+                                decomposition
+                            ).toFixed(2)
+                        }
+                    </TableCell>
+                    <TableCell>
+                        <AntSwitch 
+                            onChange={(event, status) => {
+                                let relationshipTypesCopy = {...this.state.relationshipTypes};
+                                relationshipTypesCopy[key].checked = status; 
+                                this.setState({relationshipTypes: relationshipTypesCopy});
+                            }}
+                            color={relationshipTypes[key].color}
+                        />
+                    </TableCell>
+                    <TableCell>
+                        <Slider
+                            defaultValue={0}
+                            aria-labelledby="discrete-slider"
+                            valueLabelDisplay="auto"
+                            step={this.findMaxEdgeWeight(relationshipTypes[key].links) / 10}
+                            marks={true}
+                            min={0}
+                            max={this.findMaxEdgeWeight(relationshipTypes[key].links)}
+                            style={{
+                                width: '25vh',
+                                color: relationshipTypes[key].color
+                            }}
+                            onChange={(event, weight) => {
+                                let relationshipTypesCopy = {...this.state.relationshipTypes};
+                                relationshipTypesCopy[key].minimumEdgeWeight = weight; 
+                                this.setState({relationshipTypes: relationshipTypesCopy});
+                            }}
+                        />
+                    </TableCell>
+                </TableRow>)
+            }
+        )
 
         return (
             <div>
@@ -568,40 +623,21 @@ class Decompositions extends React.Component {
                     <Table aria-label="simple table" size="small">
                         <TableHead>
                             <TableRow>
-                                <TableCell align="" colSpan={3} style={{'font-weight': 'bold'}}>
+                                <TableCell align="" colSpan={4} style={{'font-weight': 'bold'}}>
                                     Coupling & Cohesion (0-100%)
+                                </TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell colSpan={3}>
+                                    Dependencies
+                                </TableCell>
+                                <TableCell>
+                                    Minimum Edge Weight
                                 </TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            <TableRow>
-                                <TableCell style={{'font-size': 'small'}}>
-                                    Static Dependencies
-                                    {(selectedRelationshipType !== 'diff') 
-                                    && <AntSwitch onChange={(event, status) => {
-                                        this.setState({static_checked: status});
-                                    }}/>}
-                                </TableCell>
-                                <TableCell style={{'font-size': 'small'}}>
-                                    Class Name Dependencies
-                                    {(selectedRelationshipType !== 'diff') && 
-                                    <AntSwitch onChange={(event, status) => {
-                                        this.setState({class_name_checked: status});
-                                    }}/>}
-                                </TableCell>
-                            </TableRow>
-                            {(selectedRelationshipType === 'static' || 
-                            selectedRelationshipType === 'diff') && 
-                            <TableRow key={'static'}>
-                            <TableCell>{static_turboMQ[0].toFixed(2)}</TableCell>
-                            <TableCell>{static_turboMQ[1].toFixed(2)}</TableCell>
-                            </TableRow>}
-                            {(selectedRelationshipType === 'class name' 
-                            || selectedRelationshipType === 'diff') &&
-                            <TableRow key={'class name'}>
-                            <TableCell>{class_name_turboMQ[0].toFixed(2)}</TableCell>
-                            <TableCell>{class_name_turboMQ[1].toFixed(2)}</TableCell>
-                            </TableRow>}
+                            {relationshipTypeTable}
                         </TableBody>
                     </Table>
                 </TableContainer>
