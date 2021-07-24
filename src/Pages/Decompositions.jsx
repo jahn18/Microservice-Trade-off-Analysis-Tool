@@ -30,36 +30,44 @@ class Decompositions extends React.Component {
             common = [].concat(common, diffGraph[i].common);
             default_nodes = [].concat(default_nodes, this.setUpPartitions(diffGraph[i].common, i, 0, true), this.setUpPartitions(diffGraph[i].graph_one_diff, i, 1, false), 
                                     this.setUpPartitions(diffGraph[i].graph_two_diff, i, 2, false));
-        }
-
-        let core_elements = [];
-        for(let i = 0; i < num_of_partitions; i++) {
-            core_elements.push({
-                data: {
-                    id: `partition${i}`,
-                    label: `partition${i}`,
-                    background_color: 'white',
-                    colored: false,
-                    element_type: 'partition'
+            default_nodes.push(
+                {
+                    data: {
+                        id: `partition${i}`,
+                        label: `partition${i}`,
+                        background_color: 'white',
+                        colored: false,
+                        element_type: 'partition'
+                    } 
+                },
+                {
+                    data: {
+                        id: `core${i}`, 
+                        label: `core${i}`,
+                        parent: `partition${i}`,
+                        background_color: 'grey',
+                        colored: true,
+                        element_type: 'core'
+                    } 
+                },
+                {
+                    data: {
+                        id: `invisible_node${i}`,
+                        label: `invisible_node${i}`,
+                        background_color: 'grey',
+                        colored: false,
+                        element_type: 'invisible',
+                        showMinusSign: false, 
+                        partition: `partition${i}`,
+                        parent: `core${i}`
+                    },
                 } 
-            },
-            {
-                data: {
-                    id: `core${i}`, 
-                    label: `core${i}`,
-                    parent: `partition${i}`,
-                    background_color: 'grey',
-                    colored: true,
-                    element_type: 'core'
-                } 
-            });
+            )
         }
-
-        core_elements = [].concat(core_elements, default_nodes);
-
+        
         this.state = {
             num_of_partitions: num_of_partitions,
-            nodes: core_elements,
+            nodes: default_nodes,
             common_elements: common,
             static_checked: false,
             class_name_checked: false
@@ -160,6 +168,12 @@ class Decompositions extends React.Component {
             ],
         });
 
+        cy.nodes().forEach((ele) => {
+            if(ele.data().element_type === 'invisible') {
+                ele.addClass('hide');
+            }
+        });
+
         let partitions = [];
         for(let i = 0; i < num_of_partitions; i++) {
             partitions.push(cy.elements().getElementById(`partition${i}`));
@@ -214,8 +228,8 @@ class Decompositions extends React.Component {
         */       
         cy.on('tap', 'node', (e) => this.onSelectedNode(e));
         cy.on('click', (e) => { cy.elements().removeClass('deactivate').removeClass('highlight'); });
-        cy.on('mousedown', 'node', (e) => this.preventNonVisibleNodeFromMoving(e));
-        cy.on('mouseup', 'node', (e) => { cy.elements().grabify(); });
+        cy.on('mouseover', 'node', (e) => this.preventNonVisibleNodeFromMoving(e));
+        cy.on('mouseout', 'node', () => { cy.elements().grabify(); });
 
         this.setState({
             cy: cy,
@@ -271,6 +285,8 @@ class Decompositions extends React.Component {
             fit: true,
             concentric: function(n) {
                 switch(n.data().element_type) {
+                    case "invisible":
+                        return 3;
                     case "common": 
                         return 2;
                     case "graph_1":
@@ -343,7 +359,11 @@ class Decompositions extends React.Component {
         } = this.state;
 
         let renderNewGraph = [];
-        cy.elements().removeClass('hide');
+        cy.elements().forEach(ele => {
+            if(ele.data().element_type !== 'invisible') {
+                ele.removeClass('hide');
+            }
+        })
 
         switch(relationshipType) {
             case 'static':
@@ -407,8 +427,8 @@ class Decompositions extends React.Component {
             sel.ungrabify();
         } else if (selectedRelationshipType === 'class name' && sel.data().element_type === 'graph_1') {
             sel.ungrabify();
-        } else {
-            sel.grabify();
+        } else if (sel.data().element_type === 'invisible') {
+            sel.ungrabify();
         }
     }
 

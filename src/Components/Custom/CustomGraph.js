@@ -52,6 +52,18 @@ class CustomGraph extends React.Component {
                         element_type: 'partition',
                         showMinusSign: false 
                     },
+                },
+                {
+                    data: {
+                        id: `invisible_node${i}`,
+                        label: `invisible_node${i}`,
+                        background_color: 'grey',
+                        colored: false,
+                        element_type: 'invisible',
+                        showMinusSign: false, 
+                        partition: `partition${i}`,
+                        parent: `partition${i}`
+                    },
                 }] 
             );
         }
@@ -74,7 +86,6 @@ class CustomGraph extends React.Component {
 
         this.ref = React.createRef();
     };
-
 
     componentDidMount() {
         const {
@@ -117,6 +128,12 @@ class CustomGraph extends React.Component {
                         'target-arrow-color': 'grey',
                         'target-arrow-shape': 'vee',
                         'curve-style': 'bezier'
+                    }
+                },
+                {
+                    'selector': 'node.hide',
+                    'style': {
+                        'opacity': 0.0
                     }
                 },
                 {
@@ -181,6 +198,12 @@ class CustomGraph extends React.Component {
             ],
         });
 
+        cy.nodes().forEach((ele) => {
+            if(ele.data().element_type === 'invisible') {
+                ele.addClass('hide');
+            }
+        })
+
         let lastRenderedState;
         let loadedEvolutionaryHistory;
         
@@ -211,11 +234,8 @@ class CustomGraph extends React.Component {
                     y: lastRenderedNodePositions[`core${i}`].y
                 }
             )
-        }
-
-        for(let i = 0; i < num_of_partitions; i++) {
             this._renderCocentricLayout(
-                cy.getElementById(`partition${i}`).children().union(
+                cy.getElementById(`partition${i}`).union(
                     cy.elements().filter((ele)=> {
                         return ele.data().partition === `partition${i}`;
                     })
@@ -230,7 +250,9 @@ class CustomGraph extends React.Component {
         cy.pan(lastRenderedState.pan);
         cy.zoom(lastRenderedState.zoom);
 
-        let eh = cy.edgehandles();
+        let eh = cy.edgehandles({
+            snap: false
+        });
         let partitions = [];
         
         cy.nodeHtmlLabel([{
@@ -273,6 +295,17 @@ class CustomGraph extends React.Component {
         cy.on('tap', 'node', (e) => this.onClickedNode(e)); 
         cy.on('click', (e) => this.onUnclickNode(e));
         cy.on('add', 'node', () => this._calculateMetrics());
+        cy.on('mouseover', 'node', (e) => { 
+            if(e.target.data().element_type === 'invisible') {
+                e.target.ungrabify(); 
+                eh.hide();
+            }
+        })
+        cy.on('mouseout', 'node', (e) => { 
+            if(e.target.data().element_type !== undefined) {
+                e.target.grabify();
+            }
+        });
 
         this.setState({
             cy: cy,
@@ -305,6 +338,7 @@ class CustomGraph extends React.Component {
                             parent: (isCoreElement) ? `partition${partition_num}` : null,
                             partition: `partition${partition_num}`,
                             background_color: color,
+                            colored: true,
                             showMinusSign: false
                         }
                     }
@@ -513,12 +547,18 @@ class CustomGraph extends React.Component {
             num_of_decompositions
         } = this.state; 
 
-        if(sourceNode.data().showMinusSign === false 
-            && partitions.includes(targetNode.id())
-            && !sourceNode.hasClass('deactivate')
-            && sourceNode.data().element_type !== 'partition') 
+        if(sourceNode.data().showMinusSign === false && 
+            partitions.includes(targetNode.id()) &&
+            !sourceNode.hasClass('deactivate') &&
+            sourceNode.data().element_type !== 'partition') 
             {
             // Implement a way to add an additional partition. 
+            cy.nodes().forEach((ele) => {
+                if(ele.data().element_type === 'invisible') {
+                    ele.ungrabify();
+                }
+            })
+
             let prev_element = sourceNode.data().element_type;
             let prev_partition = sourceNode.data().partition; 
 
@@ -528,10 +568,9 @@ class CustomGraph extends React.Component {
                 prev_partition = sourceNode.data().prev_partition;
             }
 
-            const npos = cy.elements().getElementById(targetNode.id()).position();
             const target_pos = {
-                x: npos.x, 
-                y: npos.y
+                x: cy.getElementById(`invisible_node${targetNode.id().match('[0-9]')}`).position().x,
+                y: cy.getElementById(`invisible_node${targetNode.id().match('[0-9]')}`).position().y,
             }; 
 
             cy.add({
@@ -561,10 +600,11 @@ class CustomGraph extends React.Component {
                 for(let i = 0; i < num_of_decompositions; i++) {
                     let diff_graph_node = cy.getElementById(`graph_${i+1}_${sourceNode.data().label}`)
                     diff_graph_node.data().showMinusSign = true;
-                    if(targetNode.id() !== diff_graph_node.data().partition) {
+                    let diff_graph_node_partition = diff_graph_node.data().partition;
+                    if(targetNode.id() !== diff_graph_node_partition) {
                         const partition_position = {
-                            x: cy.getElementById(diff_graph_node.data().partition).position().x,
-                            y: cy.getElementById(diff_graph_node.data().partition).position().y
+                            x: cy.getElementById(`invisible_node${diff_graph_node_partition.match('[0-9]')}`).position().x,
+                            y: cy.getElementById(`invisible_node${diff_graph_node_partition.match('[0-9]')}`).position().y,
                         }
                         partitions.push({
                             label: diff_graph_node.data().partition, 
@@ -581,15 +621,9 @@ class CustomGraph extends React.Component {
                     }),
                     partitions[i].position,
                 )
-                // cy.automove({
-                //     nodesMatching: 
-                //         cy.elements().filter((ele)=> {
-                //             return ele.data().partition === `partition${i}`;
-                //         }),
-                //     reposition: 'drag',
-                //     dragWith: cy.elements().getElementById(`partition${i}`)
-                // });
             }
+
+            cy.elements().grabify();
 
             this.setState((prevState) => ({
                 evolutionaryHistory: {
@@ -763,7 +797,7 @@ class CustomGraph extends React.Component {
             let partitions = [movedElement[0].data().partition];
 
             cy.remove(cy.getElementById(movedElement[0].data().label)); 
-            if(!this._checkifFirstMoveForClass(movedElement)) {
+            if(!this._checkifFirstMoveForClass(movedElement) || previous_moved_node.data().element_type === 'common') {
                 cy.add(previous_moved_node);
             } else {
                 if(!this._isNodeCommonBetweenDecompositions(movedElement[0].data().element_type)) {
@@ -830,7 +864,7 @@ class CustomGraph extends React.Component {
                     case "graph_2": 
                         return 1;
                     default:
-                        return 1;
+                        return 3;
                 }
             },
             levelWidth: function() {
