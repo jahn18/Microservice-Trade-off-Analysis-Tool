@@ -117,6 +117,8 @@ class CustomGraph extends React.Component {
                     'style': {
                         'background-color': 'data(background_color)',
                         'label': 'data(label)',
+                        'min-zoomed-font-size': '15px',
+                        'font-size': '25px'
                     }
                 },
                 {
@@ -325,7 +327,7 @@ class CustomGraph extends React.Component {
         Object.keys(relationshipTypes).map(
             (key, index) => {
                 relationshipTypeTable.push(<TableRow>
-                    <TableCell style={{'font-size': 'small'}}>
+                    <TableCell style={{'font-size': 'Normal'}}>
                         {key}
                     </TableCell>
                     {
@@ -906,7 +908,7 @@ class CustomGraph extends React.Component {
         Object.keys(relationshipTypes).map(
             (key, index) => {
                 relationshipTypeTable.push(<TableRow>
-                    <TableCell style={{'font-size': 'small'}}>
+                    <TableCell style={{'font-size': 'Normal'}}>
                         {key}
                     </TableCell>
                     {

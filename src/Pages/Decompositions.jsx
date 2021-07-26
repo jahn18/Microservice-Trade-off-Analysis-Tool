@@ -108,7 +108,9 @@ class Decompositions extends React.Component {
                     'selector': 'node',
                     'style': {
                         'background-color': 'data(background_color)',
-                        'label': 'data(label)'
+                        'label': 'data(label)',
+                        'min-zoomed-font-size': '15px', 
+                        'font-size': '25px'
                     }
                 }, 
                 {
@@ -558,10 +560,10 @@ class Decompositions extends React.Component {
         Object.keys(relationshipTypes).map(
             (key, index) => {
                 relationshipTypeTable.push(<TableRow>
-                    <TableCell style={{'font-size': 'small'}}>
+                    <TableCell style={{'font-size': 'Normal'}}>
                         {key}
                     </TableCell>
-                    <TableCell align="left">
+                    <TableCell align="left" style={{'font-size': 'Normal'}}>
                         {
                             Utils.calculateNormalizedTurboMQ(
                                 relationshipTypes[key]["links"],
