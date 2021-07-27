@@ -2,8 +2,6 @@ import React, {useRef} from "react";
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
-import {connect} from 'react-redux';
-import {updateDiffGraph} from '../Actions';
 import 'react-pro-sidebar/dist/css/styles.css';
 import Decompositions from './Decompositions';
 import CustomGraph from '../Components/Custom';

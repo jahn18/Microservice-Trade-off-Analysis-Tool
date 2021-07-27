@@ -1,6 +1,6 @@
 import React, {useRef} from "react";
 import cytoscape from 'cytoscape';
-import Utils from './../Components/Utils'
+import Utils from '../Components/Utils'
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
@@ -23,71 +23,13 @@ class Decompositions extends React.Component {
     constructor(props) {
         super(props);
 
-        let diffGraph = this.props.graphData.diff_graph; 
-        let num_of_partitions = Object.keys(diffGraph).length;
+        let parsedGraph = Utils.parseGraphJSONFile(this.props.graphData, false);
 
-        let default_nodes = []; 
-        let common = [];
-        for(let i = 0; i < num_of_partitions; i++) {
-            common = [].concat(common, diffGraph[i].common);
-            default_nodes = [].concat(default_nodes, this.setUpPartitions(diffGraph[i].common, i, 0, true), this.setUpPartitions(diffGraph[i].graph_one_diff, i, 1, false), 
-                                    this.setUpPartitions(diffGraph[i].graph_two_diff, i, 2, false));
-            default_nodes.push(
-                {
-                    data: {
-                        id: `partition${i}`,
-                        label: `partition${i}`,
-                        background_color: 'white',
-                        colored: false,
-                        element_type: 'partition'
-                    } 
-                },
-                {
-                    data: {
-                        id: `core${i}`, 
-                        label: `core${i}`,
-                        parent: `partition${i}`,
-                        background_color: 'grey',
-                        colored: true,
-                        element_type: 'core'
-                    } 
-                },
-                {
-                    data: {
-                        id: `invisible_node${i}`,
-                        label: `invisible_node${i}`,
-                        background_color: 'grey',
-                        colored: false,
-                        element_type: 'invisible',
-                        showMinusSign: false, 
-                        partition: `partition${i}`,
-                        parent: `core${i}`
-                    },
-                } 
-            )
-        }
-
-        let colors = ['#ff7f50', '#9b59b6', '#9fe2bf', '#40e0d0', '#6495ed', '#c4c4c4'];
-        let relationshipTypes = {};
-        let i = 0;
-
-        for (const [key, value] of Object.entries(this.props.graphData)) {
-            if("links" in this.props.graphData[key]) {
-                relationshipTypes[key] = {
-                    checked: false,
-                    links: value["links"],
-                    minimumEdgeWeight: 0,
-                    color: colors[i]
-                }
-                i++;
-            }
-        }
-        
         this.state = {
-            num_of_partitions: num_of_partitions,
-            nodes: default_nodes,
-            common_elements: common,
-            relationshipTypes: relationshipTypes
+            nodes: parsedGraph[0],
+            common_elements: parsedGraph[1],
+            num_of_partitions: parsedGraph[2],
+            relationshipTypes: parsedGraph[3]
         }
 
         this.ref = React.createRef();
@@ -126,10 +68,22 @@ class Decompositions extends React.Component {
                         'text-halign': 'center',
                         'background-color': function(node) {
                             if (node.data("colored"))
-                                return "#e9e9e9";
+                                return "#f9f9f9";
                             else
                                 return "white";
                         },
+                        'border-style': function(node) {
+                            if (node.data("colored"))
+                                return "solid";
+                            else
+                                return "double";
+                        },
+                        'min-width': function(node) {
+                            return node.data('width');
+                        },
+                        'min-height': function(node) {
+                            return node.data('height');
+                        }
                     }
                 },
                 {
@@ -194,54 +148,93 @@ class Decompositions extends React.Component {
             }
         });
 
-        let partitions = [];
         for(let i = 0; i < num_of_partitions; i++) {
-            partitions.push(cy.elements().getElementById(`partition${i}`));
-        }
-        let previous_graph_positions = null;
-
-        let lastCustomRenderedState = storeProvider.getStore().getState().custom_graph;
-        if(this._canLoadCustomStateGraph(lastCustomRenderedState)) {
-            previous_graph_positions = this._getLastRenderedNodePositions(lastCustomRenderedState.graph);
-            for(let i = 0; i < num_of_partitions; i++) {
-                cy.elements().getElementById(`core${i}`).position(
-                    {
-                        x: previous_graph_positions[`partition${i}`].x,
-                        y: previous_graph_positions[`partition${i}`].y
-                    }
-                );
-            }
-        } else {
-            cy.collection(partitions).layout({
-                name: 'cose',
-                fit: true,
-                randomize: true
+            let previous_pos_x = 0; 
+            let previous_pos_y = 0;   
+            let ele = cy.getElementById(`partition${i}`);
+            ele.children().layout({
+                name: 'grid',
+                boundingBox: {
+                    x1: ele.position().x - ele.data().width/2,
+                    x2: ele.position().x + ele.data().width/2,
+                    y1: ele.position().y - ele.data().height/2,
+                    y2: ele.position().y + ele.data().height/2 
+                },
+                condense: false
             }).run();
-        }
 
-        for(let i = 0; i < num_of_partitions; i++) {
-            if(!this._canLoadCustomStateGraph(lastCustomRenderedState)) {
-                this._renderCocentricLayout(
-                    cy.collection(partitions[i].children())
-                        .union(cy.elements().getElementById(`core${i}`).children()),
-                    cy.elements().getElementById(`core${i}`).position()
-                );
-            } else {
-                this._renderCocentricLayout(
-                    cy.collection(partitions[i].children())
-                        .union(cy.elements().getElementById(`core${i}`).children()),
-                    {
-                        x: previous_graph_positions[`partition${i}`].x,
-                        y: previous_graph_positions[`partition${i}`].y
+            for(let j = 1; j <= 2; j++) {
+                ele = cy.getElementById(`diff${i}_graph_${j}`);
+                ele.children().layout({
+                    name: 'grid',
+                    boundingBox: {
+                        x1: ele.position().x - ele.data().width/2,
+                        x2: ele.position().x + ele.data().width/2,
+                        y1: ele.position().y - ele.data().height/2,
+                        y2: ele.position().y + ele.data().height/2 
                     }
-                );
+                }).run();
+
+                let ele_partition = cy.getElementById(`partition${i}`);
+
+                ele.position({
+                    x: ele_partition.position().x,
+                    y: ele_partition.position().y 
+                })
+
+                ele.shift({
+                    x: (j === 1) ? (ele_partition.position().x - ele.boundingBox().x2): 
+                                    (previous_pos_x - ele.boundingBox().x1),
+                    y: (j === 1) ? ele_partition.boundingBox().h / 1.25: previous_pos_y - ele.boundingBox().y1,
+                })
+                previous_pos_x = ele.boundingBox().x2;
+                previous_pos_y = ele.boundingBox().y1;
             }
         }
+        
+        // let previous_graph_positions = null;
+        // let lastCustomRenderedState = storeProvider.getStore().getState().custom_graph;
+        // if(this._canLoadCustomStateGraph(lastCustomRenderedState)) {
+        //     previous_graph_positions = this._getLastRenderedNodePositions(lastCustomRenderedState.graph);
+        //     for(let i = 0; i < num_of_partitions; i++) {
+        //         cy.elements().getElementById(`core${i}`).position(
+        //             {
+        //                 x: previous_graph_positions[`partition${i}`].x,
+        //                 y: previous_graph_positions[`partition${i}`].y
+        //             }
+        //         );
+        //     }
+        // } else {
+        //     cy.collection(partitions).layout({
+        //         name: 'cose',
+        //         fit: true,
+        //         randomize: true
+        //     }).run();
+        // }
 
-        if(this._canLoadCustomStateGraph(lastCustomRenderedState)) {
-            cy.pan(lastCustomRenderedState.graph.pan);
-            cy.zoom(lastCustomRenderedState.graph.zoom);
-        }
+        // for(let i = 0; i < num_of_partitions; i++) {
+        //     if(!this._canLoadCustomStateGraph(lastCustomRenderedState)) {
+        //         this._renderCocentricLayout(
+        //             cy.collection(partitions[i].children())
+        //                 .union(cy.elements().getElementById(`core${i}`).children()),
+        //             cy.elements().getElementById(`core${i}`).position()
+        //         );
+        //     } else {
+        //         this._renderCocentricLayout(
+        //             cy.collection(partitions[i].children())
+        //                 .union(cy.elements().getElementById(`core${i}`).children()),
+        //             {
+        //                 x: previous_graph_positions[`partition${i}`].x,
+        //                 y: previous_graph_positions[`partition${i}`].y
+        //             }
+        //         );
+        //     }
+        // }
+
+        // if(this._canLoadCustomStateGraph(lastCustomRenderedState)) {
+        //     cy.pan(lastCustomRenderedState.graph.pan);
+        //     cy.zoom(lastCustomRenderedState.graph.zoom);
+        // }
 
         /*
             All event handlers when interacting with the graph. 
@@ -290,41 +283,6 @@ class Decompositions extends React.Component {
         return true;
     }
 
-    _renderCocentricLayout(elementCollection, centerElementPosition) {
-        let w = window.innerWidth;
-
-        elementCollection.layout({
-            name: 'concentric',
-            spacingFactor: 3.5,
-            boundingBox: {
-                x1: centerElementPosition.x - w/2,
-                x2: centerElementPosition.x + w/2,
-                y1: centerElementPosition.y - w/2,
-                y2: centerElementPosition.y + w/2 
-            },
-            fit: true,
-            concentric: function(n) {
-                switch(n.data().element_type) {
-                    case "invisible":
-                        return 3;
-                    case "common": 
-                        return 2;
-                    case "graph_1":
-                        return 0;
-                    case "graph_2": 
-                        return 1;
-                    default:
-                        return 2;
-                }
-            },
-            levelWidth: function() {
-                return 1;
-            }, 
-            minNodeSpacing: 10,
-            equidistant: false, 
-        }).run();
-    }
-
     // Do this in a different place.
     getEdgeDependencies(graph, common_elements, graph_type, minimumEdgeWeight, color) {
         let edge_dependencies = [];
@@ -357,28 +315,6 @@ class Decompositions extends React.Component {
         }
         return max_edge_weight.toFixed(0);
     }
-
-    // Do this is a different place as well. 
-    setUpPartitions(graph_nodes, partition_num, graph_num, isCoreElement) {  
-        let color = 'grey';
-        let element_list = [];
-
-        for(let i = 0; i < graph_nodes.length; i++) {
-            let classNode = graph_nodes[i];
-            element_list.push({
-                group: 'nodes', 
-                data: {
-                    id: `graph_${graph_num}_${classNode}`, 
-                    label: classNode,
-                    element_type: (isCoreElement) ? 'common' : `graph_${graph_num}`,
-                    parent: (isCoreElement) ? `core${partition_num}` : `partition${partition_num}`,
-                    background_color: color
-                } 
-            });
-        }
-
-        return element_list;
-    };
 
     // When the user clicks on a tab it changes the relationship type.
     onRelationshipTypeChange(relationshipType) {
@@ -444,7 +380,8 @@ class Decompositions extends React.Component {
 
         for(let i = 0; i < num_of_partitions; i++) {
             selected_elements = selected_elements.union(cy.elements().getElementById(`partition${i}`))
-            selected_elements = selected_elements.union(cy.elements().getElementById(`core${i}`))
+            selected_elements = selected_elements.union(cy.elements().getElementById(`diff${i}_graph_1`))
+            selected_elements = selected_elements.union(cy.elements().getElementById(`diff${i}_graph_2`))
         }
 
         let unselected_elements = cy.elements().not(sel).difference(selected_elements);
@@ -464,7 +401,7 @@ class Decompositions extends React.Component {
             sel.ungrabify();
         } else if (sel.data().element_type === 'invisible') {
             sel.ungrabify();
-        }
+        } 
     }
 
     onToggleSwitch() {

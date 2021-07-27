@@ -7,7 +7,6 @@ import 'bootstrap/dist/js/bootstrap.js';
 import edgehandles from 'cytoscape-edgehandles';
 import automove from 'cytoscape-automove';
 import nodeHtmlLabel from 'cytoscape-node-html-label';
-import Metrics from '../Metrics/Metrics'
 import storeProvider from './../../storeProvider';
 import {updateCustomGraph} from './../../Actions';
 import {connect} from 'react-redux';
@@ -31,60 +30,15 @@ class CustomGraph extends React.Component {
     constructor(props) {
         super(props);
 
-        let diffGraph = this.props.graphData.diff_graph; 
-        let num_of_partitions = Object.keys(diffGraph).length;
-
-        let default_nodes = []; 
-        let common = [];
-
-        for(let i = 0; i < num_of_partitions; i++) {
-            common = [].concat(common, diffGraph[i].common);
-            default_nodes = [].concat(
-                default_nodes, 
-                this.setUpPartitions(diffGraph[i].common, i, 0, true), 
-                this.setUpPartitions(diffGraph[i].graph_one_diff, i, 1, false), 
-                this.setUpPartitions(diffGraph[i].graph_two_diff, i, 2, false), 
-                [{
-                    data: {
-                        id: `partition${i}`,
-                        label: `partition${i}`,
-                        background_color: 'grey',
-                        colored: true,
-                        element_type: 'partition',
-                        showMinusSign: false 
-                    },
-                },
-                {
-                    data: {
-                        id: `invisible_node${i}`,
-                        label: `invisible_node${i}`,
-                        background_color: 'grey',
-                        colored: false,
-                        element_type: 'invisible',
-                        showMinusSign: false, 
-                        partition: `partition${i}`,
-                        parent: `partition${i}`
-                    },
-                }] 
-            );
-        }
-
-        let relationshipTypes = {}
-
-        for (const [key, value] of Object.entries(this.props.graphData)) {
-            if("links" in this.props.graphData[key]) {
-                relationshipTypes[key] = {
-                    checked: false,
-                    links: this.props.graphData[key]["links"]
-                }
-            }
-        }
+        let parsedGraph = Utils.parseGraphJSONFile(this.props.graphData, true);
 
         this.state = {
+            nodes: parsedGraph[0],
+            common_elements: parsedGraph[1],
+            num_of_partitions: parsedGraph[2],
+            relationshipTypes: parsedGraph[3],
+            relationshipTypeTable: [],
             num_of_decompositions: 2,
-            num_of_partitions: num_of_partitions,
-            nodes: default_nodes,
-            common_elements: common,
             evolutionaryHistory: {
                 table: [],
                 nodeMoveHistory: {}
@@ -92,8 +46,6 @@ class CustomGraph extends React.Component {
             elementsSelectedOnTable: [],
             removed_node: null,
             tableBodyRenderKey: 0,
-            relationshipTypes: relationshipTypes,
-            relationshipTypeTable: []
         }
 
         this.ref = React.createRef();
@@ -133,7 +85,24 @@ class CustomGraph extends React.Component {
                         'padding-right': '10px',
                         'text-valign': 'top',
                         'text-halign': 'center',
-                        'background-color': "#e9e9e9",
+                        'background-color': function(node) {
+                            if (node.data("colored"))
+                                return "#f9f9f9";
+                            else
+                                return "white";
+                        },
+                        'border-style': function(node) {
+                            if (node.data("colored"))
+                                return "solid";
+                            else
+                                return "double";
+                        },
+                        'min-width': function(node) {
+                            return node.data('width');
+                        },
+                        'min-height': function(node) {
+                            return node.data('height');
+                        }
                     }
                 },
                 {
@@ -224,15 +193,15 @@ class CustomGraph extends React.Component {
         let loadedEvolutionaryHistory;
         
         // If the custom graph hasn't been loaded yet then load the positions of the current diff-graph. 
-        if(Object.keys(storeProvider.getStore().getState().custom_graph).length === 0) {
-            lastRenderedState = storeProvider.getStore().getState().diff_graph;
+        // if(Object.keys(storeProvider.getStore().getState().custom_graph).length === 0) {
+        //     lastRenderedState = storeProvider.getStore().getState().diff_graph;
             loadedEvolutionaryHistory = evolutionaryHistory;
-        } else {
-            lastRenderedState = storeProvider.getStore().getState().custom_graph.graph;
-            loadedEvolutionaryHistory = storeProvider.getStore().getState().custom_graph.evolutionaryHistory;
-            cy.json(lastRenderedState);
-            lastRenderedState = storeProvider.getStore().getState().diff_graph;
-        }
+        // } else {
+        //     lastRenderedState = storeProvider.getStore().getState().custom_graph.graph;
+            // loadedEvolutionaryHistory = storeProvider.getStore().getState().custom_graph.evolutionaryHistory;
+        //     cy.json(lastRenderedState);
+        //     lastRenderedState = storeProvider.getStore().getState().diff_graph;
+        // }
 
         /*
             Removes additional red nodes that were added because of the edge handles functionality. 
@@ -241,35 +210,78 @@ class CustomGraph extends React.Component {
             return (ele.data().element_type === undefined);
         });
         cy.remove(collection);
+        let partitions = [];
 
-        let lastRenderedNodePositions = this._getLastRenderedNodePositions(lastRenderedState);
         for(let i = 0; i < num_of_partitions; i++) {
-            cy.getElementById(`partition${i}`).position(
-                {
-                    x: lastRenderedNodePositions[`core${i}`].x,
-                    y: lastRenderedNodePositions[`core${i}`].y
-                }
-            )
-            this._renderCocentricLayout(
-                cy.getElementById(`partition${i}`).union(
-                    cy.elements().filter((ele)=> {
-                        return ele.data().partition === `partition${i}`;
-                    })
-                ),
-                {
-                    x: lastRenderedNodePositions[`core${i}`].x,
-                    y: lastRenderedNodePositions[`core${i}`].y
-                }
-            )
+            partitions.push(`partition${i}`);
+
+            let previous_pos_x = 0; 
+            let previous_pos_y = 0;   
+            let ele = cy.getElementById(`partition${i}`);
+            ele.children().layout({
+                name: 'grid',
+                boundingBox: {
+                    x1: ele.position().x - ele.data().width/2,
+                    x2: ele.position().x + ele.data().width/2,
+                    y1: ele.position().y - ele.data().height/2,
+                    y2: ele.position().y + ele.data().height/2 
+                },
+                condense: false
+            }).run();
+
+            for(let j = 1; j <= 2; j++) {
+                ele = cy.getElementById(`diff${i}_graph_${j}`);
+                ele.children().layout({
+                    name: 'grid',
+                    boundingBox: {
+                        x1: ele.position().x - ele.data().width/2,
+                        x2: ele.position().x + ele.data().width/2,
+                        y1: ele.position().y - ele.data().height/2,
+                        y2: ele.position().y + ele.data().height/2 
+                    }
+                }).run();
+
+                let ele_partition = cy.getElementById(`partition${i}`);
+
+                ele.position({
+                    x: ele_partition.position().x,
+                    y: ele_partition.position().y 
+                })
+
+                ele.shift({
+                    x: (j === 1) ? (ele_partition.position().x - ele.boundingBox().x2): 
+                                    (previous_pos_x - ele.boundingBox().x1),
+                    y: (j === 1) ? ele_partition.boundingBox().h / 1.25: previous_pos_y - ele.boundingBox().y1,
+                })
+                previous_pos_x = ele.boundingBox().x2;
+                previous_pos_y = ele.boundingBox().y1;
+            }
         }
 
-        cy.pan(lastRenderedState.pan);
-        cy.zoom(lastRenderedState.zoom);
+        // let lastRenderedNodePositions = this._getLastRenderedNodePositions(lastRenderedState);
+        // for(let i = 0; i < num_of_partitions; i++) {
+        //     cy.getElementById(`partition${i}`).position(
+        //         {
+        //             x: lastRenderedNodePositions[`partition${i}`].x,
+        //             y: lastRenderedNodePositions[`partition${i}`].y
+        //         }
+        //     )
+            // for(let j = 1; i <= num_of_decompositions; j++) {
+            //     cy.getElementById(`core${i}_${j}`).position(
+            //         {
+            //             x: lastRenderedNodePositions[`core${i}_${j}`].x,
+            //             y: lastRenderedNodePositions[`core${i}_${j}`].y
+            //         }
+            //     )
+            // }
+        // }
+
+        // cy.pan(lastRenderedState.pan);
+        // cy.zoom(lastRenderedState.zoom);
 
         let eh = cy.edgehandles({
             snap: false
         });
-        let partitions = [];
         
         cy.nodeHtmlLabel([{
                 query: 'node',
@@ -285,18 +297,6 @@ class CustomGraph extends React.Component {
                     }
                 }
         }]);
-
-        for(let i = 0; i < num_of_partitions; i++) {
-            cy.automove({
-                nodesMatching: 
-                    cy.elements().filter((ele)=> {
-                        return ele.data().partition === `partition${i}`;
-                    }),
-                reposition: 'drag',
-                dragWith: cy.elements().getElementById(`partition${i}`)
-            });
-            partitions.push(`partition${i}`);
-        }
 
         /*
             All event handlers.
@@ -346,7 +346,6 @@ class CustomGraph extends React.Component {
             }
             )
 
-
         this.setState({
             cy: cy,
             partitions: partitions,
@@ -354,39 +353,6 @@ class CustomGraph extends React.Component {
             relationshipTypeTable: relationshipTypeTable
         });
     }
-
-    setUpPartitions = (graph_nodes, partition_num, graph_num, isCoreElement) => {  
-            let color;
-            let element_list = [];
-
-            if(graph_num === 1) {
-                color = '#4169e1';
-            } else if (graph_num === 2) {
-                color = '#e9253e';
-            } else {
-                color = 'grey';
-            }
-
-            for(let i = 0; i < graph_nodes.length; i++) {
-                let classNode = graph_nodes[i];
-                element_list.push(
-                    {
-                        group: 'nodes', 
-                        data: {
-                            id: `graph_${graph_num}_${classNode}`, 
-                            label: classNode,
-                            element_type: (isCoreElement) ? 'common' : `graph_${graph_num}`,
-                            parent: (isCoreElement) ? `partition${partition_num}` : null,
-                            partition: `partition${partition_num}`,
-                            background_color: color,
-                            colored: true,
-                            showMinusSign: false
-                        }
-                    }
-                );
-            }
-            return element_list;
-    };
 
     _getLastRenderedNodePositions(lastRenderedGraph) {
         let previous_graph_positions = {};
@@ -421,15 +387,16 @@ class CustomGraph extends React.Component {
         } = this.state; 
 
         let sel = ele.target;
-        let selected_elements = cy.collection().union(sel); 
+        let selected_elements = cy.collection([sel, sel.parent()]); 
+        console.log(selected_elements);
 
         switch(sel.data().element_type) {
             case 'common*':
                 if(sel.data().prev_element_type !== 'common') {
                     for(let i = 0; i < num_of_decompositions; i++) {
                         let graph_node = cy.getElementById(`graph_${i+1}_${sel.id()}`)
-                        selected_elements = selected_elements.union(graph_node).union(
-                            cy.getElementById(graph_node.data().partition)
+                        selected_elements = selected_elements.union(
+                            cy.collection([graph_node, cy.getElementById(graph_node.data().partition), graph_node.parent()])
                         );
                         cy.add([{
                             group: 'edges',
@@ -440,7 +407,7 @@ class CustomGraph extends React.Component {
                         }])
                     }
                 } else {
-                    selected_elements = selected_elements.union(cy.elements().getElementById(sel.data().prev_partition));
+                    selected_elements = selected_elements.union(cy.getElementById(sel.data().prev_partition));
                     cy.add([{
                         group: 'edges',
                         data: {
@@ -449,6 +416,11 @@ class CustomGraph extends React.Component {
                         }
                     }]);
                 }
+                break;
+            case 'diff_graph':
+                selected_elements = selected_elements.union(sel.children()).union(
+                    cy.getElementById(sel.data().partition)
+                );
                 break;
             case 'partition':
                 selected_elements = selected_elements.union(sel.children()).union(
@@ -461,10 +433,10 @@ class CustomGraph extends React.Component {
                 selected_elements = selected_elements.union(cy.getElementById(sel.data().partition)); 
                 break;
             default: 
-                for(let i = 0; i < num_of_decompositions; i++) {
-                    let graph_node = cy.getElementById(`graph_${i+1}_${sel.data().label}`)
-                    selected_elements = selected_elements.union(graph_node).union(
-                        cy.getElementById(graph_node.data().partition)
+                for(let i = 1; i <= num_of_decompositions; i++) {
+                    let graph_node = cy.getElementById(`graph_${i}_${sel.data().label}`)
+                    selected_elements = selected_elements.union(
+                        cy.collection([graph_node, cy.getElementById(graph_node.data().partition), graph_node.parent()])
                     );
                 }
         }
@@ -508,7 +480,7 @@ class CustomGraph extends React.Component {
         const nodeMoveHistory = evolutionaryHistory.nodeMoveHistory;
 
         let selected_elements = cy.collection(); 
-        let sel = cy.elements().getElementById(movedElements[0].data().label);
+        let sel = cy.getElementById(movedElements[0].data().label);
         let index = this._findIndexInMoveHistory(movedElements);
         let removed_node = null;
 
@@ -528,8 +500,8 @@ class CustomGraph extends React.Component {
             if(sel.data().prev_element_type !== 'common') {
                 for(let i = 0; i < num_of_decompositions; i++) {
                     let graph_node = cy.getElementById(`graph_${i+1}_${sel.id()}`)
-                    selected_elements = selected_elements.union(graph_node).union(
-                        cy.getElementById(graph_node.data().partition)
+                    selected_elements = selected_elements.union(
+                        cy.collection([graph_node, cy.getElementById(graph_node.data().partition), graph_node.parent()])
                     );
                     cy.add([{
                         group: 'edges',
@@ -593,12 +565,6 @@ class CustomGraph extends React.Component {
             !sourceNode.hasClass('deactivate') &&
             sourceNode.data().element_type !== 'partition') 
             {
-            // Implement a way to add an additional partition. 
-            cy.nodes().forEach((ele) => {
-                if(ele.data().element_type === 'invisible') {
-                    ele.ungrabify();
-                }
-            })
 
             let prev_element = sourceNode.data().element_type;
             let prev_partition = sourceNode.data().partition; 
@@ -608,11 +574,6 @@ class CustomGraph extends React.Component {
                 prev_element = sourceNode.data().prev_element_type;
                 prev_partition = sourceNode.data().prev_partition;
             }
-
-            const target_pos = {
-                x: cy.getElementById(`invisible_node${targetNode.id().match('[0-9]')}`).position().x,
-                y: cy.getElementById(`invisible_node${targetNode.id().match('[0-9]')}`).position().y,
-            }; 
 
             cy.add({
                 group: 'nodes',
@@ -629,11 +590,6 @@ class CustomGraph extends React.Component {
                 },
             });
 
-            let partitions = [ {
-                label: targetNode.id(), 
-                position: target_pos
-            }];
-
             // Should also hide common elements if they get moved. 
             if(this._isNodeCommonBetweenDecompositions(sourceNode.data().element_type)) {
                 cy.remove(sourceNode);
@@ -641,30 +597,9 @@ class CustomGraph extends React.Component {
                 for(let i = 0; i < num_of_decompositions; i++) {
                     let diff_graph_node = cy.getElementById(`graph_${i+1}_${sourceNode.data().label}`)
                     diff_graph_node.data().showMinusSign = true;
-                    let diff_graph_node_partition = diff_graph_node.data().partition;
-                    if(targetNode.id() !== diff_graph_node_partition) {
-                        const partition_position = {
-                            x: cy.getElementById(`invisible_node${diff_graph_node_partition.match('[0-9]')}`).position().x,
-                            y: cy.getElementById(`invisible_node${diff_graph_node_partition.match('[0-9]')}`).position().y,
-                        }
-                        partitions.push({
-                            label: diff_graph_node.data().partition, 
-                            position: partition_position
-                        });
-                    }
+                    // let diff_graph_node_partition = diff_graph_node.data().partition;
                 }
             }
-
-            for(let i in partitions){
-                this._renderCocentricLayout(
-                    cy.elements().filter((ele)=> {
-                        return ele.data().partition === partitions[i].label;
-                    }),
-                    partitions[i].position,
-                )
-            }
-
-            cy.elements().grabify();
 
             this.setState((prevState) => ({
                 evolutionaryHistory: {
@@ -773,16 +708,6 @@ class CustomGraph extends React.Component {
                 }
             }
             nodeMoveHistory[movedElement[0].data().label].splice(index, 1);
-
-            for(let i in partitions){
-                this._renderCocentricLayout(
-                    cy.elements().filter((ele)=> {
-                        return ele.data().partition === partitions[i];
-                    }),
-                    cy.elements().getElementById(partitions[i]).position(),
-                )
-            }
-
         }
 
         cy.pan(pan);
@@ -798,45 +723,6 @@ class CustomGraph extends React.Component {
             elementsSelectedOnTable: [],
             tableBodyRenderKey: tableBodyRenderKey + 1
         }));
-    }
-
-    _renderCocentricLayout(elementCollection, centerElementPosition) {
-        const {
-            cy
-        } = this.state;
-
-        let w = window.innerWidth;
-
-        elementCollection.layout({
-            name: 'concentric',
-            spacingFactor: 3.5,
-            boundingBox: {
-                x1: centerElementPosition.x - w/2,
-                x2: centerElementPosition.x + w/2,
-                y1: centerElementPosition.y - w/2,
-                y2: centerElementPosition.y + w/2 
-            },
-            fit: true,
-            concentric: function(n) {
-                switch(n.data().element_type) {
-                    case "common": 
-                        return 2;
-                    case "common*":
-                        return 2;
-                    case "graph_1":
-                        return 0;
-                    case "graph_2": 
-                        return 1;
-                    default:
-                        return 3;
-                }
-            },
-            levelWidth: function() {
-                return 1;
-            }, 
-            minNodeSpacing: 10,
-            equidistant: false, 
-        }).run();
     }
 
     _printEvolutionaryHistoryText(moved_element) {
@@ -997,7 +883,7 @@ class CustomGraph extends React.Component {
                                     </TableCell>
                                     {
                                         [...Array(num_of_decompositions)].map((x, i) => 
-                                            <TableCell>
+                                            <TableCell style={{'text-color': '#4169e1'}}>
                                                 V{i+1}
                                             </TableCell>
                                         )
