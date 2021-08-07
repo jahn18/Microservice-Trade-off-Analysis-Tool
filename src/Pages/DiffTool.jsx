@@ -32,6 +32,17 @@ export default class DiffTool extends React.Component {
             selectedRelationshipType
         } = this.state;
 
+        let colors = {
+            decomposition_colors: ['#F4145B', '#495CBE'],
+            relationship_type_colors: ['#ff7f50', '#b19cd9', '#77dd77', '#F9E79F', '#67E3FF', '#c4c4c4']
+        }
+        // Sets all the colors for the metrics table, toggles, and nodes in the Custom View. 
+        const styles = theme => ({
+            indicator: {
+              backgroundColor: 'white',
+            },
+        })
+
         return (
             <div>
                 <Paper square>
@@ -43,16 +54,25 @@ export default class DiffTool extends React.Component {
                             this.setState({selectedRelationshipType: newValue});
                         }}
                     >
-                        <Tab label="Version 1 (by Static)" value="static"/>
-                        <Tab label="Version 2 (by Class name)" value="class name"/>
-                        <Tab label="custom" value="custom"/>
+                        <Tab 
+                            label="V1 (by Static)" 
+                            value="static"
+                        />
+                        <Tab 
+                            label="V2 (by Class name)" 
+                            value="class name"
+                        />
+                        <Tab style={{color: 'grey'}} 
+                            label="custom" 
+                            value="custom"
+                        />
                     </Tabs>
                 </Paper>
                 {
-                    (selectedRelationshipType !== 'custom') && <Decompositions graphData={graphData} relationshipType={selectedRelationshipType}/>
+                    (selectedRelationshipType !== 'custom') && <Decompositions graphData={graphData} colors={colors} relationshipType={selectedRelationshipType}/>
                 }
                 {
-                    (selectedRelationshipType === 'custom') && <CustomGraph graphData={graphData} />
+                    (selectedRelationshipType === 'custom') && <CustomGraph graphData={graphData} colors={colors}/>
                 }
             </div>
         );

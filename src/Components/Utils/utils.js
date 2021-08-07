@@ -53,7 +53,7 @@ export default class Utils {
      *          list[2] has the total number of partitions between all decompositions, and 
      *          list[3] contains all the edges in the graph with respect to the relationship-type.
      */
-    static parseGraphJSONFile = (json_graph, showColor) => {
+    static parseJSONGraphFile = (json_graph, colors) => {
         let all_elements = []; 
         let common_elements = [];
 
@@ -61,83 +61,54 @@ export default class Utils {
         for(let i = 0; i < num_of_partitions; i++) {
             common_elements = [].concat(common_elements, json_graph.diff_graph[i].common);
             all_elements = [].concat(all_elements, 
-                                    this.parseNodes(json_graph.diff_graph[i].common, i, 0, false, showColor), 
-                                    this.parseNodes(json_graph.diff_graph[i].graph_one_diff, i, 1, true, showColor), 
-                                    this.parseNodes(json_graph.diff_graph[i].graph_two_diff, i, 2, true, showColor));
+                                    this.getJSONNodeElements(json_graph.diff_graph[i].common, i, 0, false), 
+                                    this.getJSONNodeElements(json_graph.diff_graph[i].graph_1_diff, i, 1, true), 
+                                    this.getJSONNodeElements(json_graph.diff_graph[i].graph_2_diff, i, 2, true), 
+                                    );
             all_elements.push(
                 {
                     data: {
                         id: `partition${i}`,
-                        label: `partition${i}`,
+                        label: `P${i + 1}`,
                         background_color: 'white',
                         colored: false,
                         element_type: 'partition',
-                        width: 200,
-                        height: 350
+                        width: 0,
+                        height: 0,
+                        showMinusSign: false,
                     } 
-                },
-                {
-                    data: {
-                        id: `diff${i}_graph_1`, 
-                        background_color: 'grey',
-                        colored: true,
-                        element_type: 'diff_graph',
-                        width: 100,
-                        height: 350,
-                        parent: `partition${i}`,
-                        partition: `partition${i}`
-                    } 
-                },
-                {
-                    data: {
-                        id: `diff${i}_graph_2`, 
-                        background_color: 'grey',
-                        colored: true,
-                        element_type: 'diff_graph',
-                        width: 100,
-                        height: 350,
-                        parent: `partition${i}`,
-                        partition: `partition${i}`
-                    } 
-                },
-                {
-                    data: {
-                        id: `invisible_node${i}_diff_graph_1`,
-                        label: `invisible_node${i}`,
-                        background_color: 'grey',
-                        colored: false,
-                        element_type: 'invisible',
-                        showMinusSign: false, 
-                        partition: `partition${i}`,
-                        parent: `diff${i}_graph_1`
-                    },
-                }, 
-                {
-                    data: {
-                        id: `invisible_node${i}_diff_graph_2`,
-                        label: `invisible_node${i}`,
-                        background_color: 'grey',
-                        colored: false,
-                        element_type: 'invisible',
-                        showMinusSign: false, 
-                        partition: `partition${i}`,
-                        parent: `diff${i}_graph_2`
-                    },
-                }
-            )
+                })
+
+            if(json_graph.diff_graph[i].common.length === 0) { 
+                all_elements.push(
+                    {
+                        data: {
+                            id: `invisible_node_partition${i}`,
+                            label: `invisible_node${i}`,
+                            background_color: 'grey',
+                            colored: false,
+                            element_type: 'invisible',
+                            showminussign: false, 
+                            partition: `partition${i}`,
+                            parent: `partition${i}`
+                        },
+                    }, 
+                )
+            }
         }
 
-        let colors = ['#ff7f50', '#9b59b6', '#9fe2bf', '#40e0d0', '#6495ed', '#c4c4c4'];
         let relationshipTypes = {};
 
+        let i = 0;
         for (const [key, value] of Object.entries(json_graph)) {
             if("links" in json_graph[key]) {
                 relationshipTypes[key] = {
                     checked: false,
                     links: value["links"],
                     minimumEdgeWeight: 0,
-                    color: colors.shift()
+                    color: colors.relationship_type_colors[i],
                 }
+                i++;
             }
         }
 
@@ -150,28 +121,28 @@ export default class Utils {
      * 
      * @returns A list of elements.
      */
-    static parseNodes = (graph_nodes, partition_num, graph_num, isDiffElement, showColor) => { 
+    static getJSONNodeElements = (graph_list, partition_num, decomposition_version, isDiffElement) => { 
         let color = 'grey';
-
-        if(showColor) {
-            if(graph_num === 1) {
-                color = '#4169e1';
-            } else if (graph_num === 2) {
-                color = '#e9253e';
-            }
+        let decomposition_colors = ['#F4145B', '#495CBE'];
+        if(decomposition_version === 1) {
+            color = decomposition_colors[0];
+        } else if (decomposition_version === 2) {
+            color = decomposition_colors[1];
         }
 
         let element_list = [];
 
-        for(let i = 0; i < graph_nodes.length; i++) {
-            let classNode = graph_nodes[i];
+        for(let i = 0; i < graph_list.length; i++) {
+            let classNode = graph_list[i];
             element_list.push({
                 group: 'nodes', 
                 data: {
-                    id: `graph_${graph_num}_${classNode}`, 
+                    id: `graph_${decomposition_version}_${classNode}`, 
                     label: classNode,
-                    element_type: (isDiffElement) ? `graph_${graph_num}`: 'common',
-                    parent: (isDiffElement) ? `diff${partition_num}_graph_${graph_num}`: `partition${partition_num}`,
+                    element_type: (isDiffElement) ? 'diff': 'common',
+                    // parent: (isDiffElement) ? `graph${partition_num}_${decomposition_version}_diff`: `partition${partition_num}`,
+                    parent: `partition${partition_num}`,
+                    version: decomposition_version,
                     background_color: color,
                     colored: true,
                     showMinusSign: false,
@@ -181,5 +152,4 @@ export default class Utils {
         }
         return element_list; 
     }
-
 }
