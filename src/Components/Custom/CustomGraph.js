@@ -314,7 +314,7 @@ class CustomGraph extends React.Component {
             this.disableHandleAndInteraction(e.target, eh);
             this.onClickedNode(e)
         }); 
-        cy.on('click', (e) => this.onUnclickNode(e));
+        cy.on('click', (e) => this.onUnhighlightNodes(e));
         cy.on('mouseover', 'node', (e) => this.disableHandleAndInteraction(e.target, eh));
         cy.on('mouseout', 'node', (e) => { 
             if(e.target.data().element_type !== undefined) {
@@ -446,6 +446,7 @@ class CustomGraph extends React.Component {
                         }
                     }]);
                 }
+                selected_elements = selected_elements.union(sel.parent())
                 break;
             // case element_types.partition:
             //     selected_elements = selected_elements.union(sel.children()).union(
@@ -475,17 +476,17 @@ class CustomGraph extends React.Component {
         unselected_elements.addClass('deactivate');
     }
 
-    onUnclickNode() {
+    onUnhighlightNodes() {
         const {
-            cy,
-            removed_node
+            cy
+            // removed_node
         } = this.state;
 
-        if(removed_node !== null) {
-            let current_node = cy.elements().getElementById(removed_node.data().label);
-            cy.remove(current_node);
-            cy.add(removed_node);
-        }
+        // if(removed_node !== null) {
+        //     let current_node = cy.elements().getElementById(removed_node.data().label);
+        //     cy.remove(current_node);
+        //     cy.add(removed_node);
+        // }
 
         cy.elements().forEach((ele) => {
             ele.removeClass('deactivate');
@@ -496,7 +497,7 @@ class CustomGraph extends React.Component {
         cy.remove('edge');
     }
 
-    highlightSelectedElements(movedElements) {
+    highlightSelectedElements(changeHistoryRowElementInfo) {
         let {
             cy,
             changeHistory,
@@ -504,38 +505,38 @@ class CustomGraph extends React.Component {
             element_types,
             elementsSelectedOnTable
         } = this.state; 
-        const nodeMoveHistory = changeHistory.nodeMoveHistory;
+        // const nodeMoveHistory = changeHistory.nodeMoveHistory;
 
-        let allElements = elementsSelectedOnTable.slice();
-        if(movedElements !== null && !allElements.includes(movedElements)) {
-            allElements.push(movedElements);
+        let selectedElementsInChangedHistory = elementsSelectedOnTable.slice();
+        if(changeHistoryRowElementInfo !== null && !selectedElementsInChangedHistory.includes(changeHistoryRowElementInfo)) {
+            selectedElementsInChangedHistory.push(changeHistoryRowElementInfo);
         }
         let selected_elements = cy.collection();
 
-        let removed_node = null;
-        for(let elements of allElements) {
-            let sel = cy.getElementById(elements[0].data('label'));
-            let index = this._findIndexInMoveHistory(elements);
+        // let removed_node = null;
+        for(let movedElementInfo of selectedElementsInChangedHistory) {
+            let sel = cy.getElementById(movedElementInfo.movedNode.data('label'));
+            // let index = this._findIndexInMoveHistory(movedElementInfo);
 
             /*
             * If this is not the most recent move for the current node, then temporarily save 
             * its position and show the move the user is currently hovering on.  
             */
-            if(!this._checkIfLastMoveForClass(elements)) {
-                removed_node = cy.remove(cy.getElementById(elements[0].data('label')));
-                sel = nodeMoveHistory[elements[0].data('label')][index + 1][0];
-                sel.position({
-                        x: cy.getElementById(sel.data('partition')).position('x'),
-                        y: cy.getElementById(sel.data('partition')).position('y')
-                });
-                selected_elements = selected_elements.union(sel);
-                cy.add(sel);
-            }
+            // if(!this._checkIfLastMoveForClass(movedElementInfo)) {
+            //     removed_node = cy.remove(cy.getElementById(movedElementInfo.movedNode.data('label')));
+            //     sel = nodeMoveHistory[movedElementInfo.movedNode.data('label')][index + 1];
+            //     sel.movedNode.position({
+            //         x: cy.getElementById(sel.movedNode.data('partition')).position('x') + sel.relative_position_in_partition.x,
+            //         y: cy.getElementById(sel.movedNode.data('partition')).position('y') + sel.relative_position_in_partition.y,
+            //     });
+            //     sel = sel.movedNode;
+            //     selected_elements = selected_elements.union(sel);
+            //     cy.add(sel);
+            // }
 
-            if(this._checkifFirstMoveForClass(elements)) {
-                selected_elements = selected_elements.union(sel).union(elements[1]); 
-                // REFACTOR THIS INTO A FUNCTION
-                if(sel.data().prev_element_type !== element_types.common_node) {
+            if(this._checkifFirstMoveForClass(movedElementInfo)) {
+                selected_elements = selected_elements.union(sel).union(movedElementInfo.targetPartition); 
+                if(sel.data('prev_element_type') === element_types.diff_node) {
                     for(let i = 1; i <= decomposition_attributes.num_of_decompositions; i++) {
                         let graph_node = cy.getElementById(`graph_${i}_${sel.id()}`)
                         selected_elements = selected_elements.union(
@@ -551,32 +552,32 @@ class CustomGraph extends React.Component {
                         }])
                     }
                 } else {
-                    selected_elements = selected_elements.union(cy.getElementById(sel.data().prev_partition));
+                    selected_elements = selected_elements.union(cy.getElementById(sel.data('prev_partition')));
                     cy.add([{
                         group: 'edges',
                         data: {
                             target: sel.id(),
-                            source: sel.data().prev_partition,
+                            source: sel.data('prev_partition'),
                             color: 'grey'
                         }
                     }]);
                 }
             } else {
-                let previous_node = nodeMoveHistory[elements[0].data('label')][index][0];
                 selected_elements = selected_elements.union(
-                                            previous_node
+                                            movedElementInfo.movedNode
                                         ).union(
-                                            elements[1]
+                                            movedElementInfo.targetPartition
                                         ).union(
-                                            cy.getElementById(previous_node.data('partition')
-                                        )); 
-                cy.add([{
+                                            movedElementInfo.movedNode.data('partition')
+                                        ); 
+                cy.add({
                     group: 'edges',
                     data: {
-                        target: previous_node.id(),
-                        source: previous_node.data('partition')
+                        target: movedElementInfo.movedNode.id(),
+                        source: movedElementInfo.movedNode.data('partition'),
+                        color: 'grey'
                     }
-                }]);
+                });
             }
         }
 
@@ -586,15 +587,15 @@ class CustomGraph extends React.Component {
 
         let unselected_elements = cy.elements().difference(selected_elements);
         unselected_elements.forEach((ele) => {
-            if(this._isNodeCommonBetweenDecompositions(ele.data().element_type)) {
+            if(this._isNodeCommonBetweenDecompositions(ele.data('element_type'))) {
                 ele.data().showMinusSign = true; 
             }
         })
         unselected_elements.addClass('deactivate');
 
-        this.setState({
-            removed_node: removed_node
-        })
+        // this.setState({
+        //     removed_node: removed_node
+        // })
     }
 
     updateChangeHistory(sourceNode, targetNode) {
@@ -611,13 +612,28 @@ class CustomGraph extends React.Component {
 
         this.setState((prevState) => ({
             changeHistory: {
-                table: [...prevState.changeHistory.table, [sourceNode, targetNode]],
+                table: [...prevState.changeHistory.table, 
+                    {
+                        movedNode: sourceNode, 
+                        targetPartition: targetNode
+                    }
+                ],
                 nodeMoveHistory: !(sourceNode.data().label in prevState.changeHistory.nodeMoveHistory) ? ({
                     ...prevState.changeHistory.nodeMoveHistory,
-                    [sourceNode.data().label]: [[sourceNode, targetNode, relative_center_position]]
+                    [sourceNode.data().label]: [{
+                        movedNode: sourceNode, 
+                        targetPartition: targetNode, 
+                        relative_position_in_partition: relative_center_position}
+                    ]
                 }) : ({
                     ...prevState.changeHistory.nodeMoveHistory,
-                    [sourceNode.data().label]: [...prevState.changeHistory.nodeMoveHistory[sourceNode.data().label], [sourceNode, targetNode, relative_center_position]]
+                    [sourceNode.data().label]: [...prevState.changeHistory.nodeMoveHistory[sourceNode.data().label], 
+                        {
+                            movedNode: sourceNode, 
+                            targetPartition: targetNode, 
+                            relative_position_in_partition: relative_center_position
+                        }
+                    ]
                 })
             }
         }));
@@ -629,7 +645,6 @@ class CustomGraph extends React.Component {
             partitions,
             decomposition_attributes,
             element_types,
-            num_of_partitions
         } = this.state; 
 
         if(sourceNode.data().showMinusSign === false && 
@@ -714,89 +729,6 @@ class CustomGraph extends React.Component {
         // Used to update the minus/plus sign after a node has been moved or deleted.
         cy.elements().addClass('deactivate');
         cy.elements().removeClass('deactivate');
-    }
-
-    setPositionOfMovedNode(addedNode, targetNode) {
-        const {
-            element_types,
-            commonNodesLayoutCache
-        } = this.state;
-
-        let common_nodes = targetNode.children().filter(
-            (ele) => {
-                return ele.data('element_type') === element_types.common_node || ele.data('element_type') === element_types.moved_node;
-            }
-        );
-
-        // Save the current layout into the commonNodesLayoutSpaceCache
-        // if(!(targetNode.id() in commonNodesLayoutCache)) {
-        let appendices = targetNode.children().filter(
-            (ele) => {
-                return ele.data('element_type') === element_types.appendix;
-            }
-        );
-        // Get the current bounding-box where the common nodes should lie. 
-        let boundingBox = {
-            x1: targetNode.boundingBox().x1,
-            x2: targetNode.boundingBox().x2,
-            y1: targetNode.boundingBox().y1,
-            y2: appendices[0].boundingBox().y1 
-        };
-        // Using a matrix, model the layout space. 
-        let matrix = [];
-        for (let y = 0; y < Math.floor(boundingBox.y2 - boundingBox.y1); y++) {
-            matrix[y] = [];
-            for(let x = 0; x < Math.floor(boundingBox.x2 - boundingBox.x1); x++) {
-                matrix[y][x] = 0; // 0 indicates the space is empty
-            }
-        }
-        // In the matrix mark all spaces that are occupied with a 1
-        for(let i = 0; i < common_nodes.length; i++) {
-            for(let y = 0; y < Math.floor(common_nodes[i].boundingBox().h); y++) {
-                for(let x = 0; x < Math.floor(common_nodes[i].boundingBox().w); x++) {
-                    if( (y + Math.floor(common_nodes[i].boundingBox().y1 - boundingBox.y1)) < matrix.length 
-                    || (x + Math.floor(common_nodes[i].boundingBox().x1 - boundingBox.x1)) < matrix[0].length) {
-                        matrix[Math.floor(common_nodes[i].boundingBox().y1 - boundingBox.y1) + y][Math.floor(common_nodes[i].boundingBox().x1 - boundingBox.x1) + x] = 1;
-                    }
-                }
-            }
-        }
-        // }
-
-        // Now find an empty space for the added node.
-        let offset_x = 25;
-        let offset_y = 17;
-        for (let y = matrix.length - 1; y >= 0; y--) {
-            for(let x = 0; x < matrix[0].length; x++) {
-                if((y + Math.floor(addedNode.boundingBox().h) + offset_y) >= matrix.length || (x + Math.floor(addedNode.boundingBox().w) + offset_x) >= matrix[0].length) {
-                    continue;
-                } else if (matrix[y][x] === 0) {
-                    if(this._checkIfEnoughSpace(matrix, Math.floor(addedNode.boundingBox().h + offset_y), Math.floor(addedNode.boundingBox().w + offset_x), y, x)) {
-                        return {
-                            x: ( boundingBox.x1 + x + offset_x + (addedNode.boundingBox().w / 2)),  
-                            y: ( boundingBox.y1 + y - offset_y + (addedNode.boundingBox().h / 2)) 
-                        };
-                    }
-                }
-            }
-        }
-
-        //If an empty space could not be found
-        return {
-            x: targetNode.position('x'), 
-            y: boundingBox.y1 - 5
-        };
-    }
-
-    _checkIfEnoughSpace(matrix, height, width, offset_y, offset_x) {
-        for(let y = 0; y < height; y++) {
-            for(let x = 0; x < width; x++) {
-                if(matrix[y + offset_y][x + offset_x] !== 0) {
-                    return false;
-                } 
-            }
-        }
-        return true;
     }
 
     _getCurrentDecomposition(decomposition_version_number, cy) {
@@ -889,17 +821,17 @@ class CustomGraph extends React.Component {
 
         // Remove elements from the table
         for(let ele in elementsSelectedOnTable) {
-            let movedElement = elementsSelectedOnTable[ele];
-            const index = nodeMoveHistory[movedElement[0].data().label].length - 1;
+            let movedElementInfo = elementsSelectedOnTable[ele];
+            const index = nodeMoveHistory[movedElementInfo.movedNode.data().label].length - 1;
             let previous_move = {
-                element: nodeMoveHistory[movedElement[0].data().label].slice(-1)[0][0], 
-                partition: nodeMoveHistory[movedElement[0].data().label].slice(-1)[0][1], 
-                position: nodeMoveHistory[movedElement[0].data().label].slice(-1)[0][2]
+                element: nodeMoveHistory[movedElementInfo.movedNode.data().label].slice(-1)[0].movedNode, 
+                partition: nodeMoveHistory[movedElementInfo.movedNode.data().label].slice(-1)[0].targetPartition, 
+                position: nodeMoveHistory[movedElementInfo.movedNode.data().label].slice(-1)[0].relative_position_in_partition
             };
 
-            cy.remove(cy.getElementById(movedElement[0].data().label)); 
+            cy.remove(cy.getElementById(movedElementInfo.movedNode.data('label'))); 
             // If it is not the first move for the class, then add the previous move, or if the move is a common element.
-            if(!this._checkifFirstMoveForClass(movedElement) || previous_move.element.data('element_type') === element_types.common_node) {
+            if(!this._checkifFirstMoveForClass(movedElementInfo) || previous_move.element.data('element_type') === element_types.common_node) {
                 // Position the element back to its relative position of the partition.
                 let partition = cy.getElementById(previous_move.element.data('partition'));
                 previous_move.element.position({
@@ -908,19 +840,20 @@ class CustomGraph extends React.Component {
                 });
                 cy.add(previous_move.element);
             } else {
-                if(!this._isNodeCommonBetweenDecompositions(movedElement[0].data().element_type)) {
+                if(!this._isNodeCommonBetweenDecompositions(movedElementInfo.movedNode.data('element_type'))) {
                     for(let i = 0; i < decomposition_attributes.num_of_decompositions; i++) {
-                        let diff_node = cy.getElementById(`graph_${i+1}_${movedElement[0].data().label}`)
+                        let diff_node = cy.getElementById(`graph_${i+1}_${movedElementInfo.movedNode.data('label')}`)
                         diff_node.data().showMinusSign = false;
                     }
                 }
             }
-            nodeMoveHistory[movedElement[0].data().label].splice(index, 1);
+            nodeMoveHistory[movedElementInfo.movedNode.data('label')].splice(index, 1);
         }
 
         cy.pan(pan);
         cy.zoom(zoom);
 
+        this.onUnhighlightNodes();
         this._renderNodes();
 
         this.setState(() => ({
@@ -935,7 +868,7 @@ class CustomGraph extends React.Component {
         }));
     }
 
-    _printEvolutionaryHistoryText(moved_element) {
+    _printEvolutionaryHistoryText(movedElementInfo) {
         const {
             cy,
             decomposition_attributes,
@@ -943,54 +876,54 @@ class CustomGraph extends React.Component {
             element_types
         } = this.state;
         const nodeMoveHistory = changeHistory.nodeMoveHistory;
-        let target_node = moved_element[0].data().label;
+        let target_node = movedElementInfo.movedNode.data().label;
         let previous_partitions = "";
 
-        if(moved_element[0].data().element_type === element_types.common_node || moved_element[0].data().prev_element_type === element_types.common_node) {
-            previous_partitions = `P${moved_element[0].data().partition.match('[0-9]')}`;
-        } else if (this._checkifFirstMoveForClass(moved_element)){
-            for(let i = 0; i < decomposition_attributes.num_of_decompositions; i++) {
-                previous_partitions = previous_partitions.concat(`V${i + 1}-P${cy.getElementById(`graph_${i + 1}_${moved_element[0].data().label}`).data().partition.match('[0-9]')}`);
-                if(i !== decomposition_attributes.num_of_decompositions - 1) {
+        if(movedElementInfo.movedNode.data('element_type') === element_types.common_node || movedElementInfo.movedNode.data('prev_element_type') === element_types.common_node) {
+            let partition_num = parseInt(movedElementInfo.movedNode.data('partition').match('[0-9]')) + 1;
+            previous_partitions = `P${partition_num}`;
+        } else if (this._checkifFirstMoveForClass(movedElementInfo)){
+            for(let i = 1; i <= decomposition_attributes.num_of_decompositions; i++) {
+                let partition_num = parseInt(cy.getElementById(`graph_${i}_${movedElementInfo.movedNode.data('label')}`).data().partition.match('[0-9]')) + 1;
+                previous_partitions = previous_partitions.concat(`V${i}-P${partition_num}`);
+                if(i !== decomposition_attributes.num_of_decompositions) {
                     previous_partitions = previous_partitions.concat(" ᐱ ");
                 }
             }
         } else {
-            let index = this._findIndexInMoveHistory(moved_element);
-            let previous_node = nodeMoveHistory[moved_element[0].data().label][index][0]
-            previous_partitions = `P${previous_node.data().partition.match('[0-9]')}`;
+            let index = this._findIndexInMoveHistory(movedElementInfo);
+            let previous_node = nodeMoveHistory[movedElementInfo.movedNode.data('label')][index].movedNode
+            let partition_num = parseInt(previous_node.data('partition').match('[0-9]')) + 1;
+            previous_partitions = `P${partition_num}`;
         }
 
-        let target_partition = moved_element[1].id().match('[0-9]');
+        let target_partition = parseInt(movedElementInfo.targetPartition.id().match('[0-9]')) + 1;
         return `${target_node}: ${previous_partitions} → P${target_partition}`;
     }
 
-    _findIndexInMoveHistory(moved_element) {
+    _findIndexInMoveHistory(movedElementInfo) {
         const {
             nodeMoveHistory
         } = this.state.changeHistory;
 
-        const index = nodeMoveHistory[moved_element[0].data().label].findIndex(x => {
-            for(let i = 0; i < moved_element.length; i++) {
-                if(x[i] !== moved_element[i]) {
-                    return false;
-                }
+        const index = nodeMoveHistory[movedElementInfo.movedNode.data('label')].findIndex(x => {
+            if(x.movedNode !== movedElementInfo.movedNode && x.targetPartition !== movedElementInfo.targetPartition) {
+                return false;
             }
             return true;
         });
         return index; 
     }
 
-    _checkIfLastMoveForClass(moved_element) {
+    _checkIfLastMoveForClass(movedElementInfo) {
         const {
             nodeMoveHistory
         } = this.state.changeHistory;
-
-        return (nodeMoveHistory[moved_element[0].data().label].length - 1) === this._findIndexInMoveHistory(moved_element);
+        return (nodeMoveHistory[movedElementInfo.movedNode.data('label')].length - 1) === this._findIndexInMoveHistory(movedElementInfo);
     }
 
-    _checkifFirstMoveForClass(moved_element) {
-        return this._findIndexInMoveHistory(moved_element) === 0;
+    _checkifFirstMoveForClass(movedElementInfo) {
+        return this._findIndexInMoveHistory(movedElementInfo) === 0;
     }
 
     _createRelationshipTypeTable() {
@@ -1052,25 +985,30 @@ class CustomGraph extends React.Component {
             openTable
         } = this.state;
 
+        // movedElementInfo contains the sourceNode that was moved, the target partition it is moving to, and its relative position in the current partition.
         const changeHistoryList = changeHistory.table.map(
-            (moved_element, index) => 
+            (movedElementInfo, index) => 
             <TableRow key={index}
-                hover={true} 
+                hover={this._checkIfLastMoveForClass(movedElementInfo)} 
                 onMouseOver={(event) => {
-                    this.highlightSelectedElements(moved_element);
+                    if(this._checkIfLastMoveForClass(movedElementInfo)) {
+                        this.highlightSelectedElements(movedElementInfo);
+                    }
                 }}
                 onMouseOut={(event) => {
-                    this.onUnclickNode();
-                    this.setState({relationshipTypeTable: this._createRelationshipTypeTable()});
+                    if(this._checkIfLastMoveForClass(movedElementInfo)) {
+                        this.onUnhighlightNodes();
+                        this.setState({relationshipTypeTable: this._createRelationshipTypeTable()});
+                    }
                 }}
             >
                 <TableCell>
                     <Checkbox
-                        checked={elementsSelectedOnTable.includes(moved_element)}
-                        onChange={(event, newValue) => this._updateSelectedEvolutionaryList(newValue, moved_element, index)}
-                        disabled={!this._checkIfLastMoveForClass(moved_element)}
+                        checked={elementsSelectedOnTable.includes(movedElementInfo)}
+                        onChange={(event, newValue) => this._updateSelectedEvolutionaryList(newValue, movedElementInfo, index)}
+                        disabled={!this._checkIfLastMoveForClass(movedElementInfo)}
                     />
-                    {this._printEvolutionaryHistoryText(moved_element)}
+                    {this._printEvolutionaryHistoryText(movedElementInfo)}
                 </TableCell>
             </TableRow>
         )
@@ -1147,7 +1085,7 @@ class CustomGraph extends React.Component {
                                             this.highlightSelectedElements(null);
                                         }}
                                         onMouseOut={(event) => {
-                                            this.onUnclickNode();
+                                            this.onUnhighlightNodes();
                                         }}
                                     >
                                         <IconButton 
@@ -1161,7 +1099,7 @@ class CustomGraph extends React.Component {
                                                 })
                                             }}
                                         >
-                                            {openTable.changeHistory ? <KeyboardArrowUpIcon onClick={(event) => this.onUnclickNode()}/> : <KeyboardArrowDownIcon onClick={(event) => this.onUnclickNode()}/>}
+                                            {openTable.changeHistory ? <KeyboardArrowUpIcon onClick={(event) => this.onUnhighlightNodes()}/> : <KeyboardArrowDownIcon onClick={(event) => this.onUnhighlightNodes()}/>}
                                         </IconButton>
                                     {elementsSelectedOnTable.length} selected
                                         <Tooltip title="Undo">
@@ -1170,7 +1108,7 @@ class CustomGraph extends React.Component {
                                                 onClick={(event) => this._onDeleteRowsFromChangeHistory()}
                                             >
                                                 <UndoIcon
-                                                    onClick={(event) => this.onUnclickNode()}
+                                                    onClick={(event) => this.onUnhighlightNodes()}
                                                 />
                                             </IconButton>
                                         </Tooltip>

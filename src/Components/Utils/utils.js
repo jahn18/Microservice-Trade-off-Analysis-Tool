@@ -56,7 +56,7 @@ export default class Utils {
     static parseJSONGraphFile = (json_graph, colors) => {
         let all_elements = []; 
         let common_elements = [];
-
+        
         let num_of_partitions = Object.keys(json_graph.diff_graph).length;
         for(let i = 0; i < num_of_partitions; i++) {
             common_elements = [].concat(common_elements, json_graph.diff_graph[i].common);

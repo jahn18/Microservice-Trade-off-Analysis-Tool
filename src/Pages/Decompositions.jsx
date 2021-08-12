@@ -40,7 +40,7 @@ class Decompositions extends React.Component {
             common_elements: parsedGraph[1],
             num_of_partitions: parsedGraph[2],
             relationshipTypes: parsedGraph[3],
-            num_of_decompositions: 2,
+            num_of_decompositions: num_of_decompositions,
             element_types: {
                 partition: 'partition',
                 appendix: 'appendix',
