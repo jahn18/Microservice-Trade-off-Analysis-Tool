@@ -1,6 +1,7 @@
 import React, {createRef} from "react";
 import cytoscape from 'cytoscape';
-import Utils from './../Utils'
+import Utils from './../Utils';
+import noOverlap from 'cytoscape-no-overlap';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
@@ -20,12 +21,15 @@ import TableRow from '@material-ui/core/TableRow';
 import Checkbox from '@material-ui/core/Checkbox';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
+import Slider from '@material-ui/core/Slider';
+import 'react-pro-sidebar/dist/css/styles.css';
 import Tooltip from '@material-ui/core/Tooltip';
 import UndoIcon from '@material-ui/icons/Undo';
 import IconButton from '@material-ui/core/IconButton';
 
 cytoscape.use( nodeHtmlLabel );
 cytoscape.use( edgehandles );
+cytoscape.use( noOverlap );
 
 class CustomGraph extends React.Component {
     constructor(props) {
@@ -53,14 +57,15 @@ class CustomGraph extends React.Component {
             element_types: {
                 partition: 'partition',
                 appendix: 'appendix',
-                diff_node: 'diff', 
+                diff_node: 'diff',
                 common_node: 'common',
                 invisible_node: 'invisible',
                 moved_node: 'common*'
             },
             openTable: {
                 metrics: false,
-                changeHistory: false
+                changeHistory: false,
+                edgeFilter: false,
             },
         }
 
@@ -74,7 +79,8 @@ class CustomGraph extends React.Component {
             changeHistory,
             relationshipTypes,
             decomposition_attributes,
-            element_types 
+            element_types,
+            common_elements
         } = this.state;
 
         const cy = cytoscape({
@@ -139,11 +145,23 @@ class CustomGraph extends React.Component {
                     'selector': 'edge',
                     'style': {
                         'width': 2,
+                        'line-style': 'dashed',
+                        'line-dash-pattern': '[6, 3]',
                         'line-color': 'data(color)',
                         'target-arrow-color': 'data(color)',
                         'target-arrow-shape': 'vee',
                         'curve-style': 'bezier',
                         'arrow-scale': 2.25
+                    }
+                },
+                {
+                    'selector': 'edge.dependency',
+                    'style': {
+                        'line-style': 'solid',
+                        'label': 'data(weight)',
+                        'font-size': '25px',
+                        'text-outline-width': '3.5',
+                        'text-outline-color': 'white',
                     }
                 },
                 {
@@ -208,20 +226,24 @@ class CustomGraph extends React.Component {
 
         let lastRenderedState;
         let loadedChangeHistory;
-        
-        // If the custom graph hasn't been loaded yet then load the positions of the current diff-graph. 
+
+        // If the custom graph hasn't been loaded yet then load the positions of the current diff-graph.
         if(Object.keys(storeProvider.getStore().getState().custom_graph).length === 0) {
             loadedChangeHistory = changeHistory;
             lastRenderedState = storeProvider.getStore().getState().diff_graph;
             cy.json({elements:lastRenderedState.elements}).layout({name: 'preset'}).run();
+            cy.elements().forEach(ele => {
+                ele.removeClass('deactivate');
+                ele.data().showMinusSign = false;
+            })
         } else {
             loadedChangeHistory = storeProvider.getStore().getState().custom_graph.changeHistory;
             cy.elements().remove();
             lastRenderedState = storeProvider.getStore().getState().custom_graph.graph;
-            
+
             let principle_elements = [];
             for(let i = 0; i < lastRenderedState.elements.nodes.length; i++) {
-                if(lastRenderedState.elements.nodes[i].data.element_type === element_types.appendix 
+                if(lastRenderedState.elements.nodes[i].data.element_type === element_types.appendix
                     || lastRenderedState.elements.nodes[i].data.element_type === element_types.partition) {
                         principle_elements.push(lastRenderedState.elements.nodes[i]);
                 }
@@ -242,10 +264,10 @@ class CustomGraph extends React.Component {
                 let partition = cy.getElementById(diffGraphPartitions[i].data.id);
                 partition.shift(
                     {
-                        x: (partition.position().x > diffGraphPartitions[i].position.x) ? 
+                        x: (partition.position().x > diffGraphPartitions[i].position.x) ?
                             -(partition.position().x - diffGraphPartitions[i].position.x) :
                             (diffGraphPartitions[i].position.x - partition.position().x),
-                        y: (partition.position().y > diffGraphPartitions[i].position.y) ? 
+                        y: (partition.position().y > diffGraphPartitions[i].position.y) ?
                             -(partition.position().y - diffGraphPartitions[i].position.y) :
                             (diffGraphPartitions[i].position.y - partition.position().y)
                     }
@@ -257,7 +279,7 @@ class CustomGraph extends React.Component {
         cy.zoom(storeProvider.getStore().getState().diff_graph.zoom);
 
         /*
-            Removes additional red nodes that were added because of the edge handles functionality. 
+            Removes additional red nodes that were added because of the edge handles functionality.
         */
         let collection = cy.elements().filter((ele) => {
             return (ele.data().element_type === undefined);
@@ -287,11 +309,11 @@ class CustomGraph extends React.Component {
                     } else if (!this._isNodeCommonBetweenDecompositions(data.element_type) && data.showMinusSign === true) {
                         return '<h1 style="color:white;">' + '-' + '</h1>';
                     } else if(data.element_type === element_types.appendix) {
-                        const color = (data.showMinusSign) ? this.props.colors.decomposition_colors[data.version - 1] + '27' : this.props.colors.decomposition_colors[data.version - 1]; 
-                        return `<h3 style="color:${color};font-weight: bold; position: absolute; top: ${element.boundingBox().y1 - element.position().y + 5}; right: ${element.position().x - element.boundingBox().x1 - 45};">` 
-                                + `V${data.version}` 
+                        const color = (data.showMinusSign) ? this.props.colors.decomposition_colors[data.version - 1] + '27' : this.props.colors.decomposition_colors[data.version - 1];
+                        return `<h3 style="color:${color};font-weight: bold; position: absolute; top: ${element.boundingBox().y1 - element.position().y + 5}; right: ${element.position().x - element.boundingBox().x1 - 45};">`
+                                + `V${data.version}`
                                 + '</h3>';
-                    } 
+                    }
                 }
         }]);
 
@@ -313,12 +335,46 @@ class CustomGraph extends React.Component {
         cy.on('tap', 'node', (e) => {
             this.disableHandleAndInteraction(e.target, eh);
             this.onClickedNode(e)
-        }); 
+        });
+        cy.on('drag', (ele) => {
+            if (Utils.checkIfOverlaps(ele.target, 0, cy, decomposition_attributes.num_of_decompositions)) {
+                ele.target.position(ele.target.scratch('previousPosition'));
+            } else {
+                ele.target.scratch('previousPosition', JSON.parse(JSON.stringify(ele.target.position())));
+            }
+        });
         cy.on('click', (e) => this.onUnhighlightNodes(e));
         cy.on('mouseover', 'node', (e) => this.disableHandleAndInteraction(e.target, eh));
-        cy.on('mouseout', 'node', (e) => { 
+        cy.on('mouseout', 'node', (e) => {
             if(e.target.data().element_type !== undefined) {
                 e.target.grabify();
+            }
+        });
+        cy.on('cxttap', 'node', (element) => {
+            if(element.target.data('element_type') !== element_types.appendix || element.target.data('element_type') !== element_types.partition) {
+                Utils.addEdges(cy, this.props.selectedTab, relationshipTypes, common_elements, this.props.colors, decomposition_attributes.num_of_decompositions, element.target);
+                let selected_elements = cy.collection(element.target);
+                selected_elements = selected_elements.union(cy.elements().filter((ele) => {
+                    return ele.data('element_type') === element_types.invisible_node;
+                }));
+                selected_elements = selected_elements.union(element.target.incomers()).union(element.target.outgoers());
+                element.target.incomers().forEach((ele) => {
+                    selected_elements = selected_elements.union(cy.getElementById(ele.data('source')))
+                                                        .union(cy.getElementById(cy.getElementById(ele.data('source')).data('partition')))
+                                                        .union(cy.getElementById(ele.data('source')).parent());
+                })
+                element.target.outgoers().forEach((ele) => {
+                    selected_elements = selected_elements.union(cy.getElementById(ele.data('target')))
+                                                        .union(cy.getElementById(cy.getElementById(ele.data('target')).data('partition')))
+                                                        .union(cy.getElementById(ele.data('target')).parent());
+                })
+                let unselected_elements = cy.elements().difference(selected_elements);
+                unselected_elements.forEach((ele) => {
+                    if(this._isNodeCommonBetweenDecompositions(ele.data().element_type)) {
+                        ele.data().showMinusSign = true;
+                    }
+                })
+                unselected_elements.addClass('deactivate');
             }
         });
 
@@ -331,7 +387,7 @@ class CustomGraph extends React.Component {
                         {key}
                     </TableCell>
                     {
-                        [...Array(decomposition_attributes.num_of_decompositions)].map((x, i) => 
+                        [...Array(decomposition_attributes.num_of_decompositions)].map((x, i) =>
                             <TableCell align="left">
                                 {
                                     Utils.calculateNormalizedTurboMQ(
@@ -360,12 +416,12 @@ class CustomGraph extends React.Component {
         } = this.state;
 
         if(element.data('element_type') === 'invisible' || element.data('element_type') === element_types.appendix) {
-            element.ungrabify(); 
+            element.ungrabify();
             handler.hide();
         } else if (element.data('element_type') === element_types.partition || element.hasClass('deactivate')) {
             handler.hide();
         }
-    } 
+    }
 
     _getLastRenderedNodePositions(lastRenderedGraph) {
         let previous_graph_positions = {};
@@ -396,14 +452,14 @@ class CustomGraph extends React.Component {
             cy,
             decomposition_attributes,
             element_types
-        } = this.state; 
+        } = this.state;
 
         let sel = ele.target;
         let selected_elements = cy.elements().filter((ele) => {
             return ele.data('element_type') === element_types.invisible_node;
-        }); 
+        });
         // if (sel.data().element_type === element_types.partition) {
-        //     selected_elements = selected_elements.union(sel.parent()); 
+        //     selected_elements = selected_elements.union(sel.parent());
         // }
 
         switch(sel.data().element_type) {
@@ -459,9 +515,9 @@ class CustomGraph extends React.Component {
             //     selected_elements = selected_elements.union(sel.children());
             //     break;
             // case element_types.common_node:
-            //     selected_elements = selected_elements.union(cy.getElementById(sel.data().partition)); 
+            //     selected_elements = selected_elements.union(cy.getElementById(sel.data().partition));
             //     break;
-            default: 
+            default:
                 selected_elements = cy.elements();
         }
 
@@ -470,7 +526,7 @@ class CustomGraph extends React.Component {
         let unselected_elements = cy.elements().difference(selected_elements);
         unselected_elements.forEach((ele) => {
             if(this._isNodeCommonBetweenDecompositions(ele.data().element_type)) {
-                ele.data().showMinusSign = true; 
+                ele.data().showMinusSign = true;
             }
         })
         unselected_elements.addClass('deactivate');
@@ -504,7 +560,7 @@ class CustomGraph extends React.Component {
             decomposition_attributes,
             element_types,
             elementsSelectedOnTable
-        } = this.state; 
+        } = this.state;
         // const nodeMoveHistory = changeHistory.nodeMoveHistory;
 
         let selectedElementsInChangedHistory = elementsSelectedOnTable.slice();
@@ -519,8 +575,8 @@ class CustomGraph extends React.Component {
             // let index = this._findIndexInMoveHistory(movedElementInfo);
 
             /*
-            * If this is not the most recent move for the current node, then temporarily save 
-            * its position and show the move the user is currently hovering on.  
+            * If this is not the most recent move for the current node, then temporarily save
+            * its position and show the move the user is currently hovering on.
             */
             // if(!this._checkIfLastMoveForClass(movedElementInfo)) {
             //     removed_node = cy.remove(cy.getElementById(movedElementInfo.movedNode.data('label')));
@@ -535,7 +591,7 @@ class CustomGraph extends React.Component {
             // }
 
             if(this._checkifFirstMoveForClass(movedElementInfo)) {
-                selected_elements = selected_elements.union(sel).union(movedElementInfo.targetPartition); 
+                selected_elements = selected_elements.union(sel).union(movedElementInfo.targetPartition);
                 if(sel.data('prev_element_type') === element_types.diff_node) {
                     for(let i = 1; i <= decomposition_attributes.num_of_decompositions; i++) {
                         let graph_node = cy.getElementById(`graph_${i}_${sel.id()}`)
@@ -569,7 +625,7 @@ class CustomGraph extends React.Component {
                                             movedElementInfo.targetPartition
                                         ).union(
                                             movedElementInfo.movedNode.data('partition')
-                                        ); 
+                                        );
                 cy.add({
                     group: 'edges',
                     data: {
@@ -588,7 +644,7 @@ class CustomGraph extends React.Component {
         let unselected_elements = cy.elements().difference(selected_elements);
         unselected_elements.forEach((ele) => {
             if(this._isNodeCommonBetweenDecompositions(ele.data('element_type'))) {
-                ele.data().showMinusSign = true; 
+                ele.data().showMinusSign = true;
             }
         })
         unselected_elements.addClass('deactivate');
@@ -603,7 +659,7 @@ class CustomGraph extends React.Component {
             cy
         } = this.state;
 
-        // Get the node's position relative to the center position of the partition 
+        // Get the node's position relative to the center position of the partition
         let partition = cy.getElementById(sourceNode.data('partition'));
         const relative_center_position = {
             x: sourceNode.position('x') - partition.position('x'),
@@ -612,25 +668,25 @@ class CustomGraph extends React.Component {
 
         this.setState((prevState) => ({
             changeHistory: {
-                table: [...prevState.changeHistory.table, 
+                table: [...prevState.changeHistory.table,
                     {
-                        movedNode: sourceNode, 
+                        movedNode: sourceNode,
                         targetPartition: targetNode
                     }
                 ],
                 nodeMoveHistory: !(sourceNode.data().label in prevState.changeHistory.nodeMoveHistory) ? ({
                     ...prevState.changeHistory.nodeMoveHistory,
                     [sourceNode.data().label]: [{
-                        movedNode: sourceNode, 
-                        targetPartition: targetNode, 
+                        movedNode: sourceNode,
+                        targetPartition: targetNode,
                         relative_position_in_partition: relative_center_position}
                     ]
                 }) : ({
                     ...prevState.changeHistory.nodeMoveHistory,
-                    [sourceNode.data().label]: [...prevState.changeHistory.nodeMoveHistory[sourceNode.data().label], 
+                    [sourceNode.data().label]: [...prevState.changeHistory.nodeMoveHistory[sourceNode.data().label],
                         {
-                            movedNode: sourceNode, 
-                            targetPartition: targetNode, 
+                            movedNode: sourceNode,
+                            targetPartition: targetNode,
                             relative_position_in_partition: relative_center_position
                         }
                     ]
@@ -639,22 +695,22 @@ class CustomGraph extends React.Component {
         }));
     }
 
-    onMovedNode(event, sourceNode, targetNode, addedEles) { 
+    onMovedNode(event, sourceNode, targetNode, addedEles) {
         const {
             cy,
             partitions,
             decomposition_attributes,
             element_types,
-        } = this.state; 
+        } = this.state;
 
-        if(sourceNode.data().showMinusSign === false && 
+        if(sourceNode.data().showMinusSign === false &&
             partitions.includes(targetNode.id()) &&
             !sourceNode.hasClass('deactivate') &&
-            sourceNode.data().element_type !== element_types.partition) 
+            sourceNode.data().element_type !== element_types.partition)
             {
 
             let prev_element = sourceNode.data().element_type;
-            let prev_partition = sourceNode.data().partition; 
+            let prev_partition = sourceNode.data().partition;
 
             if(sourceNode.data().element_type === element_types.moved_node) {
                 cy.remove(sourceNode);
@@ -678,7 +734,7 @@ class CustomGraph extends React.Component {
                 position: event.position //this.setPositionOfMovedNode(sourceNode, targetNode)
             });
 
-            // Should also hide common elements if they get moved. 
+            // Should also hide common elements if they get moved.
             if(this._isNodeCommonBetweenDecompositions(sourceNode.data().element_type)) {
                 // if the sourceNode is removed and there aren't any common nodes left, then add an invisible node
                 // to fill the gap.
@@ -697,7 +753,7 @@ class CustomGraph extends React.Component {
                             background_color: 'grey',
                             colored: false,
                             element_type: 'invisible',
-                            showminussign: false, 
+                            showminussign: false,
                             partition: sourceNode.parent().id(),
                             parent: sourceNode.parent().id()
                         },
@@ -705,7 +761,7 @@ class CustomGraph extends React.Component {
                             x: sourceNode.parent().position().x,
                             y: appendices[0].boundingBox().y1 - 55,
                         }
-                    }]); 
+                    }]);
                     cy.getElementById(`invisible_node_${sourceNode.parent().id()}`).addClass('hide');
                 }
             } else {
@@ -715,10 +771,10 @@ class CustomGraph extends React.Component {
                 }
             }
 
-            // Update the evolutionary history table. 
+            // Update the evolutionary history table.
             this.updateChangeHistory(sourceNode, targetNode)
         }
-        this._renderNodes(); 
+        this._renderNodes();
         cy.remove(addedEles);
     }
 
@@ -736,7 +792,7 @@ class CustomGraph extends React.Component {
             num_of_partitions,
             decomposition_attributes,
             element_types
-        } = this.state; 
+        } = this.state;
 
         let decomposition_versions = [];
         for(let i = 1; i <= decomposition_attributes.num_of_decompositions; i++) {
@@ -745,7 +801,7 @@ class CustomGraph extends React.Component {
             }
         }
 
-        // Get all moved elements. 
+        // Get all moved elements.
         let moved_elements = cy.nodes().map((ele) => {
             if(ele.data('element_type') === element_types.moved_node) {
                 return ele.data('label');
@@ -755,12 +811,12 @@ class CustomGraph extends React.Component {
         let decomposition = [];
 
         for(let i = 0; i < num_of_partitions; i++) {
-            let partition = []; 
+            let partition = [];
             cy.nodes().forEach((ele) => {
                 if(ele.data('partition') === `partition${i}`) {
                     if(ele.data('element_type') === element_types.common_node || ele.data('element_type') === element_types.moved_node) {
                         partition.push(ele.data().label);
-                    } else if (ele.data('element_type') === element_types.diff_node 
+                    } else if (ele.data('element_type') === element_types.diff_node
                         && !moved_elements.includes(ele.data().label)
                         && !decomposition_versions.includes(ele.data('version'))) {
                         partition.push(ele.data().label);
@@ -807,7 +863,7 @@ class CustomGraph extends React.Component {
     _onDeleteRowsFromChangeHistory() {
         const {
             cy,
-            elementsSelectedOnTable, 
+            elementsSelectedOnTable,
             changeHistory,
             tableBodyRenderKey,
             decomposition_attributes,
@@ -824,12 +880,12 @@ class CustomGraph extends React.Component {
             let movedElementInfo = elementsSelectedOnTable[ele];
             const index = nodeMoveHistory[movedElementInfo.movedNode.data().label].length - 1;
             let previous_move = {
-                element: nodeMoveHistory[movedElementInfo.movedNode.data().label].slice(-1)[0].movedNode, 
-                partition: nodeMoveHistory[movedElementInfo.movedNode.data().label].slice(-1)[0].targetPartition, 
+                element: nodeMoveHistory[movedElementInfo.movedNode.data().label].slice(-1)[0].movedNode,
+                partition: nodeMoveHistory[movedElementInfo.movedNode.data().label].slice(-1)[0].targetPartition,
                 position: nodeMoveHistory[movedElementInfo.movedNode.data().label].slice(-1)[0].relative_position_in_partition
             };
 
-            cy.remove(cy.getElementById(movedElementInfo.movedNode.data('label'))); 
+            cy.remove(cy.getElementById(movedElementInfo.movedNode.data('label')));
             // If it is not the first move for the class, then add the previous move, or if the move is a common element.
             if(!this._checkifFirstMoveForClass(movedElementInfo) || previous_move.element.data('element_type') === element_types.common_node) {
                 // Position the element back to its relative position of the partition.
@@ -912,7 +968,7 @@ class CustomGraph extends React.Component {
             }
             return true;
         });
-        return index; 
+        return index;
     }
 
     _checkIfLastMoveForClass(movedElementInfo) {
@@ -943,7 +999,7 @@ class CustomGraph extends React.Component {
                             {key}
                         </TableCell>
                         {
-                            [...Array(decomposition_attributes.num_of_decompositions)].map((x, i) => 
+                            [...Array(decomposition_attributes.num_of_decompositions)].map((x, i) =>
                                 <TableCell align="left">
                                     {
                                         Utils.calculateNormalizedTurboMQ(
@@ -963,12 +1019,25 @@ class CustomGraph extends React.Component {
 
     componentDidUpdate(prevProps, prevState, snapshot) {
         const {
+            relationshipTypes,
+            common_elements,
             cy
         } = this.state;
+
+        const selectedTab = this.props.selectedTab;
 
         if(JSON.stringify(prevState.relationshipTypeTable) !== JSON.stringify(this._createRelationshipTypeTable())) {
             this.setState({relationshipTypeTable: this._createRelationshipTypeTable()});
         }
+        // if(JSON.stringify(prevState.edges) !== JSON.stringify(Utils.updateGraphEdges(selectedTab, relationshipTypes, common_elements, this.props.colors, null))) {
+        //     Utils.addEdges(cy, selectedTab, relationshipTypes, common_elements, this.props.colors);
+        //     // Do not highlight any node if the toggles are pressed.
+        //     cy.elements().forEach((ele) => {
+        //         // ele.data().showMinusSign = false;
+        //         ele.removeClass('deactivate');
+        //         ele.removeClass('highlight');
+        //     });
+        // }
     }
 
     componentWillUnmount() {
@@ -982,14 +1051,17 @@ class CustomGraph extends React.Component {
             tableBodyRenderKey,
             decomposition_attributes,
             relationshipTypeTable,
-            openTable
+            openTable,
+            relationshipTypes,
         } = this.state;
+
+        let edgeFilterTable = []
 
         // movedElementInfo contains the sourceNode that was moved, the target partition it is moving to, and its relative position in the current partition.
         const changeHistoryList = changeHistory.table.map(
-            (movedElementInfo, index) => 
+            (movedElementInfo, index) =>
             <TableRow key={index}
-                hover={this._checkIfLastMoveForClass(movedElementInfo)} 
+                hover={this._checkIfLastMoveForClass(movedElementInfo)}
                 onMouseOver={(event) => {
                     if(this._checkIfLastMoveForClass(movedElementInfo)) {
                         this.highlightSelectedElements(movedElementInfo);
@@ -1011,6 +1083,36 @@ class CustomGraph extends React.Component {
                     {this._printEvolutionaryHistoryText(movedElementInfo)}
                 </TableCell>
             </TableRow>
+        );
+
+        // Edge Filter
+        Object.keys(relationshipTypes).map(
+            (key, index) => {
+                edgeFilterTable.push(<TableRow>
+                    <TableCell style={{'font-size': 'Normal'}}>
+                        {key}
+                        <Slider
+                            defaultValue={relationshipTypes[key].minimumEdgeWeight}
+                            aria-labelledby="discrete-slider"
+                            valueLabelDisplay="auto"
+                            step={10}
+                            marks={true}
+                            min={0}
+                            max={100}
+                            style={{
+                                // width: '100%',
+                                // color: relationshipTypes[key].color
+                                color: 'grey'
+                            }}
+                            onChange={(event, weight) => {
+                                let relationshipTypesCopy = {...this.state.relationshipTypes};
+                                relationshipTypesCopy[key].minimumEdgeWeight = weight;
+                                this.setState({relationshipTypes: relationshipTypesCopy});
+                            }}
+                        />
+                    </TableCell>
+                </TableRow>)
+            }
         )
 
         return (
@@ -1018,8 +1120,8 @@ class CustomGraph extends React.Component {
                 <div className="custom-graph-container">
                     <div style={{height: '100%', width: '100%', position: 'fixed'}} ref={ref => (this.ref = ref)}></div>
                 </div>
-                <TableContainer 
-                component={Paper} 
+                <TableContainer
+                component={Paper}
                 style={
                         {
                             width: '30%',
@@ -1029,19 +1131,19 @@ class CustomGraph extends React.Component {
                             position: 'fixed',
                             maxHeight: '700px'
                         }
-                    } 
+                    }
                 size="small">
                     <Table stickyHeader aria-label="simple table" size="small">
                         <TableBody key={tableBodyRenderKey}>
                             <TableRow>
                                 <TableCell style={{'font-weight': 'bold'}}>
-                                    <IconButton 
-                                        size="small" 
+                                    <IconButton
+                                        size="small"
                                         onClick={() => {
                                             this.setState({
                                                 openTable: {
                                                     ...this.state.openTable,
-                                                    metrics: !openTable.metrics 
+                                                    metrics: !openTable.metrics
                                                 }
                                             })
                                         }}
@@ -1061,8 +1163,8 @@ class CustomGraph extends React.Component {
                                                         Dependencies
                                                     </TableCell>
                                                     {
-                                                        [...Array(decomposition_attributes.num_of_decompositions)].map((x, i) => 
-                                                            <TableCell 
+                                                        [...Array(decomposition_attributes.num_of_decompositions)].map((x, i) =>
+                                                            <TableCell
                                                                 style={{
                                                                     'color': this.props.colors.decomposition_colors[i]
                                                                 }}
@@ -1079,6 +1181,33 @@ class CustomGraph extends React.Component {
                                 </TableCell>
                             </TableRow>
                             <TableRow>
+                                <TableCell style={{'font-weight': 'bold'}}>
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => {
+                                            this.setState({
+                                                openTable: {
+                                                    ...this.state.openTable,
+                                                    edgeFilter: !openTable.edgeFilter
+                                                }
+                                            })
+                                        }}
+                                    >
+                                        {openTable.edgeFilter ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                                    </IconButton>
+                                    Edge Filter
+                                </TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell style={{ paddingBottom: 0, paddingTop: 0}} >
+                                    <Collapse in={openTable.edgeFilter} timeout="auto" unmountOnExit>
+                                        <Table size="small">
+                                            {edgeFilterTable}
+                                        </Table>
+                                    </Collapse>
+                                </TableCell>
+                            </TableRow>
+                            <TableRow>
                                 {elementsSelectedOnTable.length > 0 ? (
                                     <TableCell
                                         onMouseOver={(event) => {
@@ -1088,13 +1217,13 @@ class CustomGraph extends React.Component {
                                             this.onUnhighlightNodes();
                                         }}
                                     >
-                                        <IconButton 
-                                            size="small" 
+                                        <IconButton
+                                            size="small"
                                             onClick={() => {
                                                 this.setState({
                                                     openTable: {
                                                         ...this.state.openTable,
-                                                        changeHistory: !openTable.changeHistory 
+                                                        changeHistory: !openTable.changeHistory
                                                     }
                                                 })
                                             }}
@@ -1103,8 +1232,8 @@ class CustomGraph extends React.Component {
                                         </IconButton>
                                     {elementsSelectedOnTable.length} selected
                                         <Tooltip title="Undo">
-                                            <IconButton 
-                                                aria-label="undo" 
+                                            <IconButton
+                                                aria-label="undo"
                                                 onClick={(event) => this._onDeleteRowsFromChangeHistory()}
                                             >
                                                 <UndoIcon
@@ -1115,13 +1244,13 @@ class CustomGraph extends React.Component {
                                     </TableCell>
                                     ) : (
                                     <TableCell align="left" style={{'font-weight': 'bold'}}>
-                                        <IconButton 
-                                            size="small" 
+                                        <IconButton
+                                            size="small"
                                             onClick={() => {
                                                 this.setState({
                                                     openTable: {
                                                         ...this.state.openTable,
-                                                        changeHistory: !openTable.changeHistory 
+                                                        changeHistory: !openTable.changeHistory
                                                     }
                                                 })
                                             }}
@@ -1129,7 +1258,7 @@ class CustomGraph extends React.Component {
                                             {openTable.changeHistory ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                                         </IconButton>
                                         Change History
-                                    </TableCell> 
+                                    </TableCell>
                                 )}
                             </TableRow>
                             <TableRow>

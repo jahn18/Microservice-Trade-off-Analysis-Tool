@@ -3,7 +3,8 @@ import cytoscape from 'cytoscape';
 import cola from 'cytoscape-cola';
 import nodeHtmlLabel from 'cytoscape-node-html-label';
 import Utils from '../Components/Utils';
-import AppendixLayout from '../Components/AppendixLayout'
+import AppendixLayout from '../Components/AppendixLayout';
+import noOverlap from 'cytoscape-no-overlap';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
@@ -27,10 +28,20 @@ import storeProvider from '../storeProvider';
 
 cytoscape.use( nodeHtmlLabel );
 cytoscape.use( cola );
+cytoscape.use( noOverlap );
 
 class Decompositions extends React.Component {
     constructor(props) {
         super(props);
+
+        const element_types = {
+                partition: 'partition',
+                appendix: 'appendix',
+                diff_node: 'diff', 
+                common_node: 'common',
+                invisible_node: 'invisible',
+                moved_node: 'common*'
+        };
 
         let parsedGraph = Utils.parseJSONGraphFile(this.props.graphData, this.props.colors);
         let num_of_decompositions = 2;
@@ -41,25 +52,18 @@ class Decompositions extends React.Component {
             num_of_partitions: parsedGraph[2],
             relationshipTypes: parsedGraph[3],
             num_of_decompositions: num_of_decompositions,
-            element_types: {
-                partition: 'partition',
-                appendix: 'appendix',
-                diff_node: 'diff', 
-                common_node: 'common',
-                invisible_node: 'invisible'
-            },
+            element_types: element_types,
             openTable: false,
         }
 
         this.ref = React.createRef();
-        this.getEdgeDependencies = this.getEdgeDependencies.bind(this);
     };
 
     componentDidMount() {
         const {
             nodes,
-            num_of_partitions,
-            element_types
+            element_types,
+            num_of_decompositions
         } = this.state; 
 
         let lastCustomRenderedState = storeProvider.getStore().getState().custom_graph;
@@ -165,15 +169,12 @@ class Decompositions extends React.Component {
             ],
         });
 
-        const edges = this._updateGraphEdges();
-
         if(!this._canLoadCustomStateGraph(lastCustomRenderedState)) {
             let options = {
                     num_of_versions: 2,
                     partitions_per_row: 3,
                     width: 100,
                     height: 100,
-                    edges: edges
             };
             let layout = new AppendixLayout( cy, options );
             layout.run()
@@ -214,6 +215,7 @@ class Decompositions extends React.Component {
             }
             cy.pan(customGraphState.pan);
             cy.zoom(customGraphState.zoom);
+            // cy.nodes().noOverlap();
         }
 
         cy.nodeHtmlLabel([{
@@ -232,6 +234,7 @@ class Decompositions extends React.Component {
                 }
         }]);
 
+
         /*
             All event handlers when interacting with the graph. 
         */       
@@ -245,12 +248,19 @@ class Decompositions extends React.Component {
         });
         cy.on('mouseover', 'node', (e) => this.preventNonVisibleNodeFromMoving(e));
         cy.on('mouseout', 'node', () => { cy.elements().grabify(); });
+        cy.on('drag', (ele) => {
+            if (Utils.checkIfOverlaps(ele.target, 0, cy, num_of_decompositions)) {
+                ele.target.position(ele.target.scratch('previousPosition'));
+            } else {
+                ele.target.scratch('previousPosition', JSON.parse(JSON.stringify(ele.target.position())));
+            }
+        });
 
         this.setState({
             cy: cy,
             nodes: cy.nodes().forEach((ele) => {
                 if(ele.data().element_type === element_types.appendix) {
-                    switch(this.props.relationshipType) {
+                    switch(this.props.selectedTab) {
                         case 'static':
                             if(ele.data().version === 2) {
                                 ele.children().addClass('hide');
@@ -385,102 +395,31 @@ class Decompositions extends React.Component {
             element_types
         } = this.state;
 
-        const selectedRelationshipType = this.props.relationshipType;
+        const selectedTab = this.props.selectedTab;
 
         let sel = ele.target;
-        if(selectedRelationshipType === 'static' && sel.parent().data('version') === 2) {
+        if(selectedTab === 'static' && sel.parent().data('version') === 2) {
             sel.ungrabify();
-        } else if (selectedRelationshipType === 'class name' && sel.parent().data('version') === 1) {
+        } else if (selectedTab === 'class name' && sel.parent().data('version') === 1) {
             sel.ungrabify();
-        } else if (sel.data().element_type === element_types.invisible_node) {
+        } else if (sel.data('element_type') === element_types.invisible_node || sel.data('element_type') === element_types.appendix) {
             sel.ungrabify();
         } 
     }
 
-    findMaxEdgeWeight(edge_graph) {
-        let max_edge_weight = 0;
-
-        for(let i = 0; i < edge_graph.length; i++) {
-            let edge = edge_graph[i];
-            if(parseFloat(edge.weight) > max_edge_weight) {
-                max_edge_weight = parseFloat(edge.weight);
-            }
-        }
-        return max_edge_weight.toFixed(0);
-    }
-
-    getEdgeDependencies(edge_graph, common_elements, graph_type, minimumEdgeWeight, color) {
-        let edge_dependencies = [];
-        for(let i = 0; i < edge_graph.length; i++) {
-            let edge = edge_graph[i];
-            if((this.findMaxEdgeWeight(edge_graph) * (1 - ( minimumEdgeWeight / 100 ))) < parseFloat(edge.weight)) {
-                edge_dependencies.push({
-                    group: 'edges', 
-                    data: {
-                        source: (common_elements.includes(edge.source)) ? `graph_0_${edge.source}` : `${graph_type}_${edge.source}`,
-                        target: (common_elements.includes(edge.target)) ? `graph_0_${edge.target}` : `${graph_type}_${edge.target}`,
-                        weight: parseFloat(edge.weight).toFixed(2),
-                        element_type: 'edge',
-                        color: color
-                    } 
-                }); 
-            }
-        }
-        return edge_dependencies;
-    };  
-
-    _updateGraphEdges() {
-        const {
-            relationshipTypes,
-            common_elements
-        } = this.state;
-
-        let selectedRelationshipType = this.props.relationshipType;
-        let edges = []
-
-        switch(selectedRelationshipType) {
-            case 'static':
-                for(let key in relationshipTypes) {
-                    edges = [].concat(edges, this.getEdgeDependencies(
-                        relationshipTypes[key].links, 
-                        common_elements, 
-                        'graph_1',
-                        relationshipTypes[key].minimumEdgeWeight,
-                        relationshipTypes[key].color)
-                    );
-                }
-                break;
-            case 'class name':
-                for(let key in relationshipTypes) {
-                    edges = [].concat(edges, this.getEdgeDependencies(
-                        relationshipTypes[key].links, 
-                        common_elements, 
-                        'graph_2',
-                        relationshipTypes[key].minimumEdgeWeight,
-                        relationshipTypes[key].color));
-                }
-                break;
-            case 'default':
-        }
-
-        return edges;
-    }
-
-    onFilterEdges() {
-        let {cy} = this.state;
-        cy.remove('edge');
-
-        const edges = this._updateGraphEdges();
-        cy.add(edges);
-    }
-
     componentDidUpdate(prevProps, prevState, snapshot) {
         const {
-            cy
+            cy,
+            relationshipTypes,
+            common_elements,
+            num_of_decompositions
         } = this.state;
+
+        const selectedTab = this.props.selectedTab;
+
         // Check if the user has toggled the switch, which will add edges to the graph. 
-        if(JSON.stringify(prevState.edges) !== JSON.stringify(this._updateGraphEdges())) {
-            this.onFilterEdges();
+        if(JSON.stringify(prevState.edges) !== JSON.stringify(Utils.updateGraphEdges(selectedTab, relationshipTypes, common_elements, this.props.colors, num_of_decompositions, null))) {
+            Utils.addEdges(cy, selectedTab, relationshipTypes, common_elements, this.props.colors, num_of_decompositions);
             // Do not highlight any node if the toggles are pressed. 
             cy.elements().forEach((ele) => {
                 ele.data().showMinusSign = false; 
@@ -489,8 +428,8 @@ class Decompositions extends React.Component {
             });
         }
 
-        if(prevProps.relationshipType !== this.props.relationshipType) {
-            this.onRelationshipTypeChange(this.props.relationshipType);
+        if(prevProps.selectedTab !== this.props.selectedTab) {
+            this.onRelationshipTypeChange(this.props.selectedTab);
         }
     }
 
@@ -520,13 +459,13 @@ class Decompositions extends React.Component {
             openTable
         } = this.state; 
 
-        let selectedRelationshipType = this.props.relationshipType; 
+        let selectedTab = this.props.selectedTab; 
         let diffGraph = this.props.graphData.diff_graph;
         let decomposition = [];
         let relationshipTypeTable = []
 
         for(let i = 0; i < num_of_partitions; i++) {
-            let partition = (selectedRelationshipType === 'static') ? 
+            let partition = (selectedTab === 'static') ? 
                 [].concat(diffGraph[i].common, diffGraph[i].graph_1_diff) : 
                 [].concat(diffGraph[i].common, diffGraph[i].graph_2_diff);
             decomposition.push(partition);

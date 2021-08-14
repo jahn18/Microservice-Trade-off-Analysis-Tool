@@ -17,7 +17,7 @@ export default class DiffTool extends React.Component {
         let json_graph_data = this.props.location.state.data; 
 
         this.state = {
-            selectedRelationshipType: 'static',
+            selectedTab: 'static',
             graphData: json_graph_data,
         }
     }
@@ -29,7 +29,7 @@ export default class DiffTool extends React.Component {
     render() {
         const {
             graphData,
-            selectedRelationshipType
+            selectedTab
         } = this.state;
 
         let colors = {
@@ -47,11 +47,11 @@ export default class DiffTool extends React.Component {
             <div>
                 <Paper square>
                     <Tabs
-                        value={selectedRelationshipType}
+                        value={selectedTab}
                         textColor="primary"
                         indicatorColor="primary"
                         onChange={(event, newValue) => {
-                            this.setState({selectedRelationshipType: newValue});
+                            this.setState({selectedTab: newValue});
                         }}
                     >
                         <Tab 
@@ -69,10 +69,10 @@ export default class DiffTool extends React.Component {
                     </Tabs>
                 </Paper>
                 {
-                    (selectedRelationshipType !== 'custom') && <Decompositions graphData={graphData} colors={colors} relationshipType={selectedRelationshipType}/>
+                    (selectedTab !== 'custom') && <Decompositions graphData={graphData} colors={colors} selectedTab={selectedTab}/>
                 }
                 {
-                    (selectedRelationshipType === 'custom') && <CustomGraph graphData={graphData} colors={colors}/>
+                    (selectedTab === 'custom') && <CustomGraph graphData={graphData} colors={colors} selectedTab={selectedTab}/>
                 }
             </div>
         );

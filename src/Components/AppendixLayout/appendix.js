@@ -14,8 +14,11 @@
 
 import cytoscape from 'cytoscape';
 import cola from 'cytoscape-cola';
+import noOverlap from 'cytoscape-no-overlap';
+
 
 cytoscape.use( cola );
+cytoscape.use( noOverlap );
 
 // constructor: this layout will automatically create the appendices for you in the graph and position them accordingly.
 // cy: the cytoscape instance with all elements fulfilling the requirements above. 
@@ -356,7 +359,6 @@ AppendixLayout.prototype.run = function() {
 
         adjustPartitionPositions();
 
-        cy.add(options.edges)
     }
 
     runLayout();
