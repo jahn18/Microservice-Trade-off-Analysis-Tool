@@ -1,6 +1,9 @@
 const initialState = {
-    diff_graph: {}, 
-    custom_graph: {}
+    diff_graph: {
+    }, 
+    custom_graph: {
+        graph: []
+    },
 };
 
 function graphReducer(state = initialState, action) {

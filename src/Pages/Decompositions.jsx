@@ -1,10 +1,7 @@
 import React from "react";
 import cytoscape from 'cytoscape';
-import cola from 'cytoscape-cola';
-import nodeHtmlLabel from 'cytoscape-node-html-label';
 import Utils from '../Components/Utils';
-import AppendixLayout from '../Components/AppendixLayout';
-import noOverlap from 'cytoscape-no-overlap';
+import coseBilkent from 'cytoscape-cose-bilkent';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
@@ -26,51 +23,31 @@ import {updateDiffGraph} from '../Actions';
 import storeProvider from '../storeProvider';
 
 
-cytoscape.use( nodeHtmlLabel );
-cytoscape.use( cola );
-cytoscape.use( noOverlap );
+cytoscape.use( coseBilkent );
 
 class Decompositions extends React.Component {
     constructor(props) {
         super(props);
 
         const element_types = {
-                partition: 'partition',
-                appendix: 'appendix',
-                diff_node: 'diff', 
-                common_node: 'common',
-                invisible_node: 'invisible',
-                moved_node: 'common*'
+            partition: 'partition',
+            common_node: 'common',
         };
 
-        let parsedGraph = Utils.parseJSONGraphFile(this.props.graphData, this.props.colors);
-        let num_of_decompositions = 2;
-
         this.state = {
-            nodes: parsedGraph[0],
-            common_elements: parsedGraph[1],
-            num_of_partitions: parsedGraph[2],
-            relationshipTypes: parsedGraph[3],
-            num_of_decompositions: num_of_decompositions,
+            nodes: [],
             element_types: element_types,
             openTable: false,
         }
-
         this.ref = React.createRef();
     };
 
     componentDidMount() {
-        const {
-            nodes,
-            element_types,
-            num_of_decompositions
-        } = this.state; 
-
-        let lastCustomRenderedState = storeProvider.getStore().getState().custom_graph;
+        let parsedGraph = Utils.parseDecompositionFromJSON(this.props.selectedTab, this.props.graphData);
 
         let cy = cytoscape({
             container: this.ref,
-            elements: nodes,
+            elements: parsedGraph.decomposition,
             style: [
                 {
                     'selector': 'node',
@@ -169,76 +146,23 @@ class Decompositions extends React.Component {
             ],
         });
 
-        if(!this._canLoadCustomStateGraph(lastCustomRenderedState)) {
-            let options = {
-                    num_of_versions: 2,
-                    partitions_per_row: 3,
-                    width: 100,
-                    height: 100,
-            };
-            let layout = new AppendixLayout( cy, options );
-            layout.run()
+        let layout = cy.layout({
+            name: 'cose-bilkent',
+            nodeDimensionsIncludeLabels: true,
+            tilingPaddingVertical: 40,
+            tilingPaddingHorizontal: 40,
+            fit: true,
+            animate: false
+        });
+        layout.run();
 
-            cy.nodes().forEach((ele) => {
-                if(ele.data('element_type') === element_types.invisible_node) {
-                    ele.addClass('hide');
-                }
-            });
-        } 
-        else {
-            // Load previous state for decomposition versions.
-            cy.elements().remove();
-            let lastRenderedState = storeProvider.getStore().getState().diff_graph;
-            cy.json({elements:lastRenderedState.elements}).layout({name: 'preset'}).run();
-
-            let customGraphState = storeProvider.getStore().getState().custom_graph.graph;
-            let customGraphPartitions = [];
-            for(let i = 0; i < customGraphState.elements.nodes.length; i++) {
-                if(customGraphState.elements.nodes[i].data.element_type === element_types.partition) {
-                    customGraphPartitions.push(customGraphState.elements.nodes[i]);
-                }
-            }
-            
-            // Adjust the partitions and their positions based on the positions of the partitions in the custom graph view. 
-            for(let i in customGraphPartitions) {
-                let partition = cy.getElementById(customGraphPartitions[i].data.id);
-                partition.shift(
-                    {
-                        x: (partition.position().x > customGraphPartitions[i].position.x) ? 
-                            -(partition.position().x - customGraphPartitions[i].position.x) :
-                            (customGraphPartitions[i].position.x - partition.position().x),
-                        y: (partition.position().y > customGraphPartitions[i].position.y) ? 
-                            -(partition.position().y - customGraphPartitions[i].position.y) :
-                            (customGraphPartitions[i].position.y - partition.position().y)
-                    }
-                )
-            }
-            cy.pan(customGraphState.pan);
-            cy.zoom(customGraphState.zoom);
-            // cy.nodes().noOverlap();
-        }
-
-        cy.nodeHtmlLabel([{
-                query: 'node',
-                halign: 'center',
-                valign: 'center',
-                halignBox: 'center',
-                valignBox: 'center',
-                tpl: (data) => {
-                    let element = cy.getElementById(data.id);
-                    if(data.element_type === element_types.appendix && data.showMinusSign === false) {
-                        return `<h3 style="color:#808080; font-weight: bold; position: absolute; top: ${element.boundingBox().y1 - element.position().y + 5}; right: ${element.position().x - element.boundingBox().x1 - 45};">` 
-                                + `V${data.version}` 
-                                + '</h3>';
-                    } 
-                }
-        }]);
-
+        const num_of_partitions_per_row = 5;
+        this.adjustPartitionPositions(cy, parsedGraph.num_of_partitions, num_of_partitions_per_row)
 
         /*
             All event handlers when interacting with the graph. 
         */       
-        cy.on('tap', 'node', (e) => this.onSelectedNode(e));
+        cy.on('tap', 'node', (e) => {this.onSelectedNode(e)});
         cy.on('click', (e) => { 
             cy.elements().forEach((ele) => {
                 ele.data().showMinusSign = false; 
@@ -246,98 +170,187 @@ class Decompositions extends React.Component {
                 ele.removeClass('highlight');
             });
         });
-        cy.on('mouseover', 'node', (e) => this.preventNonVisibleNodeFromMoving(e));
-        cy.on('mouseout', 'node', () => { cy.elements().grabify(); });
-        cy.on('drag', (ele) => {
-            if (Utils.checkIfOverlaps(ele.target, 0, cy, num_of_decompositions)) {
-                ele.target.position(ele.target.scratch('previousPosition'));
-            } else {
-                ele.target.scratch('previousPosition', JSON.parse(JSON.stringify(ele.target.position())));
+        cy.fit();
+
+        // Load elements from redux
+        let edgeRelationshipTypes;
+        // let allGraphsSavedState;
+        if(Object.keys(storeProvider.getStore().getState().diff_graph).length === 0) {
+            edgeRelationshipTypes = Utils.getEdgeRelationshipTypes(this.props.graphData, this.props.colors);
+            // allGraphsSavedState = storeProvider.getStore().getState().diff_graph.graph;
+        } else {
+            edgeRelationshipTypes = storeProvider.getStore().getState().diff_graph.edgeRelationshipTypes; 
+            // allGraphsSavedState = {};
+        }
+
+        let relationshipTypeTable = [];
+
+        Object.keys(edgeRelationshipTypes).map(
+            (key, index) => {
+                relationshipTypeTable.push(<TableRow>
+                    <TableCell style={{'font-size': 'Normal'}}>
+                        {key.charAt(0).toUpperCase() + key.slice(1)}
+                    </TableCell>
+                    <TableCell align="left" style={{'font-size': 'Normal'}}>
+                        {
+                            Utils.calculateNormalizedTurboMQ(
+                                edgeRelationshipTypes[key]["links"],
+                                this.getDecomposition(this.props.selectedTab, this.props.graphData, parsedGraph.num_of_partitions)
+                            ).toFixed(2)
+                        }
+                    </TableCell>
+                    <TableCell>
+                        <Slider
+                            defaultValue={edgeRelationshipTypes[key].minimumEdgeWeight}
+                            aria-labelledby="discrete-slider"
+                            valueLabelDisplay="auto"
+                            step={10}
+                            marks={true}
+                            min={0}
+                            max={100}
+                            style={{
+                                width: '100%',
+                                color: edgeRelationshipTypes[key].color
+                            }}
+                            onChange={(event, weight) => {
+                                let edgeRelationshipTypesCopy = {...this.state.edgeRelationshipTypes};
+                                edgeRelationshipTypesCopy[key].minimumEdgeWeight = weight; 
+                                this.setState({edgeRelationshipTypes: edgeRelationshipTypesCopy});
+                            }}
+                        />
+                    </TableCell>
+                </TableRow>)
             }
-        });
+        )
 
         this.setState({
             cy: cy,
-            nodes: cy.nodes().forEach((ele) => {
-                if(ele.data().element_type === element_types.appendix) {
-                    switch(this.props.selectedTab) {
-                        case 'static':
-                            if(ele.data().version === 2) {
-                                ele.children().addClass('hide');
-                            } 
-                            break;
-                        case 'class name':
-                            if(ele.data().version === 1) {
-                                ele.children().addClass('hide');
-                            } 
-                            break;
-                        default:
-                    }
-                }
-            }).jsons(),
+            num_of_partitions: parsedGraph.num_of_partitions,
+            edgeRelationshipTypes: edgeRelationshipTypes,
+            relationshipTypeTable: relationshipTypeTable,
+            // allGraphsSavedState: allGraphsSavedState
         })
     }
 
-    _getLastRenderedNodePositions(lastRenderedGraph) {
-        let previous_graph_positions = {};
-        for(let node_i in lastRenderedGraph.elements.nodes) {
-            previous_graph_positions[lastRenderedGraph.elements.nodes[node_i].data.id] = lastRenderedGraph.elements.nodes[node_i].position;
+    getDecomposition(relationshipType, json_graph, num_of_partitions) {
+        let decomposition = []
+        for(let i = 0; i < num_of_partitions; i++) {
+            decomposition.push(json_graph[relationshipType].decomposition[`partition${i}`].map((nodeInfo => {return nodeInfo.id})));
         }
-        return previous_graph_positions;
+        return decomposition;
     }
 
-    _canLoadCustomStateGraph(lastCustomRenderedState) {
-        if(Object.keys(lastCustomRenderedState).length === 0) {
-            return false;
+    adjustPartitionPositions(cy, num_of_partitions, partitions_per_row) {
+        let previous_partition_position = {
+            x: 0,
+            y: 0,
+            first_row_x1_pos: 0, 
+            first_row_y2_pos: 0
         }
-        return true;
+
+        for(let i = 0; i < num_of_partitions; i++ ) {
+            let partition = cy.getElementById(`partition${i}`);
+            if(i % partitions_per_row === 0) {
+                partition.shift({
+                    x: previous_partition_position.first_row_x1_pos - partition.boundingBox().x1,
+                    y: previous_partition_position.first_row_y2_pos - partition.boundingBox().y1 + 100
+                });
+                previous_partition_position.first_row_x1_pos = partition.boundingBox().x1;
+                previous_partition_position.first_row_y2_pos = partition.boundingBox().y2;
+            } else {
+                partition.shift({
+                    x: previous_partition_position.x - partition.boundingBox().x1 + 100,
+                    y: previous_partition_position.y - partition.boundingBox().y1
+                });
+            }
+            previous_partition_position.x = partition.boundingBox().x2; 
+            previous_partition_position.y = partition.boundingBox().y1; 
+            if(partition.boundingBox().y2 > previous_partition_position.first_row_y2_pos) {
+                previous_partition_position.first_row_y2_pos = partition.boundingBox().y2;
+            }
+        }
+
+        cy.fit();
     }
 
     // When the user clicks on a tab it changes the relationship type.
-    onRelationshipTypeChange(relationshipType) {
-        const {
-            cy
-        } = this.state;
-        this.setState({nodes: this._updateGraphNodes(relationshipType)});
-    }
-
-    _updateGraphNodes(relationshipType) {
-        const {
+    onRelationshipTypeChange(relationshipType, prevRelationshipType) {
+        let {
             cy,
-            element_types
+            edgeRelationshipTypes,
+            // allGraphsSavedState
         } = this.state;
 
-        let renderNewGraph = [];
-        cy.elements().forEach(ele => {
-            if(ele.data().element_type !== element_types.invisible_node) {
-                ele.removeClass('hide');
-            }
-        })
+        let num_of_partitions;
+        let nodes;
+        // allGraphsSavedState[prevRelationshipType] = cy.nodes().jsons();
 
-        switch(relationshipType) {
-            case 'static':
-                renderNewGraph = cy.elements().filter((ele) => {
-                    return (ele.data('element_type') === element_types.appendix)
-                }).forEach((appendix) => {
-                    if(appendix.data().version === 2) {
-                        appendix.children().addClass('hide');
-                    }
-                }).jsons();
-                break; 
-            case 'class name':
-                renderNewGraph = cy.elements().filter((ele) => {
-                    return (ele.data('element_type') === element_types.appendix)
-                }).forEach((appendix) => {
-                    if(appendix.data().version === 1) {
-                        appendix.children().addClass('hide');
-                    }
-                }).jsons();
-                break;
-            default: 
-                renderNewGraph = cy.nodes().jsons();
-                break;
-        }
-        return renderNewGraph;
+        // if (relationshipType in allGraphsSavedState) {
+        //     nodes = allGraphsSavedState[relationshipType].elements;
+        //     cy.json({elements: nodes}).layout({name: 'preset'}).run();
+        // } else {
+            let parsedDecomposition = Utils.parseDecompositionFromJSON(relationshipType, this.props.graphData);
+            num_of_partitions = parsedDecomposition.num_of_partitions;
+            nodes = parsedDecomposition.decomposition;
+            cy.remove('node');
+            cy.add(nodes)
+            cy.layout({
+                name: 'cose-bilkent',
+                nodeDimensionsIncludeLabels: true,
+                tilingPaddingVertical: 40,
+                tilingPaddingHorizontal: 40,
+                fit: true,
+                animate: false
+            }).run();
+            this.adjustPartitionPositions(cy, parsedDecomposition.num_of_partitions, 5)
+        // }
+        cy.fit();
+
+        let relationshipTypeTable = [];
+        Object.keys(edgeRelationshipTypes).map(
+            (key, index) => {
+                relationshipTypeTable.push(<TableRow>
+                    <TableCell style={{'font-size': 'Normal'}}>
+                        {key.charAt(0).toUpperCase() + key.slice(1)}
+                    </TableCell>
+                    <TableCell align="left" style={{'font-size': 'Normal'}}>
+                        {
+                            Utils.calculateNormalizedTurboMQ(
+                                edgeRelationshipTypes[key]["links"],
+                                this.getDecomposition(this.props.selectedTab, this.props.graphData, num_of_partitions)
+                            ).toFixed(2)
+                        }
+                    </TableCell>
+                    <TableCell>
+                        <Slider
+                            defaultValue={edgeRelationshipTypes[key].minimumEdgeWeight}
+                            aria-labelledby="discrete-slider"
+                            valueLabelDisplay="auto"
+                            step={10}
+                            marks={true}
+                            min={0}
+                            max={100}
+                            style={{
+                                width: '100%',
+                                color: edgeRelationshipTypes[key].color
+                            }}
+                            onChange={(event, weight) => {
+                                let edgeRelationshipTypesCopy = {...this.state.edgeRelationshipTypes};
+                                edgeRelationshipTypesCopy[key].minimumEdgeWeight = weight; 
+                                this.setState({edgeRelationshipTypes: edgeRelationshipTypesCopy});
+                            }}
+                        />
+                    </TableCell>
+                </TableRow>)
+            }
+        )
+
+        this.setState({
+            nodes: nodes,
+            num_of_partitions: num_of_partitions,
+            relationshipTypeTable: relationshipTypeTable,
+            // allGraphsSavedState: allGraphsSavedState
+        });
     }
 
     onSelectedNode(ele) { 
@@ -358,10 +371,6 @@ class Decompositions extends React.Component {
                     }),
                 )
                 break;
-            case element_types.appendix:
-                selected_elements = selected_elements.union(sel.children());
-                break;
-            case element_types.diff_node:
             case element_types.common_node:
                 selected_elements = selected_elements.union(cy.getElementById(sel.data().partition)); 
                 break;
@@ -372,71 +381,46 @@ class Decompositions extends React.Component {
         selected_elements = selected_elements.union(selected_elements.incomers()).union(selected_elements.outgoers());
         selected_elements.incomers().forEach((ele) => {
             selected_elements = selected_elements.union(cy.getElementById(ele.data('target')))
-                                                .union(cy.getElementById(cy.getElementById(ele.data('target')).data('partition')))
                                                 .union(cy.getElementById(ele.data('target')).parent());
         })
         selected_elements.outgoers().forEach((ele) => {
             selected_elements = selected_elements.union(cy.getElementById(ele.data('source')))
-                                                .union(cy.getElementById(cy.getElementById(ele.data('source')).data('partition')))
                                                 .union(cy.getElementById(ele.data('source')).parent());
         })
         
         let unselected_elements = cy.elements().difference(selected_elements);
-        unselected_elements.forEach((ele) => {
-            ele.data().showMinusSign = true; 
-        });
-
         unselected_elements.addClass('deactivate');
         selected_elements.addClass('highlight');
-    }
-
-    preventNonVisibleNodeFromMoving(ele) {
-        const {
-            element_types
-        } = this.state;
-
-        const selectedTab = this.props.selectedTab;
-
-        let sel = ele.target;
-        if(selectedTab === 'static' && sel.parent().data('version') === 2) {
-            sel.ungrabify();
-        } else if (selectedTab === 'class name' && sel.parent().data('version') === 1) {
-            sel.ungrabify();
-        } else if (sel.data('element_type') === element_types.invisible_node || sel.data('element_type') === element_types.appendix) {
-            sel.ungrabify();
-        } 
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
         const {
             cy,
-            relationshipTypes,
-            common_elements,
-            num_of_decompositions
+            edgeRelationshipTypes,
         } = this.state;
 
-        const selectedTab = this.props.selectedTab;
-
         // Check if the user has toggled the switch, which will add edges to the graph. 
-        if(JSON.stringify(prevState.edges) !== JSON.stringify(Utils.updateGraphEdges(selectedTab, relationshipTypes, common_elements, this.props.colors, num_of_decompositions, null))) {
-            Utils.addEdges(cy, selectedTab, relationshipTypes, common_elements, this.props.colors, num_of_decompositions);
+        const edges = Utils.updateGraphEdges(edgeRelationshipTypes);
+        if(JSON.stringify(prevState.edges) !== JSON.stringify(edges)) {
+            cy.remove('edge')
+            cy.add(edges);
             // Do not highlight any node if the toggles are pressed. 
             cy.elements().forEach((ele) => {
-                ele.data().showMinusSign = false; 
                 ele.removeClass('deactivate');
                 ele.removeClass('highlight');
             });
         }
 
         if(prevProps.selectedTab !== this.props.selectedTab) {
-            this.onRelationshipTypeChange(this.props.selectedTab);
+            this.onRelationshipTypeChange(this.props.selectedTab, prevProps.selectedTab);
         }
     }
 
     updateRedux() {
         const {
             cy,
-            element_types
+            element_types,
+            edgeRelationshipTypes,
         } = this.state;
 
         cy.elements().forEach(ele => {
@@ -445,7 +429,10 @@ class Decompositions extends React.Component {
             }
         });
         cy.remove('edge');
-        this.props.updateDiffGraph(cy.json());
+        this.props.updateDiffGraph({
+            edgeRelationshipTypes: edgeRelationshipTypes,
+            // graph: cy.json()
+        });
     }
 
     componentWillUnmount() {
@@ -454,60 +441,9 @@ class Decompositions extends React.Component {
 
     render() {
         const {
-            relationshipTypes,
-            num_of_partitions,
-            openTable
+            openTable,
+            relationshipTypeTable,
         } = this.state; 
-
-        let selectedTab = this.props.selectedTab; 
-        let diffGraph = this.props.graphData.diff_graph;
-        let decomposition = [];
-        let relationshipTypeTable = []
-
-        for(let i = 0; i < num_of_partitions; i++) {
-            let partition = (selectedTab === 'static') ? 
-                [].concat(diffGraph[i].common, diffGraph[i].graph_1_diff) : 
-                [].concat(diffGraph[i].common, diffGraph[i].graph_2_diff);
-            decomposition.push(partition);
-        }
-
-        Object.keys(relationshipTypes).map(
-            (key, index) => {
-                relationshipTypeTable.push(<TableRow>
-                    <TableCell style={{'font-size': 'Normal'}}>
-                        {key}
-                    </TableCell>
-                    <TableCell align="left" style={{'font-size': 'Normal'}}>
-                        {
-                            Utils.calculateNormalizedTurboMQ(
-                                relationshipTypes[key]["links"],
-                                decomposition
-                            ).toFixed(2)
-                        }
-                    </TableCell>
-                    <TableCell>
-                        <Slider
-                            defaultValue={relationshipTypes[key].minimumEdgeWeight}
-                            aria-labelledby="discrete-slider"
-                            valueLabelDisplay="auto"
-                            step={10}
-                            marks={true}
-                            min={0}
-                            max={100}
-                            style={{
-                                width: '100%',
-                                color: relationshipTypes[key].color
-                            }}
-                            onChange={(event, weight) => {
-                                let relationshipTypesCopy = {...this.state.relationshipTypes};
-                                relationshipTypesCopy[key].minimumEdgeWeight = weight; 
-                                this.setState({relationshipTypes: relationshipTypesCopy});
-                            }}
-                        />
-                    </TableCell>
-                </TableRow>)
-            }
-        )
 
         return (
             <div>

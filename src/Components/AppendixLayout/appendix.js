@@ -16,18 +16,17 @@ import cytoscape from 'cytoscape';
 import cola from 'cytoscape-cola';
 import noOverlap from 'cytoscape-no-overlap';
 
-
 cytoscape.use( cola );
 cytoscape.use( noOverlap );
 
-// constructor: this layout will automatically create the appendices for you in the graph and position them accordingly.
-// cy: the cytoscape instance with all elements fulfilling the requirements above. 
-// options: {
-// num_of_versions: number of graphs to compare, 
-// width: default width of appendices, 
-// height: default height of appendices,
-// partitions_per_row: when laying out the partitions, the total number of partitions per row.  
-// }
+/**
+ * 
+ * @param {*} cy the cytoscape instance with all elements fulfilling the requirements above. 
+ * @param {*} options num_of_versions: number of graphs to compare, 
+ *                    width: default width of appendices, 
+ *                    height: default height of appendices,
+ *                    partitions_per_row: when laying out the partitions, the total number of partitions per row.  
+ */
 function AppendixLayout( cy, options ) {
     this.cy = cy;   
     this.options = options
@@ -38,9 +37,6 @@ AppendixLayout.prototype.run = function() {
     const options = this.options;
 
     const cy_graph_json = cy.json();
-
-    // A headless instance of a cytoscape graph to act as a "blueprint" when configuring the main graph. 
-    let headlessCy = cytoscape();
 
     // Add all the partitions and common nodes first into the headless cytoscape instance. 
     const principal_elements = cy.nodes().filter( (ele) => {
@@ -125,12 +121,12 @@ AppendixLayout.prototype.run = function() {
     const appendixLayoutOptions = {
         name: 'cola',
         animate: false,
-        maxSimulationTime: 1, 
         edgeJaccardLength: 40,
         avoidOverlap: true,
         nodeDimensionsIncludeLabels: true,
         unconstrIter: 20,
         userConstIter: 40,
+        animate: false,
         allConstIter: 10,
         infinity: false 
     }
@@ -353,7 +349,7 @@ AppendixLayout.prototype.run = function() {
             }
         }
         cy.add(add_partitions);
-        cy.json({elements: graph_state.elements.nodes}).layout({name: 'preset', position: (ele) => {return renderedPositions[ele.id()]}}).run();
+        cy.json({elements: graph_state.elements.nodes}).layout({name: 'preset', position: (ele) => {return renderedPositions[ele.id()]}, animate: false}).run();
 
         shiftAppendices(appendix_info);
 
