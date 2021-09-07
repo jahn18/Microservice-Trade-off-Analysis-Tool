@@ -40,7 +40,7 @@ export default function WeightedRelationshipSelectionTable(props) {
                     width: '50%',
                     border: '1px solid grey',
                     left: '25%',
-                    bottom: '20%',
+                    bottom: '15%',
                     position: 'fixed',
                 }
             } 

@@ -1,4 +1,4 @@
-from flask import request, jsonify, Flask, Blueprint
+from flask import request, jsonify, Flask, Blueprint, send_file
 import os
 import csv
 
@@ -99,6 +99,15 @@ def main_index(projectname, static, dynamic, classnames, classterms, commits, co
                     partitions['partition{}'.format(i)].append(entity)
                 i += 1
 
-        return jsonify(partitions)
+        return partitions
     except:
         return "ERROR: Could not retrieve json graph data...", 400
+
+
+@main.route('/<projectname>', methods=['GET', 'POST'])
+def fetch_demo_json_file(projectname):
+    demo_files_dir = cluster_dir + "/../../" + "demoJSONFiles" + "/"
+    if os.path.isfile(demo_files_dir + projectname + ".json"):
+        return send_file(demo_files_dir + projectname + ".json")
+    else:
+        return "ERROR: The demo JSON file does not exist...", 400

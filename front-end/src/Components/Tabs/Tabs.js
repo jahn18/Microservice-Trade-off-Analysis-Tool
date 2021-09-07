@@ -38,6 +38,8 @@ export default function SelectionTabs(props) {
                 onChange={(event, newValue) => {
                     props.setSelectedTab(newValue)
                 }}
+                variant="scrollable"
+                scrollButtons="auto"
             >
                 {tabs}
             </Tabs>

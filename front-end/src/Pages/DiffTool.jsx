@@ -130,7 +130,7 @@ export default class DiffTool extends React.Component {
 
         // When the xhr finishes and obtains the json graph. 
         xhr.onreadystatechange = () => {
-            if (xhr.readyState == XMLHttpRequest.DONE) {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
                 let status = xhr.status;
                 if (status !== 400) {
                     let decomposition = JSON.parse(xhr.responseText);
@@ -168,7 +168,7 @@ export default class DiffTool extends React.Component {
 
         // Accept the server address and the relationship-weights through props. 
         const PROJECT_NAME = "PartsUnlimitedMRP";
-        const address = SERVER_ADDRESS + "/" + PROJECT_NAME + "/" + relationshipWeights['static'] + "/" + relationshipWeights['dynamic'] + "/" + relationshipWeights['class-names'] + "/" + relationshipWeights['class-terms'] + "/" + relationshipWeights['commits'] + "/" + relationshipWeights['contributors'];
+        const address = SERVER_ADDRESS + PROJECT_NAME + "/" + relationshipWeights['static'] + "/" + relationshipWeights['dynamic'] + "/" + relationshipWeights['class-names'] + "/" + relationshipWeights['class-terms'] + "/" + relationshipWeights['commits'] + "/" + relationshipWeights['contributors'];
         xhr.open("POST", address);
         xhr.setRequestHeader("Accept", "application/json");
         xhr.setRequestHeader("Content-Type", "application/json");

@@ -1,0 +1,3 @@
+SS(RepositoryFactory.ss) = DealerController, RepositoryFactory, QuoteController, OrderController, OrderEventInfo
+SS(MongoOperationsWithRetry.ss) = MongoDealersRepository, DealerInfo, Dealer, MongoQuoteRepository, Quote, BadRequestException, QuoteDetails, QuoteItemInfo, MongoOperationsWithRetry, DeliveryAddress, PhoneInfo, Utility, OrderStatus, OrderDetails, OrderUpdateInfo, MongoOrderRepository
+SS(ShipmentRecord.ss) = MongoShipmentRepository, ShipmentDetails, ShipmentRecord, ShipmentEventInfo, ShipmentController

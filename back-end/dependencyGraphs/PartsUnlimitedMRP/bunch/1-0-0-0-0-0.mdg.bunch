@@ -1,0 +1,10 @@
+SS(AuthService.ss) = UpdatePasswordException, CurrentUser, UserController, UserService, DateAudit, User, UserLogoutException, CustomUserDetails, ResourceNotFoundException, ResourceAlreadyInUseException, AuthService, UpdatePasswordRequest
+SS(AuthController.ss) = MatchPasswordValidator, PasswordResetRequest, MatchPassword, PasswordResetLinkRequest, UserLoginException, JwtAuthenticationResponse, TokenRefreshRequest, UserRegistrationException, AuthController, PasswordResetException, PasswordResetLinkException, BadRequestException, AuthControllerAdvice, AppException, ApiResponse
+SS(JwtTokenProvider.ss) = JwtAuthenticationEntryPoint, WebSecurityConfig, JwtTokenProvider, JwtAuthenticationFilter, CustomUserDetailsService, UserRepository
+SS(Role.ss) = RoleService, RoleRepository, RoleName, Role
+SS(EmailVerificationToken.ss) = OnRegenerateEmailVerificationListener, OnRegenerateEmailVerificationEvent, TokenStatus, EmailVerificationTokenRepository, EmailVerificationToken, EmailVerificationTokenService
+SS(OnUserLogoutSuccessEvent.ss) = InvalidTokenRequestException, JwtTokenValidator, OnUserLogoutSuccessEvent, OnUserLogoutSuccessEventListener, LoggedOutJwtTokenCache
+SS(RefreshToken.ss) = RefreshTokenService, RefreshTokenRepository, RefreshToken, UserDeviceService, UserDevice, TokenRefreshException, UserDeviceRepository
+SS(PasswordResetToken.ss) = OnGenerateResetLinkEvent, OnGenerateResetLinkEventListener, PasswordResetTokenService, PasswordResetToken, Util, PasswordResetTokenRepository
+SS(DeviceInfo.ss) = DeviceType, DeviceInfo, LogOutRequest, LoginRequest, NullOrNotBlankValidator, NullOrNotBlank, RegistrationRequest
+SS(OnUserRegistrationCompleteListener.ss) = OnUserAccountChangeListener, OnUserAccountChangeEvent, Mail, MailService, MailSendException, OnUserRegistrationCompleteEvent, OnUserRegistrationCompleteListener
