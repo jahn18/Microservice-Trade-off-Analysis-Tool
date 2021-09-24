@@ -80,6 +80,7 @@ def main_index(projectname, static, dynamic, classnames, classterms, commits, co
         # Now convert the generated decomposition into json format and return it back to the client.
         decomposition_file_name = output_dir + "/" + static + "-" + dynamic + "-" + classnames + "-" + classterms + "-" + commits + "-" + contributors + ".mdg.bunch"
         partitions = {}
+        existing_class_names = []
         with open(decomposition_file_name, 'r') as bunchFile:
             lines = bunchFile.readlines()
             i = 0
@@ -96,8 +97,31 @@ def main_index(projectname, static, dynamic, classnames, classterms, commits, co
                 for entity in entities:
                     entity = entity.replace('\n', '')
                     entity = entity.split('.')[-1]
-                    partitions['partition{}'.format(i)].append(entity)
+                    partitions['partition{}'.format(i)].append({"id": entity})
+                    existing_class_names.append(entity)
                 i += 1
+
+        class_names = []
+        for key in graphData['static']['decomposition']:
+            for class_entity in graphData['static']['decomposition'][key]:
+                class_names.append(
+                    class_entity
+                )
+
+        missing_class_names = []
+        for className in class_names:
+            if className["id"] not in existing_class_names:
+                missing_class_names.append(className)
+
+        partitions['unobserved'] = []
+
+        for missing_class in missing_class_names:
+            partitions['unobserved'].append(
+                {
+                    'id': missing_class["id"],
+                    "package": missing_class["package"]
+                }
+            )
 
         return partitions
     except:

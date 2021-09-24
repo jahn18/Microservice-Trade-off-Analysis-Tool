@@ -1,0 +1,6 @@
+SS(QuoteDetails.ss) = QuoteRepository, MongoQuoteRepository, Quote, QuoteDetails, QuoteController
+SS(ShipmentDetails.ss) = ShipmentDetails, ShipmentController, MongoShipmentRepository, ShipmentRepository, ShipmentRecord
+SS(DealerController.ss) = MongoDealersRepository, Dealer, DealersRepository, DealerController
+SS(OrderEventInfo.ss) = DealerInfo, PhoneInfo, OrderUpdateInfo, ShipmentEventInfo, QuoteItemInfo, OrderEventInfo
+SS(OrderDetails.ss) = OrderDetails, OrderController, OrderRepository, OrderStatus, MongoOrderRepository
+SS(Delivery.ss) = DeliveryAddress, Delivery

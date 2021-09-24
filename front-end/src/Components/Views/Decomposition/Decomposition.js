@@ -33,6 +33,8 @@ class Decompositions extends React.Component {
         const element_types = {
             partition: 'partition',
             common_node: 'common',
+            unobserved_partition: 'unobserved_partition',
+            unobserved_node: 'unobserved_node'
         };
 
         this.state = {
@@ -156,7 +158,8 @@ class Decompositions extends React.Component {
         layout.run();
 
         const num_of_partitions_per_row = 5;
-        this.adjustPartitionPositions(cy, 
+        this.adjustPartitionPositions(
+            cy, 
             this.props.num_of_partitions, //parsedGraph.num_of_partitions, 
             num_of_partitions_per_row
         )
@@ -194,7 +197,7 @@ class Decompositions extends React.Component {
                         {
                             Utils.calculateNormalizedTurboMQ(
                                 edgeRelationshipTypes[key]["links"],
-                                this.getDecomposition(this.props.elements, this.props.num_of_partitions) 
+                                this.getDecomposition(cy, this.props.elements, this.props.num_of_partitions) 
                             ).toFixed(2)
                         }
                     </TableCell>
@@ -229,22 +232,30 @@ class Decompositions extends React.Component {
         })
     }
 
-    getDecomposition(elements, num_of_partitions) {
+    getDecomposition(cy, elements, num_of_partitions) {
         const {
             element_types
         } = this.state;
 
         let decomposition = [];
-        for(let i = 0; i < num_of_partitions; i++) {
+        let numPartitions
+        if(cy.getElementById('unobserved') !== undefined) {
+            numPartitions = num_of_partitions + 1; 
+        }
+
+        for(let i = 0; i < numPartitions; i++) {
             decomposition.push([]);
         }
 
         for(let ele of elements) {
-            if(ele.data.element_type !== element_types.partition) {
-                decomposition[parseInt(ele.data.parent.match('[0-9]'))].push(ele.data.id); 
+            if(ele.data.element_type === element_types.common_node || ele.data.element_type === element_types.unobserved_node) {
+                if (ele.data.parent === "unobserved") {
+                    decomposition[num_of_partitions].push(ele.data.id); 
+                } else {
+                    decomposition[parseInt(ele.data.parent.match('[0-9]'))].push(ele.data.id); 
+                }
             }
         }
-
         return decomposition;
     }
 
@@ -255,9 +266,19 @@ class Decompositions extends React.Component {
             first_row_x1_pos: 0, 
             first_row_y2_pos: 0
         }
+        
+        let numPartitions = num_of_partitions
+        if (cy.getElementById('unobserved') !== undefined) {
+            numPartitions += 1; 
+        } 
+        for(let i = 0; i < numPartitions; i++ ) {
+            let partition; 
+            if (i === num_of_partitions) {
+                partition = cy.getElementById('unobserved');
+            } else {
+                partition = cy.getElementById(`partition${i}`);
+            }
 
-        for(let i = 0; i < num_of_partitions; i++ ) {
-            let partition = cy.getElementById(`partition${i}`);
             if(i % partitions_per_row === 0) {
                 partition.shift({
                     x: previous_partition_position.first_row_x1_pos - partition.boundingBox().x1,
@@ -312,7 +333,7 @@ class Decompositions extends React.Component {
                         {
                             Utils.calculateNormalizedTurboMQ(
                                 edgeRelationshipTypes[key]["links"],
-                                this.getDecomposition(this.props.elements, this.props.num_of_partitions)
+                                this.getDecomposition(cy, this.props.elements, this.props.num_of_partitions)
                             ).toFixed(2)
                         }
                     </TableCell>

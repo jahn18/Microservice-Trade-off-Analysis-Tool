@@ -1,0 +1,2 @@
+SS(ShipmentRepository.ss) = OrderRepository, BadRequestException, OrderStatus, QuoteItemInfo, MongoOrderRepository, ShipmentRecord, DeliveryAddress, QuoteRepository, MongoDealersRepository, DealerInfo, PhoneInfo, Delivery, ShipmentEventInfo, MongoQuoteRepository, DealersRepository, OrderEventInfo, QuoteDetails, ShipmentDetails, ShipmentController, OrderController, OrderDetails, OrderUpdateInfo, MongoShipmentRepository, Quote, Dealer, Utility, RepositoryFactory, QuoteController, ShipmentRepository
+SS(MongoOperationsWithRetry.ss) = DealerController, MongoOperationsWithRetry

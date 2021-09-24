@@ -3,23 +3,23 @@ import munkres from 'munkres-js';
 export default class Utils {
     constructor() {}
 
-    /** 
-     *  Measures the coupling and cohesion for a given decomposition from a scale of 0->100%. 100% 
-     *  indicates the current decomposition is extremely well defined and cohesive; 0% indicates 
+    /**
+     *  Measures the coupling and cohesion for a given decomposition from a scale of 0->100%. 100%
+     *  indicates the current decomposition is extremely well defined and cohesive; 0% indicates
      *  the partitions are extremely and dependent between each other.
-     * 
-     *  @param {edge_dependencies} - A list of edge dependencies in the given graph. 
+     *
+     *  @param {edge_dependencies} - A list of edge dependencies in the given graph.
      *                              The elements in this list should contain a dictionary indicating
-     *                              the source of the edge, its corresponding target, and the weight 
+     *                              the source of the edge, its corresponding target, and the weight
      *                              of the edge.
      *                              e.g. [{source: 'nodeA', target: 'nodeB', weight: 1.0}, ...]
-     * 
-     *  @param {decomposition} - A list representing the decomposition configuration of nodes in a given graph. 
-     *                         Index i of decomposition[i] must indicate the partition the nodes are a part of. 
+     *
+     *  @param {decomposition} - A list representing the decomposition configuration of nodes in a given graph.
+     *                         Index i of decomposition[i] must indicate the partition the nodes are a part of.
      *                         e.g [['nodeA'], ['nodeB']]. Here, 'nodeA' is in partition0, and 'nodeB' is in partition1.
-     * 
-     *  @returns {float} the normalized TurboMQ value. 
-     * 
+     *
+     *  @returns {float} the normalized TurboMQ value.
+     *
      */
     static calculateNormalizedTurboMQ = (edge_dependencies, decomposition) => {
         let CF = 0.0;
@@ -28,26 +28,35 @@ export default class Utils {
         for(let i = 0; i < num_of_partitions; i++) {
             let partition = decomposition[i];
             let internal_edges = 0.0;
-            let external_edges = 0.0; 
+            let external_edges = 0.0;
 
             for(let j = 0; j < edge_dependencies.length; j++) {
                 let edge = edge_dependencies[j];
                 if(partition.includes(edge.source) && partition.includes(edge.target)) {
                     internal_edges += parseFloat(edge.weight);
-                } else if (partition.includes(edge.source) || partition.includes(edge.target)) {
-                    external_edges += parseFloat(edge.weight); 
+                } else if (partition.includes(edge.source)) {
+                    external_edges += parseFloat(edge.weight);
                 }
             }
-            CF += (internal_edges !== 0) ? ((2*internal_edges) / ( (2*internal_edges) + external_edges)) : 0; 
+            CF += (internal_edges !== 0) ? ((internal_edges) / ( (internal_edges) + external_edges)) : 0;
         }
-        return (CF / num_of_partitions) * 100;
+        return ( CF / (num_of_partitions) ) * 100;
     };
 
     // --> All used for the decomposition views:
-    static parseDecompositionFromJSON(relationshipType, json_graph) {
+    static parseDecompositionFromJSON(json_graph, relationshipType = null) {
         let decomposition = [];
-        let num_of_partitions = Object.keys(json_graph[relationshipType].decomposition).length;
-        for(let i = 0; i < num_of_partitions; i++) {
+        let num_of_partitions;
+        let unobservedPartition;
+        if (relationshipType === null) {
+            num_of_partitions = Object.keys(json_graph).length;
+            unobservedPartition = json_graph["unobserved"];
+        } else {
+            num_of_partitions = Object.keys(json_graph[relationshipType].decomposition).length;
+            unobservedPartition = json_graph[relationshipType].decomposition["unobserved"];
+        }
+
+        for(let i = 0; i < num_of_partitions - 1; i++) {
             decomposition.push(
                 {
                     data: {
@@ -59,36 +68,64 @@ export default class Utils {
                         width: 0,
                         height: 0,
                         showMinusSign: false,
-                    } 
+                    }
                 }
             );
-            decomposition = decomposition.concat(this.formCytoscapeElements(json_graph[relationshipType].decomposition[`partition${i}`], i));
+
+            if(relationshipType === null) {
+                decomposition = decomposition.concat(this.formCytoscapeElements(json_graph[`partition${i}`], `partition${i}`, 'common'));
+            } else {
+                decomposition = decomposition.concat(this.formCytoscapeElements(json_graph[relationshipType].decomposition[`partition${i}`], `partition${i}`, 'common'));
+            }
         }
+
+        if (unobservedPartition.length !== 0) {
+            decomposition.push(
+                {
+                    data: {
+                        id: `unobserved`,
+                        label: `unobserved`,
+                        background_color: 'white',
+                        colored: false,
+                        element_type: 'unobserved_partition',
+                        width: 0,
+                        height: 0,
+                        showMinusSign: false,
+                    }
+                }
+            );
+            if(relationshipType === null) {
+                decomposition = decomposition.concat(this.formCytoscapeElements(json_graph[`unobserved`], 'unobserved', 'unobserved_node'));
+            } else {
+                decomposition = decomposition.concat(this.formCytoscapeElements(json_graph[relationshipType].decomposition[`unobserved`], 'unobserved', 'unobserved_node'));
+            }
+        }
+
         return {
             decomposition: decomposition,
             num_of_partitions: num_of_partitions
         };
     }
 
-    static formCytoscapeElements(elements, partition_num) {
+    static formCytoscapeElements(elements, parent, element_type) {
         let element_list = [];
         for(let i = 0; i < elements.length; i++) {
             let classNode = elements[i];
             element_list.push({
-                group: 'nodes', 
+                group: 'nodes',
                 data: {
-                    id: classNode.id, 
+                    id: classNode.id,
                     label: classNode.id,
-                    element_type: 'common',
-                    parent: `partition${partition_num}`,
+                    element_type: element_type,
+                    parent: parent,
                     background_color: 'grey',
                     colored: true,
                     showMinusSign: false,
-                    partition: `partition${partition_num}`
-                } 
+                    partition: parent
+                }
             });
         }
-        return element_list; 
+        return element_list;
     }
 
     static getEdgeRelationshipTypes(json_graph, colors) {
@@ -132,22 +169,22 @@ export default class Utils {
             let edge = edges[i];
             if((this.findMaxEdgeWeight(edges) * (1 - ( minimumEdgeWeight / 100 ))) < parseFloat(edge.weight)) {
                 cytoscape_edges.push({
-                    group: 'edges', 
+                    group: 'edges',
                     data: {
                         source: edge.source,
                         target: edge.target,
                         weight: parseFloat(edge.weight).toFixed(2),
                         element_type: 'edge',
                         color: edge_color
-                    } 
-                }); 
+                    }
+                });
             }
         }
         return cytoscape_edges;
     }
     // <-- fin
 
-    // Used for custom graph --> 
+    // Used for custom graph -->
     // Uses the hungarian algorithm to match two decompositions together
     static matchDecompositions(chosenDecompositionOne, chosenDecompositionTwo, json_graph) {
         const getUnion = (cluster_one, cluster_two) => {return [...new Set([...cluster_one, ...cluster_two])]}
@@ -162,30 +199,40 @@ export default class Utils {
         // First create the matrix
         let max_num_of_partitions;
         if (Object.keys(json_graph[chosenDecompositionOne].decomposition).length > Object.keys(json_graph[chosenDecompositionTwo].decomposition).length) {
-            max_num_of_partitions = Object.keys(json_graph[chosenDecompositionOne].decomposition).length; 
+            max_num_of_partitions = Object.keys(json_graph[chosenDecompositionOne].decomposition).length;
         } else {
-            max_num_of_partitions = Object.keys(json_graph[chosenDecompositionTwo].decomposition).length; 
+            max_num_of_partitions = Object.keys(json_graph[chosenDecompositionTwo].decomposition).length;
         }
 
         let costMatrix = [];
-        let max_value = 0;
+        let max_value = 1.5;
         for (let i = 0; i<max_num_of_partitions; i++) {
             costMatrix[i] = [];
             for(let j = 0; j<max_num_of_partitions; j++) {
                 let cluster_one = json_graph[chosenDecompositionOne].decomposition[`partition${i}`];
                 let cluster_two = json_graph[chosenDecompositionTwo].decomposition[`partition${j}`];
+                if (i === max_num_of_partitions - 1 && j === max_num_of_partitions - 1) {
+                    cluster_one = json_graph[chosenDecompositionOne].decomposition['unobserved'];
+                    cluster_two = json_graph[chosenDecompositionTwo].decomposition['unobserved'];
+                    costMatrix[i][j] = 1.5;
+                    continue;
+                } else if (i === max_num_of_partitions - 1 || j === max_num_of_partitions - 1) {
+                    costMatrix[i][j] = 0;
+                    continue;
+                }
+
                 if(cluster_one !== undefined && cluster_two !== undefined) {
                     let similarity_value = clusterSimilarityMetric(cluster_one.map(nodeInfo => {return nodeInfo.id}), cluster_two.map(nodeInfo => {return nodeInfo.id}));
-                    if(similarity_value > max_value) {
-                        max_value = similarity_value;
-                    }
+                    // if(similarity_value > max_value) {
+                    //     max_value = similarity_value;
+                    // }
                     costMatrix[i][j] = similarity_value;
                 } else {
                     costMatrix[i][j] = 0;
                 }
             }
-        }      
-        // Subtract all values by the maximum, so we can find the maximum weighted matching. 
+        }
+        // Subtract all values by the maximum, so we can find the maximum weighted matching.
         for (let i = 0; i<max_num_of_partitions; i++) {
             for(let j = 0; j<max_num_of_partitions; j++) {
                 costMatrix[i][j] = max_value - costMatrix[i][j];
@@ -196,6 +243,10 @@ export default class Utils {
         for(let i = 0; i < max_num_of_partitions; i++) {
             let cluster_one = json_graph[chosenDecompositionOne].decomposition[`partition${partition_matches[i][0]}`];
             let cluster_two = json_graph[chosenDecompositionTwo].decomposition[`partition${partition_matches[i][1]}`];
+            if (i === max_num_of_partitions - 1) {
+                cluster_one = json_graph[chosenDecompositionOne].decomposition['unobserved'];
+                cluster_two = json_graph[chosenDecompositionTwo].decomposition['unobserved'];
+            }
             if(cluster_one !== undefined && cluster_two !== undefined) {
                 diff_graph[i] = {
                     common: getIntersection(cluster_one.map(nodeInfo => {return nodeInfo.id}), cluster_two.map(nodeInfo => {return nodeInfo.id})),
@@ -220,32 +271,32 @@ export default class Utils {
     }
 
     static parseDiffGraphFile(diff_graph, colors) {
-        let all_elements = []; 
+        let all_elements = [];
         let common_elements = [];
 
         let num_of_partitions = Object.keys(diff_graph).length;
         for(let i = 0; i < num_of_partitions; i++) {
             common_elements = common_elements.concat(diff_graph[i].common);
-            all_elements = all_elements.concat( 
-                                        this.getJSONNodeElements(diff_graph[i].common, i, 0, false, colors), 
-                                        this.getJSONNodeElements(diff_graph[i].diff_one, i, 1, true, colors), 
-                                        this.getJSONNodeElements(diff_graph[i].diff_two, i, 2, true, colors), 
+            all_elements = all_elements.concat(
+                                        this.getJSONNodeElements(diff_graph[i].common, i, 0, false, colors),
+                                        this.getJSONNodeElements(diff_graph[i].diff_one, i, 1, true, colors),
+                                        this.getJSONNodeElements(diff_graph[i].diff_two, i, 2, true, colors),
                                     );
             all_elements.push(
                 {
                     data: {
                         id: `partition${i}`,
-                        label: `P${i + 1}`,
+                        label: (i === num_of_partitions - 1) ? 'unobserved': `P${i + 1}`,
                         background_color: 'white',
                         colored: false,
                         element_type: 'partition',
                         width: 0,
                         height: 0,
                         showMinusSign: false,
-                    } 
+                    }
                 })
 
-            if(diff_graph[i].common.length === 0) { 
+            if(diff_graph[i].common.length === 0) {
                 all_elements.push(
                     {
                         data: {
@@ -254,11 +305,11 @@ export default class Utils {
                             background_color: 'grey',
                             colored: false,
                             element_type: 'invisible',
-                            showMinusSign: false, 
+                            showMinusSign: false,
                             partition: `partition${i}`,
                             parent: `partition${i}`
                         },
-                    }, 
+                    },
                 )
             }
         }
@@ -271,12 +322,12 @@ export default class Utils {
     }
 
     /**
-     * Parses the class names from the JSON file and formats it according to "elements-json" in cytoscape.js. 
+     * Parses the class names from the JSON file and formats it according to "elements-json" in cytoscape.js.
      * Reference: https://js.cytoscape.org/#notation/elements-json.
-     * 
+     *
      * @returns {list} Of elements.
      */
-    static getJSONNodeElements = (graph_list, partition_num, decomposition_version, isDiffElement, colors) => { 
+    static getJSONNodeElements = (graph_list, partition_num, decomposition_version, isDiffElement, colors) => {
         let color = 'grey';
         if(decomposition_version === 1) {
             color = colors[0];
@@ -289,9 +340,9 @@ export default class Utils {
         for(let i = 0; i < graph_list.length; i++) {
             let classNode = graph_list[i];
             element_list.push({
-                group: 'nodes', 
+                group: 'nodes',
                 data: {
-                    id: `graph_${decomposition_version}_${classNode}`, 
+                    id: `graph_${decomposition_version}_${classNode}`,
                     label: classNode,
                     element_type: (isDiffElement) ? 'diff': 'common',
                     parent: `partition${partition_num}`,
@@ -300,10 +351,10 @@ export default class Utils {
                     colored: true,
                     showMinusSign: false,
                     partition: `partition${partition_num}`
-                } 
+                }
             });
         }
-        return element_list; 
+        return element_list;
     }
 
     static showCustomGraphEdges(cy, chosen_relationship_types, relationshipTypes, common_elements, targetNode) {
@@ -312,13 +363,13 @@ export default class Utils {
         for(let key of chosen_relationship_types) {
             edges = edges.concat(
                 this.addEdgesForCustomGraph(
-                    relationshipTypes[key].links, 
-                    common_elements, 
+                    relationshipTypes[key].links,
+                    common_elements,
                     chosen_relationship_types.length,
                     relationshipTypes[key].minimumEdgeWeight,
                     relationshipTypes[key].color,
                     targetNode
-                ), 
+                ),
             );
         }
         cy.add(edges);
@@ -333,19 +384,19 @@ export default class Utils {
             // if ((this.findMaxEdgeWeight(edge_graph) * (1 - ( minimumEdgeWeight / 100 ))) < parseFloat(edge.weight)) {
             if (0 < parseFloat(edge.weight)) {
                 for(let j = 1; j <= num_of_decompositions; j++) {
-                    let add_edge = null; 
+                    let add_edge = null;
                     if (edge.source === targetNode.data('label')) {
                         add_edge = {
                             classes: 'dependency',
-                            group: 'edges', 
+                            group: 'edges',
                             data: {
                                 source: targetNode.data('id'),
                                 target: (common_elements.includes(edge.target)) ? `graph_0_${edge.target}` : `graph_${j}_${edge.target}`,
                                 weight: parseFloat(edge.weight).toFixed(2),
                                 element_type: 'edge',
                                 color: color
-                            } 
-                        }; 
+                            }
+                        };
                         if(!targets.includes(add_edge.data.target)) {
                             edge_dependencies.push(add_edge);
                         }
@@ -353,15 +404,15 @@ export default class Utils {
                     } else if (edge.target === targetNode.data('label')) {
                         add_edge = {
                             classes: 'dependency',
-                            group: 'edges', 
+                            group: 'edges',
                             data: {
                                 source: (common_elements.includes(edge.source)) ? `graph_0_${edge.source}` : `graph_${j}_${edge.source}`,
                                 target: targetNode.data('id'),
                                 weight: parseFloat(edge.weight).toFixed(2),
                                 element_type: 'edge',
                                 color: color
-                            } 
-                        }; 
+                            }
+                        };
                         if(!sources.includes(add_edge.data.source)) {
                             edge_dependencies.push(add_edge);
                         }
@@ -373,8 +424,8 @@ export default class Utils {
         return edge_dependencies;
     }
     /**
-     * 
-     * @param {List of Dictionaries} edge_graph 
+     *
+     * @param {List of Dictionaries} edge_graph
      * @returns {Float} The highest edge-weight in the given edge_graph
      */
     static findMaxEdgeWeight(edge_graph) {
@@ -389,8 +440,8 @@ export default class Utils {
         return max_edge_weight.toFixed(0);
     }
 
-    // Weighted Relationship View 
+    // Weighted Relationship View
     static getAllNodes(json_graph) {
-        
+
     }
 }

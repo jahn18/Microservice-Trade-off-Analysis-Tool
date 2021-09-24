@@ -1,10 +1,4 @@
-SS(AuthService.ss) = UpdatePasswordException, CurrentUser, UserController, UserService, DateAudit, User, UserLogoutException, CustomUserDetails, ResourceNotFoundException, ResourceAlreadyInUseException, AuthService, UpdatePasswordRequest
-SS(AuthController.ss) = MatchPasswordValidator, PasswordResetRequest, MatchPassword, PasswordResetLinkRequest, UserLoginException, JwtAuthenticationResponse, TokenRefreshRequest, UserRegistrationException, AuthController, PasswordResetException, PasswordResetLinkException, BadRequestException, AuthControllerAdvice, AppException, ApiResponse
-SS(JwtTokenProvider.ss) = JwtAuthenticationEntryPoint, WebSecurityConfig, JwtTokenProvider, JwtAuthenticationFilter, CustomUserDetailsService, UserRepository
-SS(Role.ss) = RoleService, RoleRepository, RoleName, Role
-SS(EmailVerificationToken.ss) = OnRegenerateEmailVerificationListener, OnRegenerateEmailVerificationEvent, TokenStatus, EmailVerificationTokenRepository, EmailVerificationToken, EmailVerificationTokenService
-SS(OnUserLogoutSuccessEvent.ss) = InvalidTokenRequestException, JwtTokenValidator, OnUserLogoutSuccessEvent, OnUserLogoutSuccessEventListener, LoggedOutJwtTokenCache
-SS(RefreshToken.ss) = RefreshTokenService, RefreshTokenRepository, RefreshToken, UserDeviceService, UserDevice, TokenRefreshException, UserDeviceRepository
-SS(PasswordResetToken.ss) = OnGenerateResetLinkEvent, OnGenerateResetLinkEventListener, PasswordResetTokenService, PasswordResetToken, Util, PasswordResetTokenRepository
-SS(DeviceInfo.ss) = DeviceType, DeviceInfo, LogOutRequest, LoginRequest, NullOrNotBlankValidator, NullOrNotBlank, RegistrationRequest
-SS(OnUserRegistrationCompleteListener.ss) = OnUserAccountChangeListener, OnUserAccountChangeEvent, Mail, MailService, MailSendException, OnUserRegistrationCompleteEvent, OnUserRegistrationCompleteListener
+SS(RepositoryFactory.ss) = Delivery, RepositoryFactory, ShipmentController, ShipmentRepository, PhoneInfo, ShipmentEventInfo, MongoShipmentRepository, ShipmentRecord, DeliveryAddress, ShipmentDetails
+SS(Quote.ss) = QuoteRepository, QuoteController, MongoQuoteRepository, QuoteItemInfo, Quote, QuoteDetails, Utility, MongoOperationsWithRetry
+SS(DealerInfo.ss) = DealerInfo, DealersRepository, DealerController, Dealer, MongoDealersRepository
+SS(BadRequestException.ss) = OrderUpdateInfo, OrderStatus, OrderEventInfo, OrderDetails, MongoOrderRepository, OrderController, OrderRepository, BadRequestException

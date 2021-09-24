@@ -1,3 +1,3 @@
-SS(JwtTokenValidator.ss) = InvalidTokenRequestException, JwtTokenValidator
-SS(OnUserLogoutSuccessEvent.ss) = LoggedOutJwtTokenCache, OnUserLogoutSuccessEvent
-SS(CustomUserDetails.ss) = DateAudit, Role, User, CustomUserDetails, JwtTokenProvider
+SS(RepositoryFactory.ss) = DealerController, RepositoryFactory, QuoteController, OrderController, OrderEventInfo
+SS(MongoOperationsWithRetry.ss) = MongoDealersRepository, DealerInfo, Dealer, MongoQuoteRepository, Quote, BadRequestException, QuoteDetails, QuoteItemInfo, MongoOperationsWithRetry, DeliveryAddress, PhoneInfo, Utility, OrderStatus, OrderDetails, OrderUpdateInfo, MongoOrderRepository
+SS(ShipmentRecord.ss) = MongoShipmentRepository, ShipmentDetails, ShipmentRecord, ShipmentEventInfo, ShipmentController

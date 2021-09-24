@@ -38,8 +38,11 @@ class TradeOffGraph extends React.Component {
 
         const selectedDecompositions = this.props.selectedDecompositions.sort((v1, v2) => (v1[1] > v2[1]) ? 1 : -1);
         let parsedDiffGraph = Utils.matchDecompositions(selectedDecompositions[0][0], selectedDecompositions[1][0], this.props.graphData);
-        let parsedGraph = Utils.parseDiffGraphFile(parsedDiffGraph, 
-            [this.props.colors.relationship_type_colors[selectedDecompositions[0][1]], this.props.colors.relationship_type_colors[selectedDecompositions[1][1]]]);
+        let parsedGraph = Utils.parseDiffGraphFile(
+            parsedDiffGraph, 
+            [this.props.colors.relationship_type_colors[selectedDecompositions[0][1]], 
+            this.props.colors.relationship_type_colors[selectedDecompositions[1][1]]]
+        );
 
         this.state = {
             savePreviousState: true,
@@ -65,7 +68,8 @@ class TradeOffGraph extends React.Component {
                 diff_node: 'diff', 
                 common_node: 'common',
                 invisible_node: 'invisible',
-                moved_node: 'common*'
+                moved_node: 'common*',
+                unobserved_node: 'unobserved_node'
             },
             openTable: {
                 metrics: false,
@@ -732,6 +736,24 @@ class TradeOffGraph extends React.Component {
             cy.nodes().forEach((ele) => {
                 if(ele.data('partition') === `partition${i}`) {
                     if(ele.data('element_type') === element_types.common_node || ele.data('element_type') === element_types.moved_node) {
+                        partition.push(ele.data().label);
+                    } else if (ele.data('element_type') === element_types.diff_node 
+                        && !moved_elements.includes(ele.data().label)
+                        && !decomposition_versions.includes(ele.data('version'))) {
+                        partition.push(ele.data().label);
+                    }
+                }
+            })
+            if(partition.length !== 0) {
+                decomposition.push(partition);
+            }
+        }
+
+        if (cy.getElementById('unobserved') !== undefined) {
+            let partition = []; 
+            cy.nodes().forEach((ele) => {
+                if(ele.data('partition') === 'unobserved') {
+                    if(ele.data('element_type') === element_types.unobserved_node || ele.data('element_type') === element_types.moved_node) {
                         partition.push(ele.data().label);
                     } else if (ele.data('element_type') === element_types.diff_node 
                         && !moved_elements.includes(ele.data().label)

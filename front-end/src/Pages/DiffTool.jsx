@@ -134,29 +134,31 @@ export default class DiffTool extends React.Component {
                 let status = xhr.status;
                 if (status !== 400) {
                     let decomposition = JSON.parse(xhr.responseText);
-                    let elements = [];
-                    let index = 0;
-                    for(let partition in decomposition) {
-                        elements.push({
-                            data: {
-                                id: partition,
-                                label: `P${index + 1}`,
-                                background_color: 'white',
-                                colored: false, 
-                                element_type: 'partition',
-                                width: 0,
-                                height: 0,
-                                showMinusSign: false 
-                            }
-                        });
-                        let element_list = decomposition[partition].map(ele => {return {id: ele}});
-                        elements = elements.concat(Utils.formCytoscapeElements(element_list, index));
-                        index++; 
-                    }
+                    console.log(decomposition)
+                    let elements = Utils.parseDecompositionFromJSON(decomposition);
+                    // let index = 0;
+                    // for(let partition in decomposition) {
+                    //     elements.push({
+                    //         data: {
+                    //             id: partition,
+                    //             label: `P${index + 1}`,
+                    //             background_color: 'white',
+                    //             colored: false, 
+                    //             element_type: 'partition',
+                    //             width: 0,
+                    //             height: 0,
+                    //             showMinusSign: false 
+                    //         }
+                    //     });
+                    //     let element_list = decomposition[partition].map(ele => {return {id: ele}});
+                    //     elements = elements.concat(Utils.formCytoscapeElements(element_list, index));
+                    //     index++; 
+                    // }
+                    // console.log(elements)
                     this.setState(
                         {
-                            weightedGraphElements: elements,
-                            weightedGraphPartitionNum: index,
+                            weightedGraphElements: elements['decomposition'],
+                            weightedGraphPartitionNum: elements['num_of_partitions'],
                             fetchedWeightedRelationshipDecomposition: true
                         }
                     );
@@ -210,12 +212,12 @@ export default class DiffTool extends React.Component {
         let elements;
         let num_of_partitions;
         if (selectedTab !== "trade-off" && selectedTab !== 'weighted-relationship') {
-            let parsedGraph = Utils.parseDecompositionFromJSON(selectedTab, graphData);
+            let parsedGraph = Utils.parseDecompositionFromJSON(graphData, selectedTab);
             elements = parsedGraph.decomposition;
-            num_of_partitions = parsedGraph.num_of_partitions; 
+            num_of_partitions = parsedGraph.num_of_partitions - 1; 
         } else if (fetchedWeightedRelationshipDecomposition && selectedTab === 'weighted-relationship') {
             elements = weightedGraphElements;
-            num_of_partitions = weightedGraphPartitionNum; 
+            num_of_partitions = weightedGraphPartitionNum - 1; 
         }
 
         return (
@@ -272,7 +274,7 @@ export default class DiffTool extends React.Component {
                         /> :
                         <Decompositions 
                             elements={weightedGraphElements}
-                            num_of_partitions={weightedGraphPartitionNum}
+                            num_of_partitions={weightedGraphPartitionNum - 1}
                             graphData={graphData} 
                             colors={colors} 
                             selectedTab={selectedTab}
