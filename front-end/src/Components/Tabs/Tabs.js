@@ -13,19 +13,19 @@ export default function SelectionTabs(props) {
                     style={{color: props.colors.relationship_type_colors[index]}}
                     label={`V${index + 1} (by ${key})`} 
                     value={key}
-                    onClick={() => props.resetTradeOffConfiguration(!props.selectedDecompositionsCompare)}
+                    // onClick={() => props.resetTradeOffConfiguration(!props.selectedDecompositionsCompare)}
                 />
             )
         }
     );
     tabs.push(
         <Tab style={{color: 'grey'}} 
-            label="Trade-Off" 
-            value="trade-off"
+            label="Weighted-view" 
+            value="weighted-relationship"
         />,
         <Tab style={{color: 'grey'}} 
-            label="Weighted-Relationship" 
-            value="weighted-relationship"
+            label="Diff-view" 
+            value="trade-off"
         />
     );
 

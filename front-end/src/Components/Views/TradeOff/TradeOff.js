@@ -27,6 +27,7 @@ import UndoIcon from '@material-ui/icons/Undo';
 import IconButton from '@material-ui/core/IconButton';
 import Button from '@material-ui/core/Button';
 import cxtmenu from 'cytoscape-cxtmenu';
+import { Typography } from "@material-ui/core";
 
 
 cytoscape.use( cxtmenu );
@@ -37,19 +38,43 @@ class TradeOffGraph extends React.Component {
         super(props);
 
         const selectedDecompositions = this.props.selectedDecompositions.sort((v1, v2) => (v1[1] > v2[1]) ? 1 : -1);
-        let parsedDiffGraph = Utils.matchDecompositions(selectedDecompositions[0][0], selectedDecompositions[1][0], this.props.graphData);
+        let sortedSelectedDecompositions = this.props.selectedDecompositions.map((selectedDecomposition) => {
+            return selectedDecomposition[0];
+        });
+
+        let consideredRelationshipEdges = [];
+
+        let parsedDiffGraph;
+        if(sortedSelectedDecompositions.includes("weighted-relationship")) {
+            parsedDiffGraph = Utils.matchDecompositions(
+                this.props.graphData[sortedSelectedDecompositions[0]].decomposition, 
+                this.props.weightedDecomposition.decomposition,
+            );
+            consideredRelationshipEdges = consideredRelationshipEdges.concat(this.props.weightedDecomposition.relationshipsConsidered);
+            consideredRelationshipEdges.push(sortedSelectedDecompositions[0]);
+        } else {
+            parsedDiffGraph = Utils.matchDecompositions(
+                this.props.graphData[sortedSelectedDecompositions[0]].decomposition, 
+                this.props.graphData[sortedSelectedDecompositions[1]].decomposition
+            );
+            consideredRelationshipEdges.push(sortedSelectedDecompositions[0]);
+            consideredRelationshipEdges.push(sortedSelectedDecompositions[1]);
+        }
+
         let parsedGraph = Utils.parseDiffGraphFile(
             parsedDiffGraph, 
-            [this.props.colors.relationship_type_colors[selectedDecompositions[0][1]], 
-            this.props.colors.relationship_type_colors[selectedDecompositions[1][1]]]
+            [this.props.colors.relationship_type_colors[selectedDecompositions[0][1]], this.props.colors.relationship_type_colors[selectedDecompositions[1][1]]],
+            selectedDecompositions[0][1],
+            selectedDecompositions[1][1]
         );
 
         this.state = {
+            consideredRelationshipEdges: consideredRelationshipEdges,
             savePreviousState: true,
             selectedDecompositions: selectedDecompositions,
             nodes: parsedGraph.elements,
             common_elements: parsedGraph.common_elements,
-            num_of_partitions: parsedGraph.num_of_partitions,
+            num_of_partitions: parsedGraph.num_of_partitions, 
             relationshipTypeTable: [],
             decomposition_attributes: {
                 num_of_decompositions: 2,
@@ -69,7 +94,6 @@ class TradeOffGraph extends React.Component {
                 common_node: 'common',
                 invisible_node: 'invisible',
                 moved_node: 'common*',
-                unobserved_node: 'unobserved_node'
             },
             openTable: {
                 metrics: false,
@@ -339,13 +363,14 @@ class TradeOffGraph extends React.Component {
             element_types,
             selectedDecompositions,
             relationshipTypes,
-            common_elements
+            common_elements,
+            consideredRelationshipEdges
         } = this.state;
 
         // Clear the selected nodes when right clicking on a new node
         this.onUnhighlightNodes();
         targetNode = cy.getElementById(targetNode.data('realNodeId'))
-        Utils.showCustomGraphEdges(cy, [selectedDecompositions[0][0], selectedDecompositions[1][0]], relationshipTypes, common_elements, targetNode);
+        Utils.showCustomGraphEdges(cy, consideredRelationshipEdges, relationshipTypes, common_elements, targetNode);
         let selected_elements = cy.collection(targetNode);
         selected_elements = selected_elements.union(cy.elements().filter((ele) => {
             return ele.data('element_type') === element_types.invisible_node;
@@ -749,23 +774,6 @@ class TradeOffGraph extends React.Component {
             }
         }
 
-        if (cy.getElementById('unobserved') !== undefined) {
-            let partition = []; 
-            cy.nodes().forEach((ele) => {
-                if(ele.data('partition') === 'unobserved') {
-                    if(ele.data('element_type') === element_types.unobserved_node || ele.data('element_type') === element_types.moved_node) {
-                        partition.push(ele.data().label);
-                    } else if (ele.data('element_type') === element_types.diff_node 
-                        && !moved_elements.includes(ele.data().label)
-                        && !decomposition_versions.includes(ele.data('version'))) {
-                        partition.push(ele.data().label);
-                    }
-                }
-            })
-            if(partition.length !== 0) {
-                decomposition.push(partition);
-            }
-        }
         return decomposition;
     }
 
@@ -885,11 +893,11 @@ class TradeOffGraph extends React.Component {
 
         if(movedElementInfo.movedNode.data('element_type') === element_types.common_node || movedElementInfo.movedNode.data('prev_element_type') === element_types.common_node) {
             let partition_num = parseInt(movedElementInfo.movedNode.data('partition').match('[0-9]')) + 1;
-            previous_partitions = `P${partition_num}`;
+            previous_partitions = `M${partition_num}`;
         } else if (this._checkifFirstMoveForClass(movedElementInfo)){
             for(let i = 1; i <= decomposition_attributes.num_of_decompositions; i++) {
                 let partition_num = parseInt(cy.getElementById(`graph_${i}_${movedElementInfo.movedNode.data('label')}`).data().partition.match('[0-9]')) + 1;
-                previous_partitions = previous_partitions.concat(`V${this.props.selectedDecompositions[i - 1][1] + 1}-P${partition_num}`);
+                previous_partitions = previous_partitions.concat(`V${this.props.selectedDecompositions[i - 1][1] + 1}-M${partition_num}`);
                 if(i !== decomposition_attributes.num_of_decompositions) {
                     previous_partitions = previous_partitions.concat(" ᐱ ");
                 }
@@ -898,11 +906,11 @@ class TradeOffGraph extends React.Component {
             let index = this._findIndexInMoveHistory(movedElementInfo);
             let previous_node = nodeMoveHistory[movedElementInfo.movedNode.data('label')][index].movedNode
             let partition_num = parseInt(previous_node.data('partition').match('[0-9]')) + 1;
-            previous_partitions = `P${partition_num}`;
+            previous_partitions = `M${partition_num}`;
         }
 
         let target_partition = parseInt(movedElementInfo.targetPartition.id().match('[0-9]')) + 1;
-        return `${target_node}: ${previous_partitions} → P${target_partition}`;
+        return `${target_node}: ${previous_partitions} → M${target_partition}`;
     }
 
     _findIndexInMoveHistory(movedElementInfo) {
@@ -1018,19 +1026,37 @@ class TradeOffGraph extends React.Component {
                 <div className="custom-graph-container">
                     <div style={{height: '100%', width: '100%', position: 'fixed'}} ref={ref => (this.ref = ref)}></div>
                 </div>
-                <Button variant="outlined" color="primary"
+                <div
                     style={{
                         position: 'fixed',
                         'margin-top': '0.75%',
-                        'left': '1%'
+                        'left': '1%',
+                        display: 'flex'
                     }}
-                    onClick={() => {
-                        this.state.savePreviousState = false;
-                        this.props.onChange(true);
-                    }
-                }>
-                    Compare new 
-                </Button>
+                >
+                    <Typography style={{'margin-top': '1%', display: 'flex'}} variant="h5"> 
+                        <div style={{'margin-right': '8px', color: this.props.colors.relationship_type_colors[selectedDecompositions[0][1]]}}>
+                            {`V${this.props.selectedDecompositions[0][1] + 1}`}
+                        </div>
+                        <div style={{'margin-right': '3px'}}>
+                            {'vs.'}
+                        </div>
+                        <div style={{color: this.props.colors.relationship_type_colors[selectedDecompositions[1][1]]}}>
+                            {`V${this.props.selectedDecompositions[1][1] + 1}`}
+                        </div>
+                    </Typography>
+                    <Button variant="outlined" color="primary"
+                        style={{
+                            'left': '10%'
+                        }}
+                        onClick={() => {
+                            this.state.savePreviousState = false;
+                            this.props.onChange(true);
+                        }
+                    }>
+                        Compare new 
+                    </Button>
+                </div>
                 <TableContainer 
                 component={Paper} 
                 style={

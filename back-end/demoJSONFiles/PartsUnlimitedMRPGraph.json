@@ -475,48 +475,70 @@
         "decomposition": {
             "partition0": [
                 {
-                    "id": "DealersRepository",
-                    "package": "DealersRepository"
+                    "id": "ShipmentController",
+                    "package": "ShipmentController"
                 },
                 {
-                    "id": "DealerInfo",
-                    "package": "DealerInfo"
+                    "id": "Delivery",
+                    "package": "Delivery"
                 },
                 {
-                    "id": "Order",
-                    "package": "Order"
+                    "id": "RepositoryFactory",
+                    "package": "RepositoryFactory"
                 },
                 {
-                    "id": "DealerController",
-                    "package": "DealerController"
+                    "id": "ShipmentRepository",
+                    "package": "ShipmentRepository"
                 },
                 {
-                    "id": "QuoteItemInfo",
-                    "package": "QuoteItemInfo"
+                    "id": "ShipmentDetails",
+                    "package": "mongodb"
                 },
                 {
-                    "id": "CatalogController",
-                    "package": "CatalogController"
+                    "id": "PhoneInfo",
+                    "package": "PhoneInfo"
                 },
                 {
-                    "id": "QuoteDetails",
-                    "package": "QuoteDetails"
+                    "id": "ShipmentEventInfo",
+                    "package": "ShipmentEventInfo"
+                },
+                {
+                    "id": "ShipmentRecord",
+                    "package": "ShipmentRecord"
+                },
+                {
+                    "id": "DeliveryAddress",
+                    "package": "DeliveryAddress"
+                },
+                {
+                    "id": "MongoShipmentRepository",
+                    "package": "mongodb"
+                }
+            ],
+            "partition1": [
+                {
+                    "id": "QuoteRepository",
+                    "package": "QuoteRepository"
+                },
+                {
+                    "id": "QuoteController",
+                    "package": "QuoteController"
                 },
                 {
                     "id": "Quote",
                     "package": "Quote"
                 },
                 {
-                    "id": "MongoShipmentRepository",
-                    "package": "MongoShipmentRepository"
+                    "id": "QuoteItemInfo",
+                    "package": "QuoteItemInfo"
                 },
                 {
-                    "id": "OrderItem",
-                    "package": "OrderItem"
+                    "id": "MongoQuoteRepository",
+                    "package": "mongodb"
                 },
                 {
-                    "id": "QuoteController",
-                    "package": "QuoteController"
+                    "id": "QuoteDetails",
+                    "package": "mongodb"
                 },
                 {
                     "id": "Utility",
@@ -524,53 +546,43 @@
                 },
                 {
                     "id": "MongoOperationsWithRetry",
-                    "package": "MongoOperationsWithRetry"
-                },
-                {
-                    "id": "QuoteRepository",
-                    "package": "QuoteRepository"
+                    "package": "mongodb"
                 }
             ],
-            "partition1": [
+            "partition2": [
                 {
-                    "id": "CatalogItem",
-                    "package": "CatalogItem"
+                    "id": "DealerInfo",
+                    "package": "DealerInfo"
                 },
+                {
+                    "id": "DealerController",
+                    "package": "DealerController"
+                },
+                {
+                    "id": "DealersRepository",
+                    "package": "DealersRepository"
+                },
+                {
+                    "id": "Dealer",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "MongoDealersRepository",
+                    "package": "mongodb"
+                }
+            ],
+            "partition3": [
                 {
                     "id": "OrderUpdateInfo",
                     "package": "OrderUpdateInfo"
-                },
-                {
-                    "id": "OrderMessage",
-                    "package": "OrderMessage"
-                },
-                {
-                    "id": "OrderEventInfo",
-                    "package": "OrderEventInfo"
                 },
                 {
                     "id": "OrderStatus",
                     "package": "OrderStatus"
                 },
                 {
-                    "id": "MongoQuoteRepository",
-                    "package": "MongoQuoteRepository"
-                },
-                {
-                    "id": "MongoDealersRepository",
-                    "package": "MongoDealersRepository"
-                },
-                {
-                    "id": "OrderingConfiguration",
-                    "package": "OrderingConfiguration"
-                },
-                {
-                    "id": "OrderDetails",
-                    "package": "OrderDetails"
-                },
-                {
-                    "id": "MongoOrderRepository",
-                    "package": "MongoOrderRepository"
+                    "id": "OrderEventInfo",
+                    "package": "OrderEventInfo"
                 },
                 {
                     "id": "OrderController",
@@ -585,66 +597,162 @@
                     "package": "BadRequestException"
                 },
                 {
-                    "id": "ShipmentDetails",
-                    "package": "ShipmentDetails"
+                    "id": "OrderDetails",
+                    "package": "mongodb"
                 },
                 {
-                    "id": "AppInsightsFilter",
-                    "package": "AppInsightsFilter"
-                },
-                {
-                    "id": "Dealer",
-                    "package": "Dealer"
+                    "id": "MongoOrderRepository",
+                    "package": "mongodb"
                 }
             ],
-            "partition2": [
-                {
-                    "id": "RepositoryFactory",
-                    "package": "RepositoryFactory"
-                },
-                {
-                    "id": "ShipmentRepository",
-                    "package": "ShipmentRepository"
-                },
+            "unobserved": [
                 {
                     "id": "ConflictingRequestException",
-                    "package": "ConflictingRequestException"
+                    "package": "smpl.ordering"
                 },
                 {
-                    "id": "ShipmentController",
-                    "package": "ShipmentController"
+                    "id": "MockCatalogItemsRepository",
+                    "package": "smpl.ordering.repositories.mock"
                 },
                 {
-                    "id": "OrderingServiceProperties",
-                    "package": "OrderingServiceProperties"
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.geoNear"
                 },
                 {
-                    "id": "Delivery",
-                    "package": "Delivery"
+                    "id": "MockDealersRepository",
+                    "package": "smpl.ordering.repositories.mock"
                 },
                 {
-                    "id": "CatalogItemsRepository",
-                    "package": "CatalogItemsRepository"
-                },
-                {
-                    "id": "ShipmentEventInfo",
-                    "package": "ShipmentEventInfo"
-                },
-                {
-                    "id": "ShipmentRecord",
-                    "package": "ShipmentRecord"
-                },
-                {
-                    "id": "PhoneInfo",
-                    "package": "PhoneInfo"
-                },
-                {
-                    "id": "DeliveryAddress",
-                    "package": "DeliveryAddress"
+                    "id": "CatalogItem",
+                    "package": "smpl.ordering.repositories.mongodb.models"
                 },
                 {
                     "id": "MongoCatalogItemsRepository",
-                    "package": "MongoCatalogItemsRepository"
+                    "package": "smpl.ordering.repositories.mongodb"
+                },
+                {
+                    "id": "MockShipmentRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.dropCollection"
+                },
+                {
+                    "id": "Order",
+                    "package": "smpl.ordering.models"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.execute"
+                },
+                {
+                    "id": "OrderingServiceProperties",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAll"
+                },
+                {
+                    "id": "OrderingInitializer",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findOne"
+                },
+                {
+                    "id": "Repositories",
+                    "package": "smpl.ordering.repositories.RepositoryFactory"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.find"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.collectionExists"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.group"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findById"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAllAndRemove"
+                },
+                {
+                    "id": "AppInsightsFilter",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "PingController",
+                    "package": "smpl.ordering.controllers"
+                },
+                {
+                    "id": "PropertyHelper",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAndRemove"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.executeInSession"
+                },
+                {
+                    "id": "OrderingConfiguration",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "TestPath",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "O",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.aggregate"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAndModify"
+                },
+                {
+                    "id": "MockOrderRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.mapReduce"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.createCollection"
+                },
+                {
+                    "id": "CatalogItemsRepository",
+                    "package": "smpl.ordering.repositories"
+                },
+                {
+                    "id": "MockQuoteRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "MongoDBProperties",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "CatalogController",
+                    "package": "smpl.ordering.controllers"
+                },
+                {
+                    "id": "CatalogItem",
+                    "package": "smpl.ordering.models"
                 }
             ]
         }
@@ -900,6 +1008,10 @@
         "decomposition": {
             "partition0": [
                 {
+                    "id": "DealerController",
+                    "package": "DealerController"
+                },
+                {
                     "id": "RepositoryFactory",
                     "package": "RepositoryFactory"
                 },
@@ -908,166 +1020,270 @@
                     "package": "QuoteController"
                 },
                 {
-                    "id": "DealerController",
-                    "package": "DealerController"
-                },
-                {
-                    "id": "OrderMessage",
-                    "package": "OrderMessage"
-                },
-                {
-                    "id": "OrderStatus",
-                    "package": "OrderStatus"
-                },
-                {
-                    "id": "MongoDealersRepository",
-                    "package": "MongoDealersRepository"
-                },
-                {
-                    "id": "QuoteRepository",
-                    "package": "QuoteRepository"
-                },
-                {
-                    "id": "OrderRepository",
-                    "package": "OrderRepository"
-                },
-                {
-                    "id": "ShipmentEventInfo",
-                    "package": "ShipmentEventInfo"
-                },
-                {
-                    "id": "ShipmentRecord",
-                    "package": "ShipmentRecord"
-                },
-                {
-                    "id": "ShipmentController",
-                    "package": "ShipmentController"
-                },
-                {
-                    "id": "DeliveryAddress",
-                    "package": "DeliveryAddress"
-                },
-                {
-                    "id": "OrderItem",
-                    "package": "OrderItem"
-                },
-                {
-                    "id": "OrderingConfiguration",
-                    "package": "OrderingConfiguration"
-                },
-                {
-                    "id": "OrderUpdateInfo",
-                    "package": "OrderUpdateInfo"
-                },
-                {
-                    "id": "CatalogItem",
-                    "package": "CatalogItem"
-                },
-                {
-                    "id": "MongoOrderRepository",
-                    "package": "MongoOrderRepository"
-                },
-                {
-                    "id": "DealersRepository",
-                    "package": "DealersRepository"
-                },
-                {
-                    "id": "AppInsightsFilter",
-                    "package": "AppInsightsFilter"
-                },
-                {
-                    "id": "MongoOperationsWithRetry",
-                    "package": "MongoOperationsWithRetry"
-                },
-                {
-                    "id": "PhoneInfo",
-                    "package": "PhoneInfo"
-                },
-                {
-                    "id": "Order",
-                    "package": "Order"
-                },
-                {
-                    "id": "CatalogController",
-                    "package": "CatalogController"
-                },
-                {
-                    "id": "ConflictingRequestException",
-                    "package": "ConflictingRequestException"
-                },
-                {
-                    "id": "BadRequestException",
-                    "package": "BadRequestException"
-                },
-                {
-                    "id": "ShipmentDetails",
-                    "package": "ShipmentDetails"
-                },
-                {
-                    "id": "CatalogItemsRepository",
-                    "package": "CatalogItemsRepository"
-                },
-                {
-                    "id": "MongoShipmentRepository",
-                    "package": "MongoShipmentRepository"
-                },
-                {
-                    "id": "OrderingServiceProperties",
-                    "package": "OrderingServiceProperties"
-                },
-                {
-                    "id": "MongoQuoteRepository",
-                    "package": "MongoQuoteRepository"
-                },
-                {
                     "id": "OrderController",
                     "package": "OrderController"
                 },
                 {
                     "id": "OrderEventInfo",
                     "package": "OrderEventInfo"
-                },
-                {
-                    "id": "OrderDetails",
-                    "package": "OrderDetails"
-                },
-                {
-                    "id": "Delivery",
-                    "package": "Delivery"
-                },
-                {
-                    "id": "ShipmentRepository",
-                    "package": "ShipmentRepository"
-                },
-                {
-                    "id": "QuoteDetails",
-                    "package": "QuoteDetails"
                 }
             ],
             "partition1": [
                 {
-                    "id": "QuoteItemInfo",
-                    "package": "QuoteItemInfo"
-                },
-                {
-                    "id": "MongoCatalogItemsRepository",
-                    "package": "MongoCatalogItemsRepository"
-                },
-                {
-                    "id": "Quote",
-                    "package": "Quote"
+                    "id": "Dealer",
+                    "package": "mongodb"
                 },
                 {
                     "id": "DealerInfo",
                     "package": "DealerInfo"
                 },
                 {
+                    "id": "MongoDealersRepository",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "QuoteItemInfo",
+                    "package": "QuoteItemInfo"
+                },
+                {
+                    "id": "QuoteDetails",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "Quote",
+                    "package": "Quote"
+                },
+                {
+                    "id": "BadRequestException",
+                    "package": "BadRequestException"
+                },
+                {
+                    "id": "MongoQuoteRepository",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "DeliveryAddress",
+                    "package": "DeliveryAddress"
+                },
+                {
                     "id": "Utility",
                     "package": "Utility"
                 },
                 {
-                    "id": "Dealer",
-                    "package": "Dealer"
+                    "id": "PhoneInfo",
+                    "package": "PhoneInfo"
+                },
+                {
+                    "id": "MongoOperationsWithRetry",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "OrderStatus",
+                    "package": "OrderStatus"
+                },
+                {
+                    "id": "OrderUpdateInfo",
+                    "package": "OrderUpdateInfo"
+                },
+                {
+                    "id": "OrderDetails",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "MongoOrderRepository",
+                    "package": "mongodb"
+                }
+            ],
+            "partition2": [
+                {
+                    "id": "MongoShipmentRepository",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "ShipmentDetails",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "ShipmentController",
+                    "package": "ShipmentController"
+                },
+                {
+                    "id": "ShipmentRecord",
+                    "package": "ShipmentRecord"
+                },
+                {
+                    "id": "ShipmentEventInfo",
+                    "package": "ShipmentEventInfo"
+                }
+            ],
+            "unobserved": [
+                {
+                    "id": "ConflictingRequestException",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "MockCatalogItemsRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.geoNear"
+                },
+                {
+                    "id": "MockDealersRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "CatalogItem",
+                    "package": "smpl.ordering.repositories.mongodb.models"
+                },
+                {
+                    "id": "MongoCatalogItemsRepository",
+                    "package": "smpl.ordering.repositories.mongodb"
+                },
+                {
+                    "id": "MockShipmentRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.dropCollection"
+                },
+                {
+                    "id": "Order",
+                    "package": "smpl.ordering.models"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.execute"
+                },
+                {
+                    "id": "OrderingServiceProperties",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAll"
+                },
+                {
+                    "id": "OrderingInitializer",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findOne"
+                },
+                {
+                    "id": "Repositories",
+                    "package": "smpl.ordering.repositories.RepositoryFactory"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.find"
+                },
+                {
+                    "id": "QuoteRepository",
+                    "package": "smpl.ordering.repositories"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.collectionExists"
+                },
+                {
+                    "id": "ShipmentRepository",
+                    "package": "smpl.ordering.repositories"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.group"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findById"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAllAndRemove"
+                },
+                {
+                    "id": "AppInsightsFilter",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "DealersRepository",
+                    "package": "smpl.ordering.repositories"
+                },
+                {
+                    "id": "OrderRepository",
+                    "package": "smpl.ordering.repositories"
+                },
+                {
+                    "id": "PingController",
+                    "package": "smpl.ordering.controllers"
+                },
+                {
+                    "id": "PropertyHelper",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAndRemove"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.executeInSession"
+                },
+                {
+                    "id": "OrderingConfiguration",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "TestPath",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "O",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.aggregate"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAndModify"
+                },
+                {
+                    "id": "MockOrderRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "Delivery",
+                    "package": "smpl.ordering.models"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.mapReduce"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.createCollection"
+                },
+                {
+                    "id": "CatalogItemsRepository",
+                    "package": "smpl.ordering.repositories"
+                },
+                {
+                    "id": "MockQuoteRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "MongoDBProperties",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "CatalogController",
+                    "package": "smpl.ordering.controllers"
+                },
+                {
+                    "id": "CatalogItem",
+                    "package": "smpl.ordering.models"
                 }
             ]
         }
@@ -1473,147 +1689,115 @@
         "decomposition": {
             "partition0": [
                 {
-                    "id": "DealersRepository",
-                    "package": "DealersRepository"
-                },
-                {
-                    "id": "DealerInfo",
-                    "package": "DealerInfo"
-                },
-                {
-                    "id": "Utility",
-                    "package": "Utility"
-                },
-                {
-                    "id": "DealerController",
-                    "package": "DealerController"
-                },
-                {
-                    "id": "Dealer",
-                    "package": "Dealer"
-                },
-                {
-                    "id": "MongoDealersRepository",
-                    "package": "MongoDealersRepository"
-                }
-            ],
-            "partition1": [
-                {
-                    "id": "RepositoryFactory",
-                    "package": "RepositoryFactory"
-                },
-                {
-                    "id": "OrderRepository",
-                    "package": "OrderRepository"
-                },
-                {
-                    "id": "OrderUpdateInfo",
-                    "package": "OrderUpdateInfo"
-                },
-                {
-                    "id": "OrderEventInfo",
-                    "package": "OrderEventInfo"
-                },
-                {
-                    "id": "OrderStatus",
-                    "package": "OrderStatus"
-                },
-                {
-                    "id": "OrderMessage",
-                    "package": "OrderMessage"
-                },
-                {
-                    "id": "MongoOrderRepository",
-                    "package": "MongoOrderRepository"
-                },
-                {
-                    "id": "OrderController",
-                    "package": "OrderController"
-                },
-                {
-                    "id": "OrderDetails",
-                    "package": "OrderDetails"
-                },
-                {
-                    "id": "Order",
-                    "package": "Order"
-                },
-                {
-                    "id": "BadRequestException",
-                    "package": "BadRequestException"
-                },
-                {
-                    "id": "OrderingConfiguration",
-                    "package": "OrderingConfiguration"
-                },
-                {
-                    "id": "OrderingServiceProperties",
-                    "package": "OrderingServiceProperties"
-                }
-            ],
-            "partition2": [
-                {
-                    "id": "QuoteController",
-                    "package": "QuoteController"
-                },
-                {
-                    "id": "QuoteItemInfo",
-                    "package": "QuoteItemInfo"
-                },
-                {
-                    "id": "OrderItem",
-                    "package": "OrderItem"
+                    "id": "QuoteRepository",
+                    "package": "QuoteRepository"
                 },
                 {
                     "id": "Quote",
                     "package": "Quote"
                 },
                 {
-                    "id": "QuoteRepository",
-                    "package": "QuoteRepository"
+                    "id": "MongoQuoteRepository",
+                    "package": "mongodb"
                 },
                 {
                     "id": "QuoteDetails",
-                    "package": "QuoteDetails"
+                    "package": "mongodb"
                 },
                 {
-                    "id": "MongoQuoteRepository",
-                    "package": "MongoQuoteRepository"
+                    "id": "QuoteController",
+                    "package": "QuoteController"
                 }
             ],
-            "partition3": [
-                {
-                    "id": "ShipmentRepository",
-                    "package": "ShipmentRepository"
-                },
-                {
-                    "id": "ConflictingRequestException",
-                    "package": "ConflictingRequestException"
-                },
+            "partition1": [
                 {
                     "id": "ShipmentRecord",
                     "package": "ShipmentRecord"
+                },
+                {
+                    "id": "MongoShipmentRepository",
+                    "package": "mongodb"
                 },
                 {
                     "id": "ShipmentController",
                     "package": "ShipmentController"
                 },
                 {
-                    "id": "ShipmentEventInfo",
-                    "package": "ShipmentEventInfo"
+                    "id": "ShipmentDetails",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "ShipmentRepository",
+                    "package": "ShipmentRepository"
+                }
+            ],
+            "partition2": [
+                {
+                    "id": "Dealer",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "MongoDealersRepository",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "DealerController",
+                    "package": "DealerController"
+                },
+                {
+                    "id": "DealersRepository",
+                    "package": "DealersRepository"
+                }
+            ],
+            "partition3": [
+                {
+                    "id": "OrderEventInfo",
+                    "package": "OrderEventInfo"
+                },
+                {
+                    "id": "DealerInfo",
+                    "package": "DealerInfo"
+                },
+                {
+                    "id": "OrderUpdateInfo",
+                    "package": "OrderUpdateInfo"
                 },
                 {
                     "id": "PhoneInfo",
                     "package": "PhoneInfo"
                 },
                 {
-                    "id": "ShipmentDetails",
-                    "package": "ShipmentDetails"
+                    "id": "ShipmentEventInfo",
+                    "package": "ShipmentEventInfo"
                 },
                 {
-                    "id": "MongoShipmentRepository",
-                    "package": "MongoShipmentRepository"
+                    "id": "QuoteItemInfo",
+                    "package": "QuoteItemInfo"
+                }
+            ],
+            "partition4": [
+                {
+                    "id": "OrderDetails",
+                    "package": "mongodb"
                 },
+                {
+                    "id": "OrderController",
+                    "package": "OrderController"
+                },
+                {
+                    "id": "OrderRepository",
+                    "package": "OrderRepository"
+                },
+                {
+                    "id": "MongoOrderRepository",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "OrderStatus",
+                    "package": "OrderStatus"
+                }
+            ],
+            "partition5": [
                 {
                     "id": "DeliveryAddress",
                     "package": "DeliveryAddress"
@@ -1623,30 +1807,170 @@
                     "package": "Delivery"
                 }
             ],
-            "partition4": [
+            "unobserved": [
+                {
+                    "id": "ConflictingRequestException",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "MockCatalogItemsRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.geoNear"
+                },
+                {
+                    "id": "MockDealersRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
                 {
                     "id": "CatalogItem",
-                    "package": "CatalogItem"
-                },
-                {
-                    "id": "CatalogController",
-                    "package": "CatalogController"
-                },
-                {
-                    "id": "MongoOperationsWithRetry",
-                    "package": "MongoOperationsWithRetry"
-                },
-                {
-                    "id": "AppInsightsFilter",
-                    "package": "AppInsightsFilter"
-                },
-                {
-                    "id": "CatalogItemsRepository",
-                    "package": "CatalogItemsRepository"
+                    "package": "smpl.ordering.repositories.mongodb.models"
                 },
                 {
                     "id": "MongoCatalogItemsRepository",
-                    "package": "MongoCatalogItemsRepository"
+                    "package": "smpl.ordering.repositories.mongodb"
+                },
+                {
+                    "id": "MockShipmentRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.dropCollection"
+                },
+                {
+                    "id": "Order",
+                    "package": "smpl.ordering.models"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.execute"
+                },
+                {
+                    "id": "OrderingServiceProperties",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAll"
+                },
+                {
+                    "id": "OrderingInitializer",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findOne"
+                },
+                {
+                    "id": "Repositories",
+                    "package": "smpl.ordering.repositories.RepositoryFactory"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.find"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.collectionExists"
+                },
+                {
+                    "id": "MongoOperationsWithRetry",
+                    "package": "smpl.ordering.repositories.mongodb"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.group"
+                },
+                {
+                    "id": "BadRequestException",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findById"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAllAndRemove"
+                },
+                {
+                    "id": "AppInsightsFilter",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "PingController",
+                    "package": "smpl.ordering.controllers"
+                },
+                {
+                    "id": "PropertyHelper",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAndRemove"
+                },
+                {
+                    "id": "RepositoryFactory",
+                    "package": "smpl.ordering.repositories"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.executeInSession"
+                },
+                {
+                    "id": "OrderingConfiguration",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "TestPath",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "O",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.aggregate"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAndModify"
+                },
+                {
+                    "id": "MockOrderRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.mapReduce"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.createCollection"
+                },
+                {
+                    "id": "Utility",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "CatalogItemsRepository",
+                    "package": "smpl.ordering.repositories"
+                },
+                {
+                    "id": "MockQuoteRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "MongoDBProperties",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "CatalogController",
+                    "package": "smpl.ordering.controllers"
+                },
+                {
+                    "id": "CatalogItem",
+                    "package": "smpl.ordering.models"
                 }
             ]
         }
@@ -3407,180 +3731,290 @@
         "decomposition": {
             "partition0": [
                 {
-                    "id": "DealersRepository",
-                    "package": "DealersRepository"
-                },
-                {
-                    "id": "DealerInfo",
-                    "package": "DealerInfo"
-                },
-                {
-                    "id": "DealerController",
-                    "package": "DealerController"
-                },
-                {
-                    "id": "Dealer",
-                    "package": "Dealer"
-                },
-                {
-                    "id": "MongoDealersRepository",
-                    "package": "MongoDealersRepository"
-                },
-                {
-                    "id": "BadRequestException",
-                    "package": "BadRequestException"
-                }
-            ],
-            "partition1": [
-                {
-                    "id": "RepositoryFactory",
-                    "package": "RepositoryFactory"
+                    "id": "QuoteRepository",
+                    "package": "QuoteRepository"
                 },
                 {
                     "id": "Utility",
                     "package": "Utility"
                 },
                 {
-                    "id": "OrderRepository",
-                    "package": "OrderRepository"
-                },
-                {
-                    "id": "OrderUpdateInfo",
-                    "package": "OrderUpdateInfo"
-                },
-                {
-                    "id": "OrderEventInfo",
-                    "package": "OrderEventInfo"
-                },
-                {
-                    "id": "OrderStatus",
-                    "package": "OrderStatus"
-                },
-                {
-                    "id": "OrderMessage",
-                    "package": "OrderMessage"
-                },
-                {
-                    "id": "MongoOrderRepository",
-                    "package": "MongoOrderRepository"
-                },
-                {
-                    "id": "OrderController",
-                    "package": "OrderController"
-                },
-                {
-                    "id": "OrderDetails",
-                    "package": "OrderDetails"
-                },
-                {
-                    "id": "Order",
-                    "package": "Order"
-                },
-                {
-                    "id": "OrderingConfiguration",
-                    "package": "OrderingConfiguration"
-                },
-                {
-                    "id": "OrderingServiceProperties",
-                    "package": "OrderingServiceProperties"
-                }
-            ],
-            "partition2": [
-                {
-                    "id": "QuoteController",
-                    "package": "QuoteController"
+                    "id": "Quote",
+                    "package": "Quote"
                 },
                 {
                     "id": "QuoteItemInfo",
                     "package": "QuoteItemInfo"
                 },
                 {
-                    "id": "OrderItem",
-                    "package": "OrderItem"
-                },
-                {
-                    "id": "Quote",
-                    "package": "Quote"
-                },
-                {
-                    "id": "QuoteRepository",
-                    "package": "QuoteRepository"
+                    "id": "MongoQuoteRepository",
+                    "package": "mongodb"
                 },
                 {
                     "id": "QuoteDetails",
-                    "package": "QuoteDetails"
+                    "package": "mongodb"
                 },
                 {
-                    "id": "MongoQuoteRepository",
-                    "package": "MongoQuoteRepository"
+                    "id": "QuoteController",
+                    "package": "QuoteController"
                 }
             ],
-            "partition3": [
+            "partition1": [
                 {
-                    "id": "ShipmentRepository",
-                    "package": "ShipmentRepository"
+                    "id": "ShipmentController",
+                    "package": "ShipmentController"
                 },
                 {
-                    "id": "ConflictingRequestException",
-                    "package": "ConflictingRequestException"
+                    "id": "ShipmentDetails",
+                    "package": "mongodb"
                 },
                 {
                     "id": "ShipmentRecord",
                     "package": "ShipmentRecord"
                 },
                 {
-                    "id": "ShipmentController",
-                    "package": "ShipmentController"
+                    "id": "ShipmentRepository",
+                    "package": "ShipmentRepository"
                 },
                 {
-                    "id": "ShipmentEventInfo",
-                    "package": "ShipmentEventInfo"
+                    "id": "MongoShipmentRepository",
+                    "package": "mongodb"
+                }
+            ],
+            "partition2": [
+                {
+                    "id": "OrderRepository",
+                    "package": "OrderRepository"
+                },
+                {
+                    "id": "OrderDetails",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "MongoOrderRepository",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "MongoOperationsWithRetry",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "RepositoryFactory",
+                    "package": "RepositoryFactory"
+                }
+            ],
+            "partition3": [
+                {
+                    "id": "Dealer",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "DealerInfo",
+                    "package": "DealerInfo"
+                },
+                {
+                    "id": "MongoDealersRepository",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "DealerController",
+                    "package": "DealerController"
+                },
+                {
+                    "id": "DealersRepository",
+                    "package": "DealersRepository"
+                }
+            ],
+            "partition4": [
+                {
+                    "id": "OrderUpdateInfo",
+                    "package": "OrderUpdateInfo"
                 },
                 {
                     "id": "PhoneInfo",
                     "package": "PhoneInfo"
                 },
                 {
-                    "id": "ShipmentDetails",
-                    "package": "ShipmentDetails"
+                    "id": "ShipmentEventInfo",
+                    "package": "ShipmentEventInfo"
                 },
                 {
-                    "id": "MongoShipmentRepository",
-                    "package": "MongoShipmentRepository"
+                    "id": "OrderEventInfo",
+                    "package": "OrderEventInfo"
+                }
+            ],
+            "partition5": [
+                {
+                    "id": "OrderController",
+                    "package": "OrderController"
                 },
                 {
-                    "id": "DeliveryAddress",
-                    "package": "DeliveryAddress"
+                    "id": "BadRequestException",
+                    "package": "BadRequestException"
                 },
+                {
+                    "id": "OrderStatus",
+                    "package": "OrderStatus"
+                }
+            ],
+            "partition6": [
                 {
                     "id": "Delivery",
                     "package": "Delivery"
                 },
                 {
-                    "id": "MongoOperationsWithRetry",
-                    "package": "MongoOperationsWithRetry"
-                },
-                {
-                    "id": "AppInsightsFilter",
-                    "package": "AppInsightsFilter"
+                    "id": "DeliveryAddress",
+                    "package": "DeliveryAddress"
                 }
             ],
-            "partition4": [
+            "unobserved": [
+                {
+                    "id": "ConflictingRequestException",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "MockCatalogItemsRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.geoNear"
+                },
+                {
+                    "id": "MockDealersRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
                 {
                     "id": "CatalogItem",
-                    "package": "CatalogItem"
-                },
-                {
-                    "id": "CatalogController",
-                    "package": "CatalogController"
-                },
-                {
-                    "id": "CatalogItemsRepository",
-                    "package": "CatalogItemsRepository"
+                    "package": "smpl.ordering.repositories.mongodb.models"
                 },
                 {
                     "id": "MongoCatalogItemsRepository",
-                    "package": "MongoCatalogItemsRepository"
+                    "package": "smpl.ordering.repositories.mongodb"
+                },
+                {
+                    "id": "MockShipmentRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.dropCollection"
+                },
+                {
+                    "id": "Order",
+                    "package": "smpl.ordering.models"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.execute"
+                },
+                {
+                    "id": "OrderingServiceProperties",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAll"
+                },
+                {
+                    "id": "OrderingInitializer",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findOne"
+                },
+                {
+                    "id": "Repositories",
+                    "package": "smpl.ordering.repositories.RepositoryFactory"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.find"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.collectionExists"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.group"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findById"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAllAndRemove"
+                },
+                {
+                    "id": "AppInsightsFilter",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "PingController",
+                    "package": "smpl.ordering.controllers"
+                },
+                {
+                    "id": "PropertyHelper",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAndRemove"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.executeInSession"
+                },
+                {
+                    "id": "OrderingConfiguration",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "TestPath",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "O",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.aggregate"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAndModify"
+                },
+                {
+                    "id": "MockOrderRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.mapReduce"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.createCollection"
+                },
+                {
+                    "id": "CatalogItemsRepository",
+                    "package": "smpl.ordering.repositories"
+                },
+                {
+                    "id": "MockQuoteRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "MongoDBProperties",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "CatalogController",
+                    "package": "smpl.ordering.controllers"
+                },
+                {
+                    "id": "CatalogItem",
+                    "package": "smpl.ordering.models"
                 }
             ]
         }
@@ -5916,84 +6350,108 @@
         "decomposition": {
             "partition0": [
                 {
-                    "id": "OrderController",
-                    "package": "OrderController"
-                },
-                {
-                    "id": "ShipmentRepository",
-                    "package": "ShipmentRepository"
-                },
-                {
-                    "id": "ShipmentEventInfo",
-                    "package": "ShipmentEventInfo"
-                },
-                {
-                    "id": "MongoShipmentRepository",
-                    "package": "MongoShipmentRepository"
-                },
-                {
-                    "id": "OrderEventInfo",
-                    "package": "OrderEventInfo"
-                },
-                {
-                    "id": "DeliveryAddress",
-                    "package": "DeliveryAddress"
-                },
-                {
-                    "id": "QuoteDetails",
-                    "package": "QuoteDetails"
-                },
-                {
-                    "id": "Delivery",
-                    "package": "Delivery"
-                },
-                {
-                    "id": "OrderDetails",
-                    "package": "OrderDetails"
-                },
-                {
-                    "id": "ShipmentDetails",
-                    "package": "ShipmentDetails"
-                },
-                {
-                    "id": "MongoQuoteRepository",
-                    "package": "MongoQuoteRepository"
-                },
-                {
                     "id": "OrderRepository",
                     "package": "OrderRepository"
-                },
-                {
-                    "id": "AppInsightsFilter",
-                    "package": "AppInsightsFilter"
-                },
-                {
-                    "id": "DealerInfo",
-                    "package": "DealerInfo"
                 },
                 {
                     "id": "BadRequestException",
                     "package": "BadRequestException"
                 },
                 {
+                    "id": "MongoOrderRepository",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "OrderStatus",
+                    "package": "OrderStatus"
+                },
+                {
+                    "id": "QuoteItemInfo",
+                    "package": "QuoteItemInfo"
+                },
+                {
+                    "id": "QuoteDetails",
+                    "package": "mongodb"
+                },
+                {
                     "id": "ShipmentRecord",
                     "package": "ShipmentRecord"
                 },
                 {
-                    "id": "MongoCatalogItemsRepository",
-                    "package": "MongoCatalogItemsRepository"
-                },
-                {
-                    "id": "OrderingServiceProperties",
-                    "package": "OrderingServiceProperties"
-                },
-                {
-                    "id": "CatalogItemsRepository",
-                    "package": "CatalogItemsRepository"
+                    "id": "DeliveryAddress",
+                    "package": "DeliveryAddress"
                 },
                 {
                     "id": "Dealer",
-                    "package": "Dealer"
+                    "package": "mongodb"
+                },
+                {
+                    "id": "QuoteRepository",
+                    "package": "QuoteRepository"
+                },
+                {
+                    "id": "OrderDetails",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "DealerInfo",
+                    "package": "DealerInfo"
+                },
+                {
+                    "id": "PhoneInfo",
+                    "package": "PhoneInfo"
+                },
+                {
+                    "id": "Delivery",
+                    "package": "Delivery"
+                },
+                {
+                    "id": "ShipmentEventInfo",
+                    "package": "ShipmentEventInfo"
+                },
+                {
+                    "id": "MongoQuoteRepository",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "DealersRepository",
+                    "package": "DealersRepository"
+                },
+                {
+                    "id": "OrderEventInfo",
+                    "package": "OrderEventInfo"
+                },
+                {
+                    "id": "MongoShipmentRepository",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "ShipmentController",
+                    "package": "ShipmentController"
+                },
+                {
+                    "id": "OrderController",
+                    "package": "OrderController"
+                },
+                {
+                    "id": "ShipmentDetails",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "OrderUpdateInfo",
+                    "package": "OrderUpdateInfo"
+                },
+                {
+                    "id": "Quote",
+                    "package": "Quote"
+                },
+                {
+                    "id": "Utility",
+                    "package": "Utility"
+                },
+                {
+                    "id": "MongoDealersRepository",
+                    "package": "mongodb"
                 },
                 {
                     "id": "RepositoryFactory",
@@ -6004,84 +6462,168 @@
                     "package": "QuoteController"
                 },
                 {
-                    "id": "QuoteItemInfo",
-                    "package": "QuoteItemInfo"
-                },
-                {
-                    "id": "ConflictingRequestException",
-                    "package": "ConflictingRequestException"
-                },
-                {
-                    "id": "Order",
-                    "package": "Order"
-                },
-                {
-                    "id": "CatalogController",
-                    "package": "CatalogController"
-                },
-                {
-                    "id": "PhoneInfo",
-                    "package": "PhoneInfo"
-                },
-                {
-                    "id": "Utility",
-                    "package": "Utility"
-                },
-                {
-                    "id": "OrderingConfiguration",
-                    "package": "OrderingConfiguration"
-                },
+                    "id": "ShipmentRepository",
+                    "package": "ShipmentRepository"
+                }
+            ],
+            "partition1": [
                 {
                     "id": "MongoOperationsWithRetry",
-                    "package": "MongoOperationsWithRetry"
-                },
-                {
-                    "id": "QuoteRepository",
-                    "package": "QuoteRepository"
-                },
-                {
-                    "id": "MongoOrderRepository",
-                    "package": "MongoOrderRepository"
-                },
-                {
-                    "id": "DealersRepository",
-                    "package": "DealersRepository"
-                },
-                {
-                    "id": "CatalogItem",
-                    "package": "CatalogItem"
-                },
-                {
-                    "id": "OrderUpdateInfo",
-                    "package": "OrderUpdateInfo"
-                },
-                {
-                    "id": "OrderMessage",
-                    "package": "OrderMessage"
-                },
-                {
-                    "id": "OrderItem",
-                    "package": "OrderItem"
-                },
-                {
-                    "id": "ShipmentController",
-                    "package": "ShipmentController"
-                },
-                {
-                    "id": "MongoDealersRepository",
-                    "package": "MongoDealersRepository"
-                },
-                {
-                    "id": "Quote",
-                    "package": "Quote"
-                },
-                {
-                    "id": "OrderStatus",
-                    "package": "OrderStatus"
+                    "package": "mongodb"
                 },
                 {
                     "id": "DealerController",
                     "package": "DealerController"
+                }
+            ],
+            "unobserved": [
+                {
+                    "id": "ConflictingRequestException",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "MockCatalogItemsRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.geoNear"
+                },
+                {
+                    "id": "MockDealersRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "CatalogItem",
+                    "package": "smpl.ordering.repositories.mongodb.models"
+                },
+                {
+                    "id": "MongoCatalogItemsRepository",
+                    "package": "smpl.ordering.repositories.mongodb"
+                },
+                {
+                    "id": "MockShipmentRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.dropCollection"
+                },
+                {
+                    "id": "Order",
+                    "package": "smpl.ordering.models"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.execute"
+                },
+                {
+                    "id": "OrderingServiceProperties",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAll"
+                },
+                {
+                    "id": "OrderingInitializer",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findOne"
+                },
+                {
+                    "id": "Repositories",
+                    "package": "smpl.ordering.repositories.RepositoryFactory"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.find"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.collectionExists"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.group"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findById"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAllAndRemove"
+                },
+                {
+                    "id": "AppInsightsFilter",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "PingController",
+                    "package": "smpl.ordering.controllers"
+                },
+                {
+                    "id": "PropertyHelper",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAndRemove"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.executeInSession"
+                },
+                {
+                    "id": "OrderingConfiguration",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "TestPath",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "O",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.aggregate"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAndModify"
+                },
+                {
+                    "id": "MockOrderRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.mapReduce"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.createCollection"
+                },
+                {
+                    "id": "CatalogItemsRepository",
+                    "package": "smpl.ordering.repositories"
+                },
+                {
+                    "id": "MockQuoteRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "MongoDBProperties",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "CatalogController",
+                    "package": "smpl.ordering.controllers"
+                },
+                {
+                    "id": "CatalogItem",
+                    "package": "smpl.ordering.models"
                 }
             ]
         }
@@ -8417,84 +8959,108 @@
         "decomposition": {
             "partition0": [
                 {
-                    "id": "OrderController",
-                    "package": "OrderController"
-                },
-                {
-                    "id": "ShipmentRepository",
-                    "package": "ShipmentRepository"
-                },
-                {
-                    "id": "ShipmentEventInfo",
-                    "package": "ShipmentEventInfo"
-                },
-                {
-                    "id": "MongoShipmentRepository",
-                    "package": "MongoShipmentRepository"
-                },
-                {
-                    "id": "OrderEventInfo",
-                    "package": "OrderEventInfo"
-                },
-                {
-                    "id": "DeliveryAddress",
-                    "package": "DeliveryAddress"
-                },
-                {
-                    "id": "QuoteDetails",
-                    "package": "QuoteDetails"
-                },
-                {
-                    "id": "Delivery",
-                    "package": "Delivery"
-                },
-                {
-                    "id": "OrderDetails",
-                    "package": "OrderDetails"
-                },
-                {
-                    "id": "ShipmentDetails",
-                    "package": "ShipmentDetails"
-                },
-                {
-                    "id": "MongoQuoteRepository",
-                    "package": "MongoQuoteRepository"
-                },
-                {
                     "id": "OrderRepository",
                     "package": "OrderRepository"
-                },
-                {
-                    "id": "AppInsightsFilter",
-                    "package": "AppInsightsFilter"
-                },
-                {
-                    "id": "DealerInfo",
-                    "package": "DealerInfo"
                 },
                 {
                     "id": "BadRequestException",
                     "package": "BadRequestException"
                 },
                 {
+                    "id": "MongoOrderRepository",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "OrderStatus",
+                    "package": "OrderStatus"
+                },
+                {
+                    "id": "QuoteItemInfo",
+                    "package": "QuoteItemInfo"
+                },
+                {
+                    "id": "QuoteDetails",
+                    "package": "mongodb"
+                },
+                {
                     "id": "ShipmentRecord",
                     "package": "ShipmentRecord"
                 },
                 {
-                    "id": "MongoCatalogItemsRepository",
-                    "package": "MongoCatalogItemsRepository"
-                },
-                {
-                    "id": "OrderingServiceProperties",
-                    "package": "OrderingServiceProperties"
-                },
-                {
-                    "id": "CatalogItemsRepository",
-                    "package": "CatalogItemsRepository"
+                    "id": "DeliveryAddress",
+                    "package": "DeliveryAddress"
                 },
                 {
                     "id": "Dealer",
-                    "package": "Dealer"
+                    "package": "mongodb"
+                },
+                {
+                    "id": "QuoteRepository",
+                    "package": "QuoteRepository"
+                },
+                {
+                    "id": "OrderDetails",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "DealerInfo",
+                    "package": "DealerInfo"
+                },
+                {
+                    "id": "PhoneInfo",
+                    "package": "PhoneInfo"
+                },
+                {
+                    "id": "Delivery",
+                    "package": "Delivery"
+                },
+                {
+                    "id": "ShipmentEventInfo",
+                    "package": "ShipmentEventInfo"
+                },
+                {
+                    "id": "MongoQuoteRepository",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "DealersRepository",
+                    "package": "DealersRepository"
+                },
+                {
+                    "id": "OrderEventInfo",
+                    "package": "OrderEventInfo"
+                },
+                {
+                    "id": "MongoShipmentRepository",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "ShipmentController",
+                    "package": "ShipmentController"
+                },
+                {
+                    "id": "OrderController",
+                    "package": "OrderController"
+                },
+                {
+                    "id": "ShipmentDetails",
+                    "package": "mongodb"
+                },
+                {
+                    "id": "OrderUpdateInfo",
+                    "package": "OrderUpdateInfo"
+                },
+                {
+                    "id": "Quote",
+                    "package": "Quote"
+                },
+                {
+                    "id": "Utility",
+                    "package": "Utility"
+                },
+                {
+                    "id": "MongoDealersRepository",
+                    "package": "mongodb"
                 },
                 {
                     "id": "RepositoryFactory",
@@ -8505,84 +9071,168 @@
                     "package": "QuoteController"
                 },
                 {
-                    "id": "QuoteItemInfo",
-                    "package": "QuoteItemInfo"
-                },
-                {
-                    "id": "ConflictingRequestException",
-                    "package": "ConflictingRequestException"
-                },
-                {
-                    "id": "Order",
-                    "package": "Order"
-                },
-                {
-                    "id": "CatalogController",
-                    "package": "CatalogController"
-                },
-                {
-                    "id": "PhoneInfo",
-                    "package": "PhoneInfo"
-                },
-                {
-                    "id": "Utility",
-                    "package": "Utility"
-                },
-                {
-                    "id": "OrderingConfiguration",
-                    "package": "OrderingConfiguration"
-                },
+                    "id": "ShipmentRepository",
+                    "package": "ShipmentRepository"
+                }
+            ],
+            "partition1": [
                 {
                     "id": "MongoOperationsWithRetry",
-                    "package": "MongoOperationsWithRetry"
-                },
-                {
-                    "id": "QuoteRepository",
-                    "package": "QuoteRepository"
-                },
-                {
-                    "id": "MongoOrderRepository",
-                    "package": "MongoOrderRepository"
-                },
-                {
-                    "id": "DealersRepository",
-                    "package": "DealersRepository"
-                },
-                {
-                    "id": "CatalogItem",
-                    "package": "CatalogItem"
-                },
-                {
-                    "id": "OrderUpdateInfo",
-                    "package": "OrderUpdateInfo"
-                },
-                {
-                    "id": "OrderMessage",
-                    "package": "OrderMessage"
-                },
-                {
-                    "id": "OrderItem",
-                    "package": "OrderItem"
-                },
-                {
-                    "id": "ShipmentController",
-                    "package": "ShipmentController"
-                },
-                {
-                    "id": "MongoDealersRepository",
-                    "package": "MongoDealersRepository"
-                },
-                {
-                    "id": "Quote",
-                    "package": "Quote"
-                },
-                {
-                    "id": "OrderStatus",
-                    "package": "OrderStatus"
+                    "package": "mongodb"
                 },
                 {
                     "id": "DealerController",
                     "package": "DealerController"
+                }
+            ],
+            "unobserved": [
+                {
+                    "id": "ConflictingRequestException",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "MockCatalogItemsRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.geoNear"
+                },
+                {
+                    "id": "MockDealersRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "CatalogItem",
+                    "package": "smpl.ordering.repositories.mongodb.models"
+                },
+                {
+                    "id": "MongoCatalogItemsRepository",
+                    "package": "smpl.ordering.repositories.mongodb"
+                },
+                {
+                    "id": "MockShipmentRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.dropCollection"
+                },
+                {
+                    "id": "Order",
+                    "package": "smpl.ordering.models"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.execute"
+                },
+                {
+                    "id": "OrderingServiceProperties",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAll"
+                },
+                {
+                    "id": "OrderingInitializer",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findOne"
+                },
+                {
+                    "id": "Repositories",
+                    "package": "smpl.ordering.repositories.RepositoryFactory"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.find"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.collectionExists"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.group"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findById"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAllAndRemove"
+                },
+                {
+                    "id": "AppInsightsFilter",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "PingController",
+                    "package": "smpl.ordering.controllers"
+                },
+                {
+                    "id": "PropertyHelper",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAndRemove"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.executeInSession"
+                },
+                {
+                    "id": "OrderingConfiguration",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "TestPath",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "O",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.aggregate"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.findAndModify"
+                },
+                {
+                    "id": "MockOrderRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.mapReduce"
+                },
+                {
+                    "id": "T",
+                    "package": "smpl.ordering.repositories.mongodb.MongoOperationsWithRetry.createCollection"
+                },
+                {
+                    "id": "CatalogItemsRepository",
+                    "package": "smpl.ordering.repositories"
+                },
+                {
+                    "id": "MockQuoteRepository",
+                    "package": "smpl.ordering.repositories.mock"
+                },
+                {
+                    "id": "MongoDBProperties",
+                    "package": "smpl.ordering"
+                },
+                {
+                    "id": "CatalogController",
+                    "package": "smpl.ordering.controllers"
+                },
+                {
+                    "id": "CatalogItem",
+                    "package": "smpl.ordering.models"
                 }
             ]
         }

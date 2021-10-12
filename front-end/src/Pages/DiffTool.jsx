@@ -36,6 +36,7 @@ export default class DiffTool extends React.Component {
             relationshipWeights: relationshipWeights,
             weightedGraphElements: [],
             weightedGraphPartitionNum: 0,
+            weightedGraphDecomposition: [],
             clickedCluster: false
         }
     }
@@ -134,31 +135,12 @@ export default class DiffTool extends React.Component {
                 let status = xhr.status;
                 if (status !== 400) {
                     let decomposition = JSON.parse(xhr.responseText);
-                    console.log(decomposition)
                     let elements = Utils.parseDecompositionFromJSON(decomposition);
-                    // let index = 0;
-                    // for(let partition in decomposition) {
-                    //     elements.push({
-                    //         data: {
-                    //             id: partition,
-                    //             label: `P${index + 1}`,
-                    //             background_color: 'white',
-                    //             colored: false, 
-                    //             element_type: 'partition',
-                    //             width: 0,
-                    //             height: 0,
-                    //             showMinusSign: false 
-                    //         }
-                    //     });
-                    //     let element_list = decomposition[partition].map(ele => {return {id: ele}});
-                    //     elements = elements.concat(Utils.formCytoscapeElements(element_list, index));
-                    //     index++; 
-                    // }
-                    // console.log(elements)
                     this.setState(
                         {
                             weightedGraphElements: elements['decomposition'],
                             weightedGraphPartitionNum: elements['num_of_partitions'],
+                            weightedGraphDecomposition: decomposition,
                             fetchedWeightedRelationshipDecomposition: true
                         }
                     );
@@ -192,11 +174,12 @@ export default class DiffTool extends React.Component {
             relationshipWeights,
             weightedGraphElements,
             weightedGraphPartitionNum,
+            weightedGraphDecomposition,
             clickedCluster
         } = this.state;
 
         let colors = {
-            relationship_type_colors: ['#61a14a', '#4987c0', '#eb8227', '#F4145B', '#dfb63d', '#824f7d'],
+            relationship_type_colors: ['#61a14a', '#4987c0', '#eb8227', '#F4145B', '#dfb63d', '#824f7d', '#a1665e'],
             relationships: {
                 'static': '#61a14a', 
                 'dynamic': '#4987c0', 
@@ -204,17 +187,17 @@ export default class DiffTool extends React.Component {
                 'class-terms': '#F4145B', 
                 'commits': '#dfb63d', 
                 'contributors': '#824f7d', 
-                'trade-off': 'grey',
-                'weighted-relationship': 'grey'
+                'weighted-relationship': 'grey',
+                'trade-off': 'grey'
             }
         }
 
         let elements;
         let num_of_partitions;
         if (selectedTab !== "trade-off" && selectedTab !== 'weighted-relationship') {
-            let parsedGraph = Utils.parseDecompositionFromJSON(graphData, selectedTab);
+            let parsedGraph = Utils.parseDecompositionFromJSON(graphData[selectedTab].decomposition);
             elements = parsedGraph.decomposition;
-            num_of_partitions = parsedGraph.num_of_partitions - 1; 
+            num_of_partitions = parsedGraph.num_of_partitions; 
         } else if (fetchedWeightedRelationshipDecomposition && selectedTab === 'weighted-relationship') {
             elements = weightedGraphElements;
             num_of_partitions = weightedGraphPartitionNum - 1; 
@@ -249,6 +232,13 @@ export default class DiffTool extends React.Component {
                             graphData={graphData}
                             updateGraphStatus={this.setTradeOffActive}
                             numDecompositionsSelected={numDecompositionsSelected}
+                            selectedDecompositions={selectedDecompositions}
+                            weightedDecomposition={
+                                {
+                                    exists: fetchedWeightedRelationshipDecomposition,
+                                    decomposition: weightedGraphDecomposition,
+                                }
+                            }
                         /> :
                         <TradeOffGraph
                             graphData={graphData} 
@@ -256,6 +246,13 @@ export default class DiffTool extends React.Component {
                             selectedTab={selectedTab} 
                             selectedDecompositions={selectedDecompositions}
                             onChange={this.resetTradeOffConfiguration}
+                            weightedDecomposition={
+                                {
+                                    exists: fetchedWeightedRelationshipDecomposition,
+                                    decomposition: weightedGraphDecomposition,
+                                    relationshipsConsidered: Object.keys(relationshipWeights).filter(key => {return relationshipWeights[key] > 0})
+                                }
+                            }
                         /> 
                     )
                 }
@@ -274,7 +271,7 @@ export default class DiffTool extends React.Component {
                         /> :
                         <Decompositions 
                             elements={weightedGraphElements}
-                            num_of_partitions={weightedGraphPartitionNum - 1}
+                            num_of_partitions={weightedGraphPartitionNum}
                             graphData={graphData} 
                             colors={colors} 
                             selectedTab={selectedTab}

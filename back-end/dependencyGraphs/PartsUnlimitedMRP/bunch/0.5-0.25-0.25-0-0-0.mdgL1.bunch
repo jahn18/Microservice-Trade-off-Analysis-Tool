@@ -1,0 +1,6 @@
+SS(DealersRepository.ss) = DealersRepository, DealerController, Dealer, MongoDealersRepository, MockDealersRepository, DealerInfo
+SS(MockOrderRepository.ss) = Order, MockOrderRepository, OrderStatus, OrderingInitializer, OrderController, OrderRepository, BadRequestException, ConflictingRequestException, OrderUpdateInfo, OrderEventInfo, OrderDetails, MongoOrderRepository
+SS(RepositoryFactory.ss) = MockQuoteRepository, Utility, QuoteController, QuoteItemInfo, Quote, CatalogItem, CatalogItemsRepository, MockCatalogItemsRepository, MongoCatalogItemsRepository, CatalogController, MongoQuoteRepository, QuoteDetails, RepositoryFactory, MongoOperationsWithRetry, QuoteRepository
+SS(MongoShipmentRepository.ss) = ShipmentRecord, PhoneInfo, MockShipmentRepository, ShipmentEventInfo, ShipmentController, ShipmentRepository, ShipmentDetails, MongoShipmentRepository, DeliveryAddress, Delivery
+SS(OrderingConfiguration.ss) = PingController, OrderingServiceProperties, OrderingConfiguration, MongoDBProperties, PostgresqlProperties
+SS(AppInsightsFilter.ss) = SimpleCORSFilter, AppInsightsFilter

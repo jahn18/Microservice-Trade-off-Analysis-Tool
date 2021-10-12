@@ -13,7 +13,6 @@ import LinearProgress from '@material-ui/core/LinearProgress';
 
 
 export default function WeightedRelationshipSelectionTable(props) {
-    
     let weightedRelationshipTable = [];
     Object.keys(props.graphData).map(
         (key, index) => {
@@ -70,7 +69,7 @@ export default function WeightedRelationshipSelectionTable(props) {
                                     props.setClickCluster();
                                     props.getWeightedDecomposition()
                                 }}
-                                disabled={props.getTotalRelationshipWeightSum() !== 1}
+                                disabled={props.getTotalRelationshipWeightSum() < 0.99}
                             >
                                 Cluster
                             </Button> 

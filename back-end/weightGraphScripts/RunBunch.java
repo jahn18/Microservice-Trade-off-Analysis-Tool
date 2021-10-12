@@ -26,13 +26,20 @@ public class RunBunch {
 		bp.setProperty(BunchProperties.ECHO_RESULTS_TO_CONSOLE, "False");
     //added
 		bp.setProperty(BunchProperties.MDG_OUTPUT_MODE, BunchProperties.OUTPUT_DETAILED);
+        bp.setProperty(BunchProperties.ALG_HC_SA_CLASS,"bunch.SASimpleTechnique");
+        bp.setProperty(BunchProperties.ALG_HC_SA_CONFIG,"InitialTemp=100.0,Alpha=0.95");
     //select 200 intial partitions and perform bunch on each of them, selecting the result w/ the highest MQ value
-		bp.setProperty(BunchProperties.ALG_HC_POPULATION_SZ, "200");
+		//bp.setProperty(BunchProperties.ALG_HC_POPULATION_SZ, "200");
     //examine half of all possible neighbor partitions
-		bp.setProperty(BunchProperties.ALG_HC_HC_PCT, "50");
+        bp.setProperty(BunchProperties.ALG_HC_HC_PCT, "50");
+        bp.setProperty(BunchProperties.ALG_HC_RND_PCT,"50");
     
 		api.setProperties(bp);
 		api.run();
+        
+        System.out.println("Results: ");
+        Hashtable results = api.getResults();
+        printResults(results);
 
 		BunchEngine engine = null;
 		Field field = api.getClass().getDeclaredField("engine");
@@ -54,4 +61,32 @@ public class RunBunch {
 		graphOutput.setGraph(engine.getBestGraph());
 		graphOutput.write();
 	}
+
+      public static void printResults(Hashtable results)
+    {
+        String rt = (String)results.get(BunchAPI.RUNTIME);
+        String evals = (String)results.get(BunchAPI.MQEVALUATIONS);
+        String levels = (String)results.get(BunchAPI.TOTAL_CLUSTER_LEVELS);
+        String saMovesTaken = (String)results.get(BunchAPI.SA_NEIGHBORS_TAKEN);
+
+        System.out.println("Runtime = " + rt + " ms.");
+        System.out.println("Total MQ Evaluations = " + evals);
+        System.out.println("Simulated Annealing Moves Taken = " + saMovesTaken);
+        System.out.println();
+        Hashtable [] resultLevels = (Hashtable[])results.get(BunchAPI.RESULT_CLUSTER_OBJS);
+
+        for(int i = 0; i < resultLevels.length; i++)
+        {
+            Hashtable lvlResults = resultLevels[i];
+            System.out.println("***** LEVEL "+i+"*****");
+            String mq = (String)lvlResults.get(BunchAPI.MQVALUE);
+            String depth = (String)lvlResults.get(BunchAPI.CLUSTER_DEPTH);
+            String numC = (String)lvlResults.get(BunchAPI.NUMBER_CLUSTERS);
+
+            System.out.println("  MQ Value = " + mq);
+            System.out.println("  Best Cluster Depth = " + depth);
+            System.out.println("  Number of Clusters in Best Partition = " + numC);
+            System.out.println();
+        }
+    }
 }

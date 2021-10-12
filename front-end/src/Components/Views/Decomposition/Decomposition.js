@@ -19,7 +19,7 @@ import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import Slider from '@material-ui/core/Slider';
 import 'react-pro-sidebar/dist/css/styles.css';
 import {connect} from 'react-redux';
-import {updateDiffGraph} from '../../../Actions';
+import {updateDiffGraph, updateWeightedRelationshipGraph} from '../../../Actions';
 import storeProvider from '../../../storeProvider';
 import Button from '@material-ui/core/Button';
 
@@ -33,8 +33,6 @@ class Decompositions extends React.Component {
         const element_types = {
             partition: 'partition',
             common_node: 'common',
-            unobserved_partition: 'unobserved_partition',
-            unobserved_node: 'unobserved_node'
         };
 
         this.state = {
@@ -185,81 +183,32 @@ class Decompositions extends React.Component {
             edgeRelationshipTypes = storeProvider.getStore().getState().diff_graph.edgeRelationshipTypes; 
         }
 
-        let relationshipTypeTable = [];
-
-        Object.keys(edgeRelationshipTypes).map(
-            (key, index) => {
-                relationshipTypeTable.push(<TableRow>
-                    <TableCell style={{'font-size': 'Normal'}}>
-                        {key.charAt(0).toUpperCase() + key.slice(1)}
-                    </TableCell>
-                    <TableCell align="left" style={{'font-size': 'Normal'}}>
-                        {
-                            Utils.calculateNormalizedTurboMQ(
-                                edgeRelationshipTypes[key]["links"],
-                                this.getDecomposition(cy, this.props.elements, this.props.num_of_partitions) 
-                            ).toFixed(2)
-                        }
-                    </TableCell>
-                    <TableCell>
-                        <Slider
-                            defaultValue={edgeRelationshipTypes[key].minimumEdgeWeight}
-                            aria-labelledby="discrete-slider"
-                            valueLabelDisplay="auto"
-                            step={10}
-                            marks={true}
-                            min={0}
-                            max={100}
-                            style={{
-                                width: '100%',
-                                color: edgeRelationshipTypes[key].color
-                            }}
-                            onChange={(event, weight) => {
-                                let edgeRelationshipTypesCopy = {...this.state.edgeRelationshipTypes};
-                                edgeRelationshipTypesCopy[key].minimumEdgeWeight = weight; 
-                                this.setState({edgeRelationshipTypes: edgeRelationshipTypesCopy});
-                            }}
-                        />
-                    </TableCell>
-                </TableRow>)
-            }
-        )
-
         this.setState({
             cy: cy,
             edgeRelationshipTypes: edgeRelationshipTypes,
-            relationshipTypeTable: relationshipTypeTable,
         })
     }
 
-    getDecomposition(cy, elements, num_of_partitions) {
+    getDecomposition(cy, elements, numPartitions) {
         const {
             element_types
         } = this.state;
 
         let decomposition = [];
-        let numPartitions
-        if(cy.getElementById('unobserved') !== undefined) {
-            numPartitions = num_of_partitions + 1; 
-        }
 
         for(let i = 0; i < numPartitions; i++) {
             decomposition.push([]);
         }
 
         for(let ele of elements) {
-            if(ele.data.element_type === element_types.common_node || ele.data.element_type === element_types.unobserved_node) {
-                if (ele.data.parent === "unobserved") {
-                    decomposition[num_of_partitions].push(ele.data.id); 
-                } else {
-                    decomposition[parseInt(ele.data.parent.match('[0-9]'))].push(ele.data.id); 
-                }
+            if(ele.data.element_type === element_types.common_node) {
+                decomposition[parseInt(ele.data.parent.match('[0-9]'))].push(ele.data.id); 
             }
         }
         return decomposition;
     }
 
-    adjustPartitionPositions(cy, num_of_partitions, partitions_per_row) {
+    adjustPartitionPositions(cy, numPartitions, partitions_per_row) {
         let previous_partition_position = {
             x: 0,
             y: 0,
@@ -267,18 +216,8 @@ class Decompositions extends React.Component {
             first_row_y2_pos: 0
         }
         
-        let numPartitions = num_of_partitions
-        if (cy.getElementById('unobserved') !== undefined) {
-            numPartitions += 1; 
-        } 
         for(let i = 0; i < numPartitions; i++ ) {
-            let partition; 
-            if (i === num_of_partitions) {
-                partition = cy.getElementById('unobserved');
-            } else {
-                partition = cy.getElementById(`partition${i}`);
-            }
-
+            let partition = cy.getElementById(`partition${i}`);
             if(i % partitions_per_row === 0) {
                 partition.shift({
                     x: previous_partition_position.first_row_x1_pos - partition.boundingBox().x1,
@@ -455,8 +394,51 @@ class Decompositions extends React.Component {
     render() {
         const {
             openTable,
-            relationshipTypeTable,
+            cy,
+            edgeRelationshipTypes,
         } = this.state; 
+
+        let relationshipTypeTable = [];
+
+        if(cy) {
+            Object.keys(edgeRelationshipTypes).map(
+                (key, index) => {
+                    relationshipTypeTable.push(<TableRow>
+                        <TableCell style={{'font-size': 'Normal'}}>
+                            {key.charAt(0).toUpperCase() + key.slice(1)}
+                        </TableCell>
+                        <TableCell align="left" style={{'font-size': 'Normal'}}>
+                            {
+                                Utils.calculateNormalizedTurboMQ(
+                                    edgeRelationshipTypes[key]["links"],
+                                    this.getDecomposition(cy, this.props.elements, this.props.num_of_partitions) 
+                                ).toFixed(2)
+                            }
+                        </TableCell>
+                        <TableCell>
+                            <Slider controlled
+                                value={edgeRelationshipTypes[key].minimumEdgeWeight}
+                                aria-labelledby="discrete-slider"
+                                valueLabelDisplay="auto"
+                                step={10}
+                                marks={true}
+                                min={0}
+                                max={100}
+                                style={{
+                                    width: '100%',
+                                    color: edgeRelationshipTypes[key].color
+                                }}
+                                onChange={(event, weight) => {
+                                    let edgeRelationshipTypesCopy = {...this.state.edgeRelationshipTypes};
+                                    edgeRelationshipTypesCopy[key].minimumEdgeWeight = weight; 
+                                    this.setState({edgeRelationshipTypes: edgeRelationshipTypesCopy});
+                                }}
+                            />
+                        </TableCell>
+                    </TableRow>)
+                }
+            )
+        }
 
         return (
             <div>

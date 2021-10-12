@@ -44,19 +44,14 @@ export default class Utils {
     };
 
     // --> All used for the decomposition views:
-    static parseDecompositionFromJSON(json_graph, relationshipType = null) {
+    static parseDecompositionFromJSON(decompositionGraph) {
         let decomposition = [];
-        let num_of_partitions;
-        let unobservedPartition;
-        if (relationshipType === null) {
-            num_of_partitions = Object.keys(json_graph).length;
-            unobservedPartition = json_graph["unobserved"];
-        } else {
-            num_of_partitions = Object.keys(json_graph[relationshipType].decomposition).length;
-            unobservedPartition = json_graph[relationshipType].decomposition["unobserved"];
-        }
 
-        for(let i = 0; i < num_of_partitions - 1; i++) {
+        let parsedDecomposition = Object.values(decompositionGraph).filter((partition => {
+                return partition.length > 0;
+        }));
+
+        for(let i = 0; i < parsedDecomposition.length; i++) {
             decomposition.push(
                 {
                     data: {
@@ -71,39 +66,12 @@ export default class Utils {
                     }
                 }
             );
-
-            if(relationshipType === null) {
-                decomposition = decomposition.concat(this.formCytoscapeElements(json_graph[`partition${i}`], `partition${i}`, 'common'));
-            } else {
-                decomposition = decomposition.concat(this.formCytoscapeElements(json_graph[relationshipType].decomposition[`partition${i}`], `partition${i}`, 'common'));
-            }
-        }
-
-        if (unobservedPartition.length !== 0) {
-            decomposition.push(
-                {
-                    data: {
-                        id: `unobserved`,
-                        label: `unobserved`,
-                        background_color: 'white',
-                        colored: false,
-                        element_type: 'unobserved_partition',
-                        width: 0,
-                        height: 0,
-                        showMinusSign: false,
-                    }
-                }
-            );
-            if(relationshipType === null) {
-                decomposition = decomposition.concat(this.formCytoscapeElements(json_graph[`unobserved`], 'unobserved', 'unobserved_node'));
-            } else {
-                decomposition = decomposition.concat(this.formCytoscapeElements(json_graph[relationshipType].decomposition[`unobserved`], 'unobserved', 'unobserved_node'));
-            }
+            decomposition = decomposition.concat(this.formCytoscapeElements(parsedDecomposition[i], `partition${i}`, 'common'));
         }
 
         return {
             decomposition: decomposition,
-            num_of_partitions: num_of_partitions
+            num_of_partitions: parsedDecomposition.length
         };
     }
 
@@ -139,8 +107,10 @@ export default class Utils {
                 minimumEdgeWeight: 0,
                 color: colors.relationship_type_colors[i],
             }
+
+            let maxEdgeWeight = this.findMaxEdgeWeight(value["links"]);
             for(let j = 0; j <= 100; j += 10) {
-                edgeCache[j] = this.formCytoscapeEdges(value["links"], j, colors.relationship_type_colors[i]);
+                edgeCache[j] = this.formCytoscapeEdges(value["links"], maxEdgeWeight, j, colors.relationship_type_colors[i]);
             }
             edgeRelationshipTypes[key]['edgeCache'] = edgeCache;
             i++;
@@ -159,7 +129,7 @@ export default class Utils {
         return edges;
     }
 
-    static formCytoscapeEdges(edges, minimumEdgeWeight, edge_color) {
+    static formCytoscapeEdges(edges, maxEdgeWeight, minimumEdgeWeight, edge_color) {
         if(minimumEdgeWeight === 0) {
             return [];
         }
@@ -167,7 +137,7 @@ export default class Utils {
         let cytoscape_edges = [];
         for(let i = 0; i < edges.length; i++) {
             let edge = edges[i];
-            if((this.findMaxEdgeWeight(edges) * (1 - ( minimumEdgeWeight / 100 ))) < parseFloat(edge.weight)) {
+            if((maxEdgeWeight * (1 - ( minimumEdgeWeight / 100 ))) < parseFloat(edge.weight)) {
                 cytoscape_edges.push({
                     group: 'edges',
                     data: {
@@ -182,95 +152,131 @@ export default class Utils {
         }
         return cytoscape_edges;
     }
-    // <-- fin
 
-    // Used for custom graph -->
-    // Uses the hungarian algorithm to match two decompositions together
-    static matchDecompositions(chosenDecompositionOne, chosenDecompositionTwo, json_graph) {
-        const getUnion = (cluster_one, cluster_two) => {return [...new Set([...cluster_one, ...cluster_two])]}
+    /**
+     * Matches the decompositions in the diff-view and provides a graph representation. 
+     * 
+     * @param {*} chosenDecompositionOne formatted as follows [[...elements in partition one], [...elements in partition 2], ... so on]
+     * @param {*} chosenDecompositionTwo formatted as follows [[...elements in partition one], [...elements in partition 2], ... so on]
+     * @returns 
+     */
+    static matchDecompositions(chosenDecompositionOne, chosenDecompositionTwo) {
         const getIntersection = (cluster_one, cluster_two) => {return cluster_one.filter(x => cluster_two.includes(x))}
-        // Gets all the elements that are in cluster_one, but not in cluster_two
+        // ORDER matters here! This gets the different elements in cluster one opposed to cluster two 
         const getDifference = (cluster_one, cluster_two) => {return cluster_one.filter(x => !cluster_two.includes(x));}
+
+        let matchedPartitions = this.matchPartitions(chosenDecompositionOne, chosenDecompositionTwo);
+
+        const decompositionOnePartitions = Object.values(chosenDecompositionOne).filter((partition => {
+            return partition.length > 0;
+        }));
+        const decompositionTwoPartitions = Object.values(chosenDecompositionTwo).filter((partition => {
+            return partition.length > 0;
+        }));
+
+        let diff_graph = {};
+        for(let i = 0; i < matchedPartitions.costMatrix.length; i++) {
+            let clusterOne = decompositionOnePartitions[i];
+            let clusterTwo = decompositionTwoPartitions[i];
+
+            if(clusterOne !== undefined && clusterTwo !== undefined) {
+                diff_graph[i] = {
+                    common: getIntersection(clusterOne.map(nodeInfo => {return nodeInfo.id}), clusterTwo.map(nodeInfo => {return nodeInfo.id})),
+                    diff_one: getDifference(clusterOne.map(nodeInfo => {return nodeInfo.id}), clusterTwo.map(nodeInfo => {return nodeInfo.id})),
+                    diff_two: getDifference(clusterTwo.map(nodeInfo => {return nodeInfo.id}), clusterOne.map(nodeInfo => {return nodeInfo.id})),
+                    match: [matchedPartitions.matching[i][0] + 1, matchedPartitions.matching[i][1] + 1]
+                }
+            } else if (clusterOne === undefined) {
+                diff_graph[i] = {
+                    common: [],
+                    diff_one: [],
+                    diff_two: clusterTwo.map(nodeInfo => {return nodeInfo.id}),
+                    match: ["", matchedPartitions.matching[i][1] + 1]
+                }
+            } else if (clusterTwo === undefined) {
+                diff_graph[i] = {
+                    common: [],
+                    diff_one: clusterOne.map(nodeInfo => {return nodeInfo.id}),
+                    diff_two: [],
+                    match: [matchedPartitions.matching[i][0] + 1, ""]
+                }
+            }
+        }
+
+        return diff_graph;
+    }
+
+    /**
+     * Matches the partitions using the hungarian algorithm between two decompositions 
+     * 
+     * @param {*} decomposition_one formatted as follows [[...elements in partition one], [...elements in partition 2], ... so on]
+     * @param {*} decomposition_two formatted as follows [[...elements in partition one], [...elements in partition 2], ... so on]
+     * @returns 
+     */
+    static matchPartitions(decomposition_one, decomposition_two) {
         const clusterSimilarityMetric = (cluster_one, cluster_two) => {
             let intersection = cluster_one.filter(x => cluster_two.includes(x));
             let union = new Set([...cluster_one, ...cluster_two]);
+            if(union.size === 0 || intersection === 0) {
+                return 0;
+            }
             return (intersection.length / union.size);
         }
-        // First create the matrix
-        let max_num_of_partitions;
-        if (Object.keys(json_graph[chosenDecompositionOne].decomposition).length > Object.keys(json_graph[chosenDecompositionTwo].decomposition).length) {
-            max_num_of_partitions = Object.keys(json_graph[chosenDecompositionOne].decomposition).length;
-        } else {
-            max_num_of_partitions = Object.keys(json_graph[chosenDecompositionTwo].decomposition).length;
-        }
+
+        const decompositionOnePartitions = Object.values(decomposition_one).filter((partition => {
+            return partition.length > 0;
+        }));
+        const decompositionTwoPartitions = Object.values(decomposition_two).filter((partition => {
+            return partition.length > 0;
+        }));
+
+        let max_num_of_partitions = (decompositionOnePartitions.length > decompositionTwoPartitions.length) ? decompositionOnePartitions.length : decompositionTwoPartitions.length;
 
         let costMatrix = [];
-        let max_value = 1.5;
+        let max_value = 0;
         for (let i = 0; i<max_num_of_partitions; i++) {
             costMatrix[i] = [];
             for(let j = 0; j<max_num_of_partitions; j++) {
-                let cluster_one = json_graph[chosenDecompositionOne].decomposition[`partition${i}`];
-                let cluster_two = json_graph[chosenDecompositionTwo].decomposition[`partition${j}`];
-                if (i === max_num_of_partitions - 1 && j === max_num_of_partitions - 1) {
-                    cluster_one = json_graph[chosenDecompositionOne].decomposition['unobserved'];
-                    cluster_two = json_graph[chosenDecompositionTwo].decomposition['unobserved'];
-                    costMatrix[i][j] = 1.5;
-                    continue;
-                } else if (i === max_num_of_partitions - 1 || j === max_num_of_partitions - 1) {
-                    costMatrix[i][j] = 0;
-                    continue;
-                }
+                let clusterOne = decompositionOnePartitions[i];
+                let clusterTwo = decompositionTwoPartitions[j];
 
-                if(cluster_one !== undefined && cluster_two !== undefined) {
-                    let similarity_value = clusterSimilarityMetric(cluster_one.map(nodeInfo => {return nodeInfo.id}), cluster_two.map(nodeInfo => {return nodeInfo.id}));
-                    // if(similarity_value > max_value) {
-                    //     max_value = similarity_value;
-                    // }
+                if(clusterOne !== undefined && clusterTwo !== undefined) {
+                    let similarity_value = clusterSimilarityMetric(clusterOne.map(nodeInfo => {return nodeInfo.id}), clusterTwo.map(nodeInfo => {return nodeInfo.id}));
+                    if(similarity_value > max_value) {
+                        max_value = similarity_value;
+                    }
                     costMatrix[i][j] = similarity_value;
                 } else {
                     costMatrix[i][j] = 0;
                 }
             }
         }
+
+        const similarityMatrix = costMatrix.map((arr) => {
+            return arr.slice();
+        }); 
+
         // Subtract all values by the maximum, so we can find the maximum weighted matching.
         for (let i = 0; i<max_num_of_partitions; i++) {
             for(let j = 0; j<max_num_of_partitions; j++) {
                 costMatrix[i][j] = max_value - costMatrix[i][j];
             }
         }
-        let partition_matches = munkres(costMatrix);
-        let diff_graph = {};
-        for(let i = 0; i < max_num_of_partitions; i++) {
-            let cluster_one = json_graph[chosenDecompositionOne].decomposition[`partition${partition_matches[i][0]}`];
-            let cluster_two = json_graph[chosenDecompositionTwo].decomposition[`partition${partition_matches[i][1]}`];
-            if (i === max_num_of_partitions - 1) {
-                cluster_one = json_graph[chosenDecompositionOne].decomposition['unobserved'];
-                cluster_two = json_graph[chosenDecompositionTwo].decomposition['unobserved'];
-            }
-            if(cluster_one !== undefined && cluster_two !== undefined) {
-                diff_graph[i] = {
-                    common: getIntersection(cluster_one.map(nodeInfo => {return nodeInfo.id}), cluster_two.map(nodeInfo => {return nodeInfo.id})),
-                    diff_one: getDifference(cluster_one.map(nodeInfo => {return nodeInfo.id}), cluster_two.map(nodeInfo => {return nodeInfo.id})),
-                    diff_two: getDifference(cluster_two.map(nodeInfo => {return nodeInfo.id}), cluster_one.map(nodeInfo => {return nodeInfo.id}))
-                }
-            } else if (cluster_one === undefined) {
-                diff_graph[i] = {
-                    common: [],
-                    diff_one: [],
-                    diff_two: cluster_two.map(nodeInfo => {return nodeInfo.id})
-                }
-            } else if (cluster_two === undefined) {
-                diff_graph[i] = {
-                    common: [],
-                    diff_one: cluster_one.map(nodeInfo => {return nodeInfo.id}),
-                    diff_two: [],
-                }
-            }
-        }
-        return diff_graph;
+        
+        return {
+            matching: munkres(costMatrix),
+            costMatrix: costMatrix,
+            similarityMatrix: similarityMatrix
+        };
     }
 
-    static parseDiffGraphFile(diff_graph, colors) {
+    /**
+     * 
+     * @param {*} diff_graph 
+     * @param {*} colors 
+     * @returns 
+     */
+    static parseDiffGraphFile(diff_graph, colors, matchedDecompositionOne, matchedDecompositionTwo) {
         let all_elements = [];
         let common_elements = [];
 
@@ -282,11 +288,18 @@ export default class Utils {
                                         this.getJSONNodeElements(diff_graph[i].diff_one, i, 1, true, colors),
                                         this.getJSONNodeElements(diff_graph[i].diff_two, i, 2, true, colors),
                                     );
+            let partitionLabel = `M${i + 1} = V${matchedDecompositionOne + 1}-P${diff_graph[i].match[0]} ᐱ V${matchedDecompositionTwo + 1}-P${diff_graph[i].match[1]}`;
+            if(diff_graph[i].match[0] === "") {
+                partitionLabel = `M${i + 1} = V${matchedDecompositionTwo + 1}-P${diff_graph[i].match[1]}`;
+            } else if (diff_graph[i].match[1] === "") {
+                partitionLabel = `M${i + 1} = V${matchedDecompositionOne + 1}-P${diff_graph[i].match[0]}`; 
+            }
+
             all_elements.push(
                 {
                     data: {
                         id: `partition${i}`,
-                        label: (i === num_of_partitions - 1) ? 'unobserved': `P${i + 1}`,
+                        label: partitionLabel,
                         background_color: 'white',
                         colored: false,
                         element_type: 'partition',
@@ -360,6 +373,7 @@ export default class Utils {
     static showCustomGraphEdges(cy, chosen_relationship_types, relationshipTypes, common_elements, targetNode) {
         cy.remove('edge');
         let edges = [];
+        console.log(chosen_relationship_types);
         for(let key of chosen_relationship_types) {
             edges = edges.concat(
                 this.addEdgesForCustomGraph(
@@ -438,10 +452,5 @@ export default class Utils {
             }
         }
         return max_edge_weight.toFixed(0);
-    }
-
-    // Weighted Relationship View
-    static getAllNodes(json_graph) {
-
     }
 }
