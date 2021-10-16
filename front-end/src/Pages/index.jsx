@@ -126,7 +126,6 @@ const FilePage = () => {
                                         <em>None</em>
                                     </MenuItem>
                                     <MenuItem value={"PartsUnlimitedMRP"}>PartsUnlimitedMRP</MenuItem>
-                                    <MenuItem value={"JwtSpringSecurityJPA"}>JwtSpringSecurityJPA</MenuItem>
                                 </Select>
                             </FormControl>
                         </TableCell>

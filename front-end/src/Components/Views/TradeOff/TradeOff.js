@@ -1,7 +1,7 @@
 import React from "react";
 import cytoscape from 'cytoscape';
 import Utils from '../../Utils';
-import compoundDragAndDrop from '../../DragAndDrop';
+import CompoundDragAndDrop from '../../DragAndDrop';
 import AppendixLayout from '../../AppendixLayout';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
@@ -11,29 +11,28 @@ import storeProvider from '../../../storeProvider';
 import {updateTradeOffGraph} from '../../../Actions';
 import {connect} from 'react-redux';
 import Paper from "@material-ui/core/Paper";
-import Collapse from '@material-ui/core/Collapse';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import Checkbox from '@material-ui/core/Checkbox';
-import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import 'react-pro-sidebar/dist/css/styles.css';
-import Tooltip from '@material-ui/core/Tooltip';
-import UndoIcon from '@material-ui/icons/Undo';
-import IconButton from '@material-ui/core/IconButton';
 import Button from '@material-ui/core/Button';
 import cxtmenu from 'cytoscape-cxtmenu';
 import { Typography } from "@material-ui/core";
 
+// import {ChangeHistoryStore} from '@service/ChangeHistoryStore';
+import {ChangeHistoryStore} from './../../../service/ChangeHistoryStore';
+import {ChangeHistoryTable} from '../../tables/ChangeHistoryTable/ChangeHistoryTable';
+import {CouplingAndCohesionTable} from './../../tables/MetricsTable/CouplingAndCohesionTable';
 
 cytoscape.use( cxtmenu );
 cytoscape.use( nodeHtmlLabel );
 
+
 class TradeOffGraph extends React.Component {
+    _changeHistory = new ChangeHistoryStore();
+
     constructor(props) {
         super(props);
 
@@ -45,7 +44,14 @@ class TradeOffGraph extends React.Component {
         let consideredRelationshipEdges = [];
 
         let parsedDiffGraph;
-        if(sortedSelectedDecompositions.includes("weighted-relationship")) {
+        if (sortedSelectedDecompositions[0] === 'weighted-view' && sortedSelectedDecompositions[1] === 'weighted-view') {
+            parsedDiffGraph = Utils.matchDecompositions(
+                this.props.weightedDecomposition.decomposition,
+                this.props.weightedDecomposition.decomposition,
+            );
+            consideredRelationshipEdges = consideredRelationshipEdges.concat(this.props.weightedDecomposition.relationshipsConsidered);
+        }
+        else if(sortedSelectedDecompositions.includes("weighted-view")) {
             parsedDiffGraph = Utils.matchDecompositions(
                 this.props.graphData[sortedSelectedDecompositions[0]].decomposition, 
                 this.props.weightedDecomposition.decomposition,
@@ -68,8 +74,10 @@ class TradeOffGraph extends React.Component {
             selectedDecompositions[1][1]
         );
 
+
         this.state = {
             consideredRelationshipEdges: consideredRelationshipEdges,
+            allMovedElements: [],
             savePreviousState: true,
             selectedDecompositions: selectedDecompositions,
             nodes: parsedGraph.elements,
@@ -80,11 +88,6 @@ class TradeOffGraph extends React.Component {
                 num_of_decompositions: 2,
                 colors: this.props.colors.relationship_type_colors
             },
-            changeHistory: {
-                table: [],
-                nodeMoveHistory: {}
-            },
-            elementsSelectedOnTable: [],
             removed_node: null,
             tableBodyRenderKey: 0,
             element_types: {
@@ -97,7 +100,7 @@ class TradeOffGraph extends React.Component {
             },
             openTable: {
                 metrics: false,
-                changeHistory: false,
+                changeHistoryTable: false,
                 edgeFilter: false,
             },
         }
@@ -109,7 +112,6 @@ class TradeOffGraph extends React.Component {
         const {
             nodes,
             num_of_partitions,
-            changeHistory,
             decomposition_attributes,
             element_types,
             selectedDecompositions,
@@ -144,7 +146,6 @@ class TradeOffGraph extends React.Component {
                         'background-color': function(node) {
                             if (node.data("colored"))
                                 return "#f9f9f9";
-                                // return "white";
                             else
                                 return "white";
                         },
@@ -208,8 +209,8 @@ class TradeOffGraph extends React.Component {
                     }
                 },
                 {
-                    selector: '.cdnd-drop-target',
-                    style: {
+                    'selector': '.cdnd-drop-target',
+                    'style': {
                       'border-color': 'red',
                       'border-style': 'dashed'
                     }
@@ -218,12 +219,10 @@ class TradeOffGraph extends React.Component {
         });
 
         let lastRenderedState;
-        let loadedChangeHistory;
-        let relationshipTypes = storeProvider.getStore().getState().diff_graph.edgeRelationshipTypes;
         
+        let relationshipTypes = storeProvider.getStore().getState().diff_graph.edgeRelationshipTypes;
         // If the custom graph hasn't been loaded yet then load the positions of the current diff-graph. 
         if(storeProvider.getStore().getState().trade_off_graph.graph.length === 0) {
-            loadedChangeHistory = changeHistory;
             let options = {
                 num_of_versions: 2,
                 partitions_per_row: 5,
@@ -239,7 +238,7 @@ class TradeOffGraph extends React.Component {
                 }
             });
         } else {
-            loadedChangeHistory = storeProvider.getStore().getState().trade_off_graph.changeHistory;
+            this._changeHistory.loadChangeHistoryStore(storeProvider.getStore().getState().trade_off_graph.changeHistory);
             cy.elements().remove();
             lastRenderedState = storeProvider.getStore().getState().trade_off_graph.graph;
             let principle_elements = [];
@@ -302,7 +301,7 @@ class TradeOffGraph extends React.Component {
             ]
         });
 
-        let cdnd = new compoundDragAndDrop(
+        let cdnd = new CompoundDragAndDrop(
             cy, 
             {
                 padding: 10, 
@@ -324,36 +323,28 @@ class TradeOffGraph extends React.Component {
             }
         });
 
-        let relationshipTypeTable = [];
+        const allDecompositions = {};
+        const styles = {};
+        for(let i = 0; i < decomposition_attributes.num_of_decompositions; i++) {
+            let decompositionName = `V${this.props.selectedDecompositions[i][1] + 1}`;
+            allDecompositions[decompositionName] = this._getCurrentDecomposition(i + 1, cy);
+            styles[decompositionName] = {'color': this.props.colors.relationship_type_colors[selectedDecompositions[i][1]]}
+        }
 
-        Object.keys(relationshipTypes).map(
-            (key, index) => {
-                relationshipTypeTable.push(<TableRow>
-                    <TableCell style={{'font-size': 'Normal'}}>
-                        {key}
-                    </TableCell>
-                    {
-                        [...Array(decomposition_attributes.num_of_decompositions)].map((x, i) => 
-                            <TableCell>
-                                {
-                                    Utils.calculateNormalizedTurboMQ(
-                                        relationshipTypes[key]["links"],
-                                        this._getCurrentDecomposition(i + 1, cy)
-                                    ).toFixed(2)
-                                }
-                            </TableCell>
-                        )
-                    }
-                </TableRow>)
-            }
-        )
+        const allDependencies = {};
+        Object.keys(relationshipTypes).map((key) => {
+            allDependencies[key] = relationshipTypes[key]["links"];
+        });
 
         this.setState({
             cy: cy,
             partitions: this.getAllPartitionIds(num_of_partitions),
+            couplingAndCohesionTable: {
+                decompositions: allDecompositions,
+                styles: styles,
+                dependencies: allDependencies
+            },
             relationshipTypes: relationshipTypes,
-            changeHistory: loadedChangeHistory,
-            relationshipTypeTable: relationshipTypeTable
         });
     }
 
@@ -361,7 +352,6 @@ class TradeOffGraph extends React.Component {
         const {
             cy,
             element_types,
-            selectedDecompositions,
             relationshipTypes,
             common_elements,
             consideredRelationshipEdges
@@ -522,15 +512,15 @@ class TradeOffGraph extends React.Component {
         cy.remove('edge');
     }
 
-    highlightSelectedElements(changeHistoryRowElementInfo) {
+    highlightSelectedElements = (changeHistoryRowElementInfo, elementsSelectedOnTable) => {
         let {
             cy,
             decomposition_attributes,
             element_types,
-            elementsSelectedOnTable,
             selectedDecompositions
         } = this.state; 
 
+        // This is where I'm trying to highlight all objects that were being selected. 
         let selectedElementsInChangedHistory = elementsSelectedOnTable.slice();
         if(changeHistoryRowElementInfo !== null && !selectedElementsInChangedHistory.includes(changeHistoryRowElementInfo)) {
             selectedElementsInChangedHistory.push(changeHistoryRowElementInfo);
@@ -539,7 +529,7 @@ class TradeOffGraph extends React.Component {
 
         for(let movedElementInfo of selectedElementsInChangedHistory) {
             let sel = cy.getElementById(movedElementInfo.movedNode.data('label'));
-            if(this._checkifFirstMoveForClass(movedElementInfo)) {
+            if(this._changeHistory.isFirstMove(movedElementInfo)) {
                 selected_elements = selected_elements.union(sel).union(movedElementInfo.targetPartition); 
                 if(sel.data('prev_element_type') === element_types.diff_node) {
                     for(let i = 1; i <= decomposition_attributes.num_of_decompositions; i++) {
@@ -599,56 +589,13 @@ class TradeOffGraph extends React.Component {
         unselected_elements.addClass('deactivate');
     }
 
-    updateChangeHistory(sourceNode, targetNode) {
-        const {
-            cy
-        } = this.state;
-
-        // Get the node's position relative to the center position of the partition 
-        let partition = cy.getElementById(sourceNode.data('partition'));
-        const relative_center_position = {
-            x: sourceNode.position('x') - partition.position('x'),
-            y: sourceNode.position('y') - partition.position('y'),
-        }
-
-        this.setState((prevState) => ({
-            changeHistory: {
-                table: [...prevState.changeHistory.table, 
-                    {
-                        movedNode: sourceNode, 
-                        targetPartition: targetNode,
-                        moveNumber: !(sourceNode.data().label in prevState.changeHistory.nodeMoveHistory) ? 0 : prevState.changeHistory.nodeMoveHistory[sourceNode.data().label].length
-                    }
-                ],
-                nodeMoveHistory: !(sourceNode.data().label in prevState.changeHistory.nodeMoveHistory) ? ({
-                    ...prevState.changeHistory.nodeMoveHistory,
-                    [sourceNode.data().label]: [{
-                        movedNode: sourceNode, 
-                        targetPartition: targetNode, 
-                        relative_position_in_partition: relative_center_position,
-                        moveNumber: 0
-                    }]
-                }) : ({
-                    ...prevState.changeHistory.nodeMoveHistory,
-                    [sourceNode.data().label]: [...prevState.changeHistory.nodeMoveHistory[sourceNode.data().label], 
-                        {
-                            movedNode: sourceNode, 
-                            targetPartition: targetNode, 
-                            relative_position_in_partition: relative_center_position,
-                            moveNumber: prevState.changeHistory.nodeMoveHistory[sourceNode.data().label].length
-                        }
-                    ]
-                })
-            }
-        }));
-    }
-
     onMovedNode(position, sourceNode, targetNode) { 
         const {
             cy,
             partitions,
             decomposition_attributes,
             element_types,
+            couplingAndCohesionTable
         } = this.state; 
 
         if(sourceNode.data().showMinusSign === false && 
@@ -719,9 +666,18 @@ class TradeOffGraph extends React.Component {
             }
 
             // Update the evolutionary history table. 
-            this.updateChangeHistory(sourceNode, targetNode)
+            this._changeHistory.addNewMove(sourceNode, cy.getElementById(sourceNode.data('partition')), targetNode);
         }
+
+
         this._renderNodes(); 
+        this.setState({
+            allMovedElements: this._changeHistory.getAllMoveOperations(),
+            couplingAndCohesionTable: {
+                ...couplingAndCohesionTable,
+                decompositions: this._getDecompositions()
+            }
+        });
     }
 
     _renderNodes() {
@@ -780,7 +736,7 @@ class TradeOffGraph extends React.Component {
     updateRedux() {
         const {
             cy,
-            changeHistory,
+            // changeHistory,
             savePreviousState
         } = this.state;
 
@@ -788,80 +744,65 @@ class TradeOffGraph extends React.Component {
             this.props.updateTradeOffGraph(
                 {
                     graph: cy.json(),
-                    changeHistory: changeHistory,
+                    changeHistory: this._changeHistory.getChangeHistory()
                 }
             );
         } else {
             this.props.updateTradeOffGraph({
                 graph: cy.collection(),
-                changeHistory: [],
+                changeHistory: {},
             });
         }
 
     }
 
-    _updateSelectedEvolutionaryList(isBoxChecked, element) {
-        const {
-            elementsSelectedOnTable
-        } = this.state;
-
-        if(isBoxChecked) {
-            this.setState(prevState => ({
-                elementsSelectedOnTable: [...prevState.elementsSelectedOnTable, element]
-            }))
-        } else {
-            this.setState({elementsSelectedOnTable: elementsSelectedOnTable.filter((ele) => {
-                return ele !== element;
-            })});
-        }
-    }
-
-    _onDeleteRowsFromChangeHistory() {
+    _getDecompositions() {
         const {
             cy,
-            elementsSelectedOnTable, 
-            changeHistory,
+            decomposition_attributes
+        } = this.state;
+
+        // Update the metrics once a node is moved
+        const allDecompositions = {};
+        for(let i = 0; i < decomposition_attributes.num_of_decompositions; i++) {
+            let decompositionName = `V${this.props.selectedDecompositions[i][1] + 1}`;
+            allDecompositions[decompositionName] = this._getCurrentDecomposition(i + 1, cy);
+        }
+
+        return allDecompositions;
+    }
+
+    _onDeleteRowsFromChangeHistory = (elementsSelectedOnTable) => {
+        const {
+            cy,
             tableBodyRenderKey,
             decomposition_attributes,
-            element_types
+            element_types,
+            couplingAndCohesionTable
         } = this.state;
 
         const zoom = cy.zoom();
         const pan = cy.pan();
 
-        let nodeMoveHistory = {...changeHistory.nodeMoveHistory};
+        elementsSelectedOnTable.forEach((movedElementInfo) => {
+            const {movedNode, currPartition, currPartitionRelativePos, moveNumber} = movedElementInfo; 
+            this._changeHistory.undoMove(movedNode);  
 
-        // Remove elements from the table
-        for(let ele in elementsSelectedOnTable) {
-            let movedElementInfo = elementsSelectedOnTable[ele];
-            const index = nodeMoveHistory[movedElementInfo.movedNode.data().label].length - 1;
-            let previous_move = {
-                element: nodeMoveHistory[movedElementInfo.movedNode.data().label].slice(-1)[0].movedNode, 
-                partition: nodeMoveHistory[movedElementInfo.movedNode.data().label].slice(-1)[0].targetPartition, 
-                position: nodeMoveHistory[movedElementInfo.movedNode.data().label].slice(-1)[0].relative_position_in_partition
-            };
+            // Remove the moved node. 
+            cy.remove(cy.getElementById(movedNode.data('label'))); 
 
-            cy.remove(cy.getElementById(movedElementInfo.movedNode.data('label'))); 
-            // If it is not the first move for the class, then add the previous move, or if the move is a common element.
-            if(!this._checkifFirstMoveForClass(movedElementInfo) || previous_move.element.data('element_type') === element_types.common_node) {
-                // Position the element back to its relative position of the partition.
-                let partition = cy.getElementById(previous_move.element.data('partition'));
-                previous_move.element.position({
-                    x: partition.position('x') + previous_move.position.x,
-                    y: partition.position('y') + previous_move.position.y,
-                });
-                cy.add(previous_move.element);
-            } else {
-                if(!this._isNodeCommonBetweenDecompositions(movedElementInfo.movedNode.data('element_type'))) {
-                    for(let i = 0; i < decomposition_attributes.num_of_decompositions; i++) {
-                        let diff_node = cy.getElementById(`graph_${i+1}_${movedElementInfo.movedNode.data('label')}`)
-                        diff_node.data().showMinusSign = false;
-                    }
+            if(moveNumber > 0 || movedNode.data('element_type') === element_types.common_node) {
+                cy.add(movedNode.move({parent: currPartition.id()}).position({
+                    x: currPartition.position('x') + currPartitionRelativePos.x,
+                    y: currPartition.position('y') + currPartitionRelativePos.y
+                }));
+            } else if (movedNode.data('element_type') === element_types.diff_node) {
+                for(let i = 0; i < decomposition_attributes.num_of_decompositions; i++) {
+                    let diff_node = cy.getElementById(`graph_${i+1}_${movedNode.data('label')}`)
+                    diff_node.data().showMinusSign = false;
                 }
             }
-            nodeMoveHistory[movedElementInfo.movedNode.data('label')].splice(index, 1);
-        }
-
+        });
         cy.pan(pan);
         cy.zoom(zoom);
 
@@ -869,32 +810,30 @@ class TradeOffGraph extends React.Component {
         this._renderNodes();
 
         this.setState(() => ({
-            changeHistory: {
-                table: changeHistory.table.filter((ele) => {
-                    return !elementsSelectedOnTable.includes(ele);
-                }),
-                nodeMoveHistory: nodeMoveHistory,
-            },
-            elementsSelectedOnTable: [],
-            tableBodyRenderKey: tableBodyRenderKey + 1
+            allMovedElements: this._changeHistory.getAllMoveOperations(),
+            tableBodyRenderKey: tableBodyRenderKey + 1,
+            couplingAndCohesionTable: {
+                ...couplingAndCohesionTable,
+                decompositions: this._getDecompositions()
+            }
         }));
     }
 
-    _printEvolutionaryHistoryText(movedElementInfo) {
+    _printEvolutionaryHistoryText = (movedElementInfo) => {
         const {
             cy,
             decomposition_attributes,
-            changeHistory,
             element_types
         } = this.state;
-        const nodeMoveHistory = changeHistory.nodeMoveHistory;
-        let target_node = movedElementInfo.movedNode.data().label;
+
+        const nodeMoveHistory = this._changeHistory.getChangeHistory().indivElementHistories;
+        let target_node = movedElementInfo.movedNode.data('label');
         let previous_partitions = "";
 
         if(movedElementInfo.movedNode.data('element_type') === element_types.common_node || movedElementInfo.movedNode.data('prev_element_type') === element_types.common_node) {
             let partition_num = parseInt(movedElementInfo.movedNode.data('partition').match('[0-9]')) + 1;
             previous_partitions = `M${partition_num}`;
-        } else if (this._checkifFirstMoveForClass(movedElementInfo)){
+        } else if (this._changeHistory.isFirstMove(movedElementInfo)) {
             for(let i = 1; i <= decomposition_attributes.num_of_decompositions; i++) {
                 let partition_num = parseInt(cy.getElementById(`graph_${i}_${movedElementInfo.movedNode.data('label')}`).data().partition.match('[0-9]')) + 1;
                 previous_partitions = previous_partitions.concat(`V${this.props.selectedDecompositions[i - 1][1] + 1}-M${partition_num}`);
@@ -903,7 +842,7 @@ class TradeOffGraph extends React.Component {
                 }
             }
         } else {
-            let index = this._findIndexInMoveHistory(movedElementInfo);
+            let index = movedElementInfo.moveNumber;
             let previous_node = nodeMoveHistory[movedElementInfo.movedNode.data('label')][index].movedNode
             let partition_num = parseInt(previous_node.data('partition').match('[0-9]')) + 1;
             previous_partitions = `M${partition_num}`;
@@ -911,21 +850,6 @@ class TradeOffGraph extends React.Component {
 
         let target_partition = parseInt(movedElementInfo.targetPartition.id().match('[0-9]')) + 1;
         return `${target_node}: ${previous_partitions} → M${target_partition}`;
-    }
-
-    _findIndexInMoveHistory(movedElementInfo) {
-        return movedElementInfo.moveNumber;
-    }
-
-    _checkIfLastMoveForClass(movedElementInfo) {
-        const {
-            nodeMoveHistory
-        } = this.state.changeHistory;
-        return (nodeMoveHistory[movedElementInfo.movedNode.data('label')].length - 1) === this._findIndexInMoveHistory(movedElementInfo);
-    }
-
-    _checkifFirstMoveForClass(movedElementInfo) {
-        return this._findIndexInMoveHistory(movedElementInfo) === 0;
     }
 
     _createRelationshipTypeTable() {
@@ -964,17 +888,8 @@ class TradeOffGraph extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        if(JSON.stringify(prevState.relationshipTypeTable) !== JSON.stringify(this._createRelationshipTypeTable())) {
-            this.setState({relationshipTypeTable: this._createRelationshipTypeTable()});
-        }
-        // if(JSON.stringify(prevState.edges) !== JSON.stringify(Utils.updateGraphEdges(selectedTab, relationshipTypes, common_elements, this.props.colors, null))) {
-        //     Utils.addEdges(cy, selectedTab, relationshipTypes, common_elements, this.props.colors);
-        //     // Do not highlight any node if the toggles are pressed. 
-        //     cy.elements().forEach((ele) => {
-        //         // ele.data().showMinusSign = false; 
-        //         ele.removeClass('deactivate');
-        //         ele.removeClass('highlight');
-        //     });
+        // if(JSON.stringify(prevState.relationshipTypeTable) !== JSON.stringify(this._createRelationshipTypeTable())) {
+        //     this.setState({relationshipTypeTable: this._createRelationshipTypeTable()});
         // }
     }
     
@@ -982,44 +897,27 @@ class TradeOffGraph extends React.Component {
         this.updateRedux();
     }
 
+    highlightElements = (movedElementInfo, allSelectedElements) => {
+        if(this._changeHistory.isLastestMove(movedElementInfo)) {
+            this.highlightSelectedElements(movedElementInfo, allSelectedElements);
+        }
+    }
+
+    updateRelationshipMetrics = (movedElementOperation) => {
+        if(this._changeHistory.isLastestMove(movedElementOperation)) {
+            this.onUnhighlightNodes();
+            this.setState({relationshipTypeTable: this._createRelationshipTypeTable()});
+        }
+    }
+
     render() {
         let {
-            changeHistory,
-            elementsSelectedOnTable,
+            allMovedElements,
             tableBodyRenderKey,
-            decomposition_attributes,
-            relationshipTypeTable,
             openTable,
-            selectedDecompositions
+            selectedDecompositions,
+            couplingAndCohesionTable
         } = this.state;
-
-        // movedElementInfo contains the sourceNode that was moved, the target partition it is moving to, and its relative position in the current partition.
-        const changeHistoryList = changeHistory.table.map(
-            (movedElementInfo, index) => 
-            <TableRow key={index}
-                hover={this._checkIfLastMoveForClass(movedElementInfo)} 
-                onMouseOver={(event) => {
-                    if(this._checkIfLastMoveForClass(movedElementInfo)) {
-                        this.highlightSelectedElements(movedElementInfo);
-                    }
-                }}
-                onMouseOut={(event) => {
-                    if(this._checkIfLastMoveForClass(movedElementInfo)) {
-                        this.onUnhighlightNodes();
-                        this.setState({relationshipTypeTable: this._createRelationshipTypeTable()});
-                    }
-                }}
-            >
-                <TableCell>
-                    <Checkbox
-                        checked={elementsSelectedOnTable.includes(movedElementInfo)}
-                        onChange={(event, newValue) => this._updateSelectedEvolutionaryList(newValue, movedElementInfo, index)}
-                        disabled={!this._checkIfLastMoveForClass(movedElementInfo)}
-                    />
-                    {this._printEvolutionaryHistoryText(movedElementInfo)}
-                </TableCell>
-            </TableRow>
-        );
 
         return (
             <div>
@@ -1073,117 +971,26 @@ class TradeOffGraph extends React.Component {
                     <Table stickyHeader aria-label="simple table" size="small">
                         <TableBody key={tableBodyRenderKey}>
                             <TableRow>
-                                <TableCell style={{'font-weight': 'bold'}}>
-                                    <IconButton 
-                                        size="small" 
-                                        onClick={() => {
-                                            this.setState({
-                                                openTable: {
-                                                    ...this.state.openTable,
-                                                    metrics: !openTable.metrics 
-                                                }
-                                            })
-                                        }}
-                                    >
-                                        {openTable.metrics ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                                    </IconButton>
-                                    Metrics
-                                </TableCell>
+                                <CouplingAndCohesionTable 
+                                    styles={couplingAndCohesionTable?.styles || {}}
+                                    decompositions={couplingAndCohesionTable?.decompositions || []}
+                                    dependencies={couplingAndCohesionTable?.dependencies || []}
+                                    openTable={openTable.metrics}
+                                    onOpenTableChange={() => this.setState({openTable: {...openTable, metrics: !openTable.metrics}})}
+                                />
                             </TableRow>
                             <TableRow>
-                                <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} >
-                                    <Collapse in={openTable.metrics} timeout="auto" unmountOnExit>
-                                        <Table size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell colSpan={4} style={{'font-weight': 'bold'}}>
-                                                        Coupling & Cohesion (0-100%)
-                                                    </TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell>
-                                                        Dependencies
-                                                    </TableCell>
-                                                    {
-                                                        [...Array(decomposition_attributes.num_of_decompositions)].map((x, i) => 
-                                                            <TableCell 
-                                                                style={{
-                                                                    'color': this.props.colors.relationship_type_colors[selectedDecompositions[i][1]]
-                                                                }}
-                                                            >
-                                                                V{selectedDecompositions[i][1] + 1}
-                                                            </TableCell>
-                                                        )
-                                                    }
-                                                </TableRow>
-                                            </TableHead>
-                                            {relationshipTypeTable}
-                                        </Table>
-                                    </Collapse>
-                                </TableCell>
-                            </TableRow>
-                            <TableRow>
-                                {elementsSelectedOnTable.length > 0 ? (
-                                    <TableCell
-                                        onMouseOver={(event) => {
-                                            this.highlightSelectedElements(null);
-                                        }}
-                                        onMouseOut={(event) => {
-                                            this.onUnhighlightNodes();
-                                        }}
-                                    >
-                                        <IconButton 
-                                            size="small" 
-                                            onClick={() => {
-                                                this.setState({
-                                                    openTable: {
-                                                        ...this.state.openTable,
-                                                        changeHistory: !openTable.changeHistory 
-                                                    }
-                                                })
-                                            }}
-                                        >
-                                            {openTable.changeHistory ? <KeyboardArrowUpIcon onClick={(event) => this.onUnhighlightNodes()}/> : <KeyboardArrowDownIcon onClick={(event) => this.onUnhighlightNodes()}/>}
-                                        </IconButton>
-                                    {elementsSelectedOnTable.length} selected
-                                        <Tooltip title="Undo">
-                                            <IconButton 
-                                                aria-label="undo" 
-                                                onClick={(event) => this._onDeleteRowsFromChangeHistory()}
-                                            >
-                                                <UndoIcon
-                                                    onClick={(event) => this.onUnhighlightNodes()}
-                                                />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </TableCell>
-                                    ) : (
-                                    <TableCell style={{'font-weight': 'bold'}}>
-                                        <IconButton 
-                                            size="small" 
-                                            onClick={() => {
-                                                this.setState({
-                                                    openTable: {
-                                                        ...this.state.openTable,
-                                                        changeHistory: !openTable.changeHistory 
-                                                    }
-                                                })
-                                            }}
-                                        >
-                                            {openTable.changeHistory ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                                        </IconButton>
-                                        Change History
-                                    </TableCell> 
-                                )}
-                            </TableRow>
-                            <TableRow>
-                                <TableCell style={{ paddingBottom: 0, paddingTop: 0}} >
-                                    <Collapse in={openTable.changeHistory} timeout="auto" unmountOnExit>
-                                        <Table size="small">
-                                            {changeHistoryList}
-                                        </Table>
-                                    </Collapse>
-                                </TableCell>
+                                <ChangeHistoryTable
+                                    allMoveOperations={allMovedElements}
+                                    enableHover={this._changeHistory.isLastestMove}
+                                    onMouseOver={this.highlightElements}
+                                    onMouseOut={this.updateRelationshipMetrics}
+                                    disable={this._changeHistory.isLastestMove}
+                                    moveOperationContent={this._printEvolutionaryHistoryText}
+                                    onAllSelectedElements={this._onDeleteRowsFromChangeHistory}
+                                    openTable={openTable.changeHistoryTable}
+                                    onOpenTableChange={() => this.setState({openTable: {...openTable, changeHistoryTable: !openTable.changeHistoryTable}})}
+                                />
                             </TableRow>
                         </TableBody>
                     </Table>

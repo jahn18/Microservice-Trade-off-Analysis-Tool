@@ -445,7 +445,7 @@ class Decompositions extends React.Component {
                 <div className="graph-container">
                     <div style={{height: '100%', width: '100%', position: 'fixed'}} ref={ref => (this.ref = ref)}></div>
                 </div>
-                { (this.props.selectedTab === 'weighted-relationship') && 
+                { (this.props.selectedTab === 'weighted-view') && 
                 <Button variant="outlined" color="primary"
                     style={{
                         position: 'fixed',

@@ -3,12 +3,12 @@ import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
 import 'react-pro-sidebar/dist/css/styles.css';
-import Decompositions from '../Components/Views/Decomposition';
-import TradeOffGraph from '../Components/Views/TradeOff';
-import TradeOffSelectionTable from "../Components/SelectionTables/TradeOffTable";
-import WeightedRelationshipSelectionTable from "../Components/SelectionTables/WeightedRelationshipTable";
-import SelectionTabs from "../Components/Tabs";
-import Utils from "../Components/Utils";
+import Decompositions from '../components/Views/Decomposition';
+import TradeOffGraph from '../components/Views/TradeOff';
+import TradeOffSelectionTable from "./../components/SelectionTables/TradeOffTable";
+import WeightedRelationshipSelectionTable from "./../components/SelectionTables/WeightedRelationshipTable";
+import SelectionTabs from "../components/Tabs";
+import Utils from "../components/Utils";
 
 
 var SERVER_ADDRESS = "http://127.0.0.1:5000/";
@@ -45,31 +45,18 @@ export default class DiffTool extends React.Component {
         this.setState({selectedTab: tab})
     }
 
-    updateSelectedDecompositions = (value, decomposition, index) => {
-        let {
-            numDecompositionsSelected,
-            selectedDecompositions
-        } = this.state;
-
-        let selectedDecompositionCopy = selectedDecompositions.map((x) => x);
-
-        if(value) {
-            selectedDecompositionCopy.push([decomposition, index]);
-        } else {
-            const i = selectedDecompositions.map(x => {return x[0]}).indexOf(decomposition);
-            selectedDecompositionCopy.splice(i, 1);
-        }
-
+    /**
+     * 
+     * @param {*} decompositionA [key, decomposition version]
+     * @param {*} decompositionB [key, decomposition version]
+     */
+    selectDecompositions2Diff = (decompositionA, decompositionB) => {
         this.setState(
             {
-                numDecompositionsSelected: (value) ? numDecompositionsSelected + 1 : numDecompositionsSelected - 1,
-                selectedDecompositions: selectedDecompositionCopy
+                selectedDecompositionsCompare: true,
+                selectedDecompositions: [decompositionA, decompositionB]
             }
         )
-    }
-
-    setTradeOffActive = () => {
-        this.setState({selectedDecompositionsCompare: true});
     }
 
     resetTradeOffConfiguration = (wasClicked) => {
@@ -145,7 +132,7 @@ export default class DiffTool extends React.Component {
                         }
                     );
                 } else {
-                    console.log('ERROR: could not retrieve graph for weighted-relationship view');
+                    console.log('ERROR: could not retrieve graph for weighted-view');
                 }
             }
         }
@@ -187,18 +174,18 @@ export default class DiffTool extends React.Component {
                 'class-terms': '#F4145B', 
                 'commits': '#dfb63d', 
                 'contributors': '#824f7d', 
-                'weighted-relationship': 'grey',
+                'weighted-view': 'grey',
                 'trade-off': 'grey'
             }
         }
 
         let elements;
         let num_of_partitions;
-        if (selectedTab !== "trade-off" && selectedTab !== 'weighted-relationship') {
+        if (selectedTab !== "trade-off" && selectedTab !== 'weighted-view') {
             let parsedGraph = Utils.parseDecompositionFromJSON(graphData[selectedTab].decomposition);
             elements = parsedGraph.decomposition;
             num_of_partitions = parsedGraph.num_of_partitions; 
-        } else if (fetchedWeightedRelationshipDecomposition && selectedTab === 'weighted-relationship') {
+        } else if (fetchedWeightedRelationshipDecomposition && selectedTab === 'weighted-view') {
             elements = weightedGraphElements;
             num_of_partitions = weightedGraphPartitionNum - 1; 
         }
@@ -214,7 +201,7 @@ export default class DiffTool extends React.Component {
                     setSelectedTab={this.setSelectedTab}
                 />
                 {
-                    (selectedTab !== "trade-off" && selectedTab !== 'weighted-relationship') && 
+                    (selectedTab !== "trade-off" && selectedTab !== 'weighted-view') &&
                     <Decompositions 
                         elements={elements}
                         num_of_partitions={num_of_partitions}
@@ -228,11 +215,11 @@ export default class DiffTool extends React.Component {
                     (
                         (!selectedDecompositionsCompare) ? 
                         <TradeOffSelectionTable 
-                            updateSelectedDecompositions={this.updateSelectedDecompositions}
+                            updateSelectedDecompositions={this.selectDecompositions2Diff}
                             graphData={graphData}
-                            updateGraphStatus={this.setTradeOffActive}
-                            numDecompositionsSelected={numDecompositionsSelected}
-                            selectedDecompositions={selectedDecompositions}
+                            // updateGraphStatus={this.setTradeOffActive}
+                            // numDecompositionsSelected={numDecompositionsSelected}
+                            // selectedDecompositions={selectedDecompositions}
                             weightedDecomposition={
                                 {
                                     exists: fetchedWeightedRelationshipDecomposition,
@@ -257,7 +244,7 @@ export default class DiffTool extends React.Component {
                     )
                 }
                 {
-                    (selectedTab === "weighted-relationship" && 
+                    (selectedTab === "weighted-view" &&
                         ((!fetchedWeightedRelationshipDecomposition) ?
                         <WeightedRelationshipSelectionTable
                             updateRelationshipWeights={this.updateRelationshipWeights}

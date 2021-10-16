@@ -17,8 +17,8 @@ export default function WeightedRelationshipSelectionTable(props) {
     Object.keys(props.graphData).map(
         (key, index) => {
             weightedRelationshipTable.push(
-                <TableRow key={`weighted-relationship-${key}`}>
-                    <TableCell key={`weighted-relationship-${key}`}>
+                <TableRow key={`weighted-view-${key}`}>
+                    <TableCell key={`weighted-view-${key}`}>
                         <TextField 
                             id="standard-basic" 
                             label={key.toUpperCase()} 
@@ -69,7 +69,7 @@ export default function WeightedRelationshipSelectionTable(props) {
                                     props.setClickCluster();
                                     props.getWeightedDecomposition()
                                 }}
-                                disabled={props.getTotalRelationshipWeightSum() < 0.99}
+                                disabled={props.getTotalRelationshipWeightSum() < 0.99 || props.getTotalRelationshipWeightSum() > 1}
                             >
                                 Cluster
                             </Button> 

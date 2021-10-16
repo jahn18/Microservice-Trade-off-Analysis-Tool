@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import Paper from "@material-ui/core/Paper";
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -7,13 +7,10 @@ import TableContainer from '@material-ui/core/TableContainer';
 import Button from '@material-ui/core/Button';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import Checkbox from '@material-ui/core/Checkbox';
 import Typography from '@material-ui/core/Typography';
 import Utils from '../Utils/utils';
 
 export default function TradeOffSelectionTable(props) {
-    let [relationshipCheckBox, updateCheckBox] = useState({});
-
     const getSimilarityValue = (matching, similarityMatrix) => {
         let sum = 0;
         matching.forEach(match => {
@@ -22,110 +19,117 @@ export default function TradeOffSelectionTable(props) {
         return sum / similarityMatrix.length;
     }
 
-    let similarityValue = 0;
-    let selectedDecompositions = props.selectedDecompositions.map((selectedDecomposition) => {
-        return selectedDecomposition[0];
-    });
-    if (props.numDecompositionsSelected == 2) {
-        let matchedPartitions;
-        if(selectedDecompositions.includes("weighted-relationship")) {
-            if(selectedDecompositions[0] === "weighted-relationship") {
-                matchedPartitions = Utils.matchPartitions(
-                    props.weightedDecomposition.decomposition,
-                    props.graphData[selectedDecompositions[1]].decomposition
-                );
-            } else {
-                matchedPartitions = Utils.matchPartitions(
-                    props.graphData[selectedDecompositions[0]].decomposition, 
-                    props.weightedDecomposition.decomposition,
-                );
-            }
-        } else {
-            matchedPartitions = Utils.matchPartitions(
-                props.graphData[selectedDecompositions[0]].decomposition, 
-                props.graphData[selectedDecompositions[1]].decomposition
-            );
-        }
-        similarityValue = getSimilarityValue(matchedPartitions.matching, matchedPartitions.similarityMatrix) * 100;
-    }
-    
+    let keys = Object.keys(props.graphData).map((key) => key);
+    keys.push('weighted-view');
 
-    let tradeOffTable = [];
-    Object.keys(props.graphData).map(
-        (key, index) => {
-            tradeOffTable.push(
-                <TableRow key={`trade-off-${key}`}>
-                    <TableCell key={`trade-off-${key}`} colSpan={4}>
-                        <Checkbox
-                            onChange={(event, newValue) => props.updateSelectedDecompositions(newValue, key, index)}
-                            checked={selectedDecompositions.includes(key)}
-                        />
-                        {`V${index + 1} (by ${key.charAt(0).toUpperCase() + key.slice(1)})`} 
+    let tableHeader = [
+        <TableRow key={'empty-space'}>
+            <TableCell key={'empty-space'}>
+            </TableCell>
+            {Object.keys(props.graphData).map(
+                (key, index) =>
+                    <TableCell key={`header-${key}`}>
+                        {`V${index + 1} (by ${key.charAt(0).toUpperCase() + key.slice(1)})`}
                     </TableCell>
-                </TableRow>
-            )
-        }
-    )
-    tradeOffTable.push(
-        <TableRow key={`trade-off-weighted-relationship`}>
-            <TableCell key={`trade-off-weighted-relationship`} colSpan={4}>
-                <Checkbox
-                    onChange={(event, newValue) => props.updateSelectedDecompositions(newValue, 'weighted-relationship', tradeOffTable.length - 1)}
-                    checked={selectedDecompositions.includes("weighted-relationship")}
-                    disabled={!props.weightedDecomposition.exists}
-                />
-                {`V${tradeOffTable.length + 1} (Weighted View)`} 
+            )}
+            <TableCell key={`header-weighted-view`}>
+                {`V${Object.keys(props.graphData).length + 1} (Weighted View)`}
             </TableCell>
         </TableRow>
-    );
+    ];
 
-    return(
+    let trackKeys = [];
+    let tradeOffTable = [
+        keys.map(
+            (keyA, indexA) => {
+                trackKeys.push(keyA);
+                return (
+                    <TableRow key={`trade-off-${keyA}`}>
+                        <TableCell key={`trade-off-${keyA}`}>
+                            {`V${indexA + 1} (by ${keyA.charAt(0).toUpperCase() + keyA.slice(1)})`}
+                        </TableCell>
+                        {keys.map(
+                            (keyB, indexB) => {
+                                if (trackKeys.includes(keyB) && keyB !== keyA) {
+                                    return (
+                                        <TableCell key={`empty-key`}>
+                                        </TableCell>
+                                    )
+                                }
+                                if (keyA !== 'weighted-view' && keyB !== 'weighted-view') {
+                                    let matchedPartitions = Utils.matchPartitions(
+                                        props.graphData[keyA].decomposition,
+                                        props.graphData[keyB].decomposition
+                                    );
+                                    return (
+                                        <TableCell key={`similarity-value-${keyB}`}>
+                                            <Button variant="text" onClick={() => props.updateSelectedDecompositions([keyA, indexA], [keyB, indexB])}>
+                                                {(getSimilarityValue(matchedPartitions.matching, matchedPartitions.similarityMatrix) * 100).toFixed(2)}
+                                            </Button>
+                                        </TableCell>
+                                    );
+                                } else if (props.weightedDecomposition.exists) {
+                                    let matchedPartitions;
+                                    if (keyA === 'weighted-view' && keyB === 'weighted-view') {
+                                        matchedPartitions = Utils.matchPartitions(
+                                            props.weightedDecomposition.decomposition,
+                                            props.weightedDecomposition.decomposition,
+                                        );
+                                    } else { // has to be in keyA since we only show half of the table. 
+                                        matchedPartitions = Utils.matchPartitions(
+                                            props.graphData[keyA].decomposition,
+                                            props.weightedDecomposition.decomposition
+                                        );
+                                    } 
+
+                                    return (
+                                        <TableCell key={`similarity-value-${keyB}`}>
+                                            <Button variant="text" onClick={() => props.updateSelectedDecompositions([keyA, indexA], [keyB, indexB])}>
+                                                {(getSimilarityValue(matchedPartitions.matching, matchedPartitions.similarityMatrix) * 100).toFixed(2)}
+                                            </Button>
+                                        </TableCell>
+                                    )
+                                } else {
+                                    return (
+                                        <TableCell key={`similarity-value-${keyB}`}>
+                                            {"N/A"}
+                                        </TableCell>
+                                    );
+                                }
+                            }
+                        )}
+                    </TableRow>
+                )
+            }
+        )
+    ];
+
+    return (
         <TableContainer
-        component={Paper} 
-        style={
+            component={Paper}
+            style={
                 {
-                    width: '50%',
+                    width: '65%',
                     border: '1px solid grey',
-                    left: '25%',
+                    left: '17%',
                     bottom: '10%',
                     position: 'fixed',
                 }
-            } 
-        size="small">
+            }
+            size="small">
             <Table>
                 <TableHead>
                     <TableRow>
-                        <TableCell colSpan={2}>
+                        <TableCell colSpan={100}>
                             <Typography variant="overline">
                                 {"Compare Two Decompositions"}
-                            </Typography>
-                        </TableCell>
-                        <TableCell align="center" colSpan={1}>
-                            <Typography>
-                                {"Similiarity Value (0-100%):  "}
-                            </Typography>
-                            <Typography>
-                                {(props.numDecompositionsSelected == 2) ? similarityValue.toFixed(2) : "N/A"}
                             </Typography>
                         </TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {/* <TableRow>
-                        {tradeOffRow}
-                    </TableRow> */}
+                    {tableHeader}
                     {tradeOffTable}
-                    <TableCell colSpan={4}>
-                        <Button variant="contained" color="primary"
-                            style={{
-                                width: '100%'
-                            }}
-                            onClick={props.updateGraphStatus} 
-                            disabled={props.numDecompositionsSelected !== 2}
-                        >
-                            Compare
-                        </Button>
-                    </TableCell>
                 </TableBody>
             </Table>
         </TableContainer>

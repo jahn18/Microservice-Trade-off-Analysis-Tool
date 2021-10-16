@@ -9,12 +9,12 @@
  *                    - dropTarget: (filter function) specifies what can be the drop target. n => ... funciton
  *                    - grabbedNode: (filter function) specifies which nodes are valid to grab and drop
  */
-function compoundDragAndDrop( cy, options ) {
+function CompoundDragAndDrop( cy, options ) {
     this.cy = cy;
     this.options = options;
 }
 
-compoundDragAndDrop.prototype.run = function() {
+CompoundDragAndDrop.prototype.run = function() {
     let cy = this.cy;
     const options = this.options;
 
@@ -225,4 +225,4 @@ compoundDragAndDrop.prototype.run = function() {
     })
 }
 
-export default compoundDragAndDrop;
+export default CompoundDragAndDrop;

@@ -1,3 +1,3 @@
-import compoundDragAndDrop from './drag-and-drop';
+import compoundDragAndDrop from './CompoundDragAndDrop';
 
 export default compoundDragAndDrop; 

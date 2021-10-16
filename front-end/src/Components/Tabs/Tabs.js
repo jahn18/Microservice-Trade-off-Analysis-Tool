@@ -21,7 +21,7 @@ export default function SelectionTabs(props) {
     tabs.push(
         <Tab style={{color: 'grey'}} 
             label="Weighted-view" 
-            value="weighted-relationship"
+            value="weighted-view"
         />,
         <Tab style={{color: 'grey'}} 
             label="Diff-view" 
