@@ -8,7 +8,7 @@ import Button from '@material-ui/core/Button';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Typography from '@material-ui/core/Typography';
-import Utils from '../Utils/utils';
+import { GraphMatchingUtils } from '../../utils/GraphMatchingUtils';
 
 export default function TradeOffSelectionTable(props) {
     const getSimilarityValue = (matching, similarityMatrix) => {
@@ -19,22 +19,18 @@ export default function TradeOffSelectionTable(props) {
         return sum / similarityMatrix.length;
     }
 
-    let keys = Object.keys(props.graphData).map((key) => key);
-    keys.push('weighted-view');
+    let keys = Object.keys(props.decompositions).map((key) => key);
 
     let tableHeader = [
         <TableRow key={'empty-space'}>
             <TableCell key={'empty-space'}>
             </TableCell>
-            {Object.keys(props.graphData).map(
+            {Object.keys(props.decompositions).map(
                 (key, index) =>
                     <TableCell key={`header-${key}`}>
                         {`V${index + 1} (by ${key.charAt(0).toUpperCase() + key.slice(1)})`}
                     </TableCell>
             )}
-            <TableCell key={`header-weighted-view`}>
-                {`V${Object.keys(props.graphData).length + 1} (Weighted View)`}
-            </TableCell>
         </TableRow>
     ];
 
@@ -56,10 +52,10 @@ export default function TradeOffSelectionTable(props) {
                                         </TableCell>
                                     )
                                 }
-                                if (keyA !== 'weighted-view' && keyB !== 'weighted-view') {
-                                    let matchedPartitions = Utils.matchPartitions(
-                                        props.graphData[keyA].decomposition,
-                                        props.graphData[keyB].decomposition
+                                if ((keyA !== 'weighted-view' && keyB !== 'weighted-view') || props.weightedViewExists) {
+                                    let matchedPartitions = new GraphMatchingUtils().matchPartitions(
+                                        props.decompositions[keyA],
+                                        props.decompositions[keyB]
                                     );
                                     return (
                                         <TableCell key={`similarity-value-${keyB}`}>
@@ -68,28 +64,8 @@ export default function TradeOffSelectionTable(props) {
                                             </Button>
                                         </TableCell>
                                     );
-                                } else if (props.weightedDecomposition.exists) {
-                                    let matchedPartitions;
-                                    if (keyA === 'weighted-view' && keyB === 'weighted-view') {
-                                        matchedPartitions = Utils.matchPartitions(
-                                            props.weightedDecomposition.decomposition,
-                                            props.weightedDecomposition.decomposition,
-                                        );
-                                    } else { // has to be in keyA since we only show half of the table. 
-                                        matchedPartitions = Utils.matchPartitions(
-                                            props.graphData[keyA].decomposition,
-                                            props.weightedDecomposition.decomposition
-                                        );
-                                    } 
-
-                                    return (
-                                        <TableCell key={`similarity-value-${keyB}`}>
-                                            <Button variant="text" onClick={() => props.updateSelectedDecompositions([keyA, indexA], [keyB, indexB])}>
-                                                {(getSimilarityValue(matchedPartitions.matching, matchedPartitions.similarityMatrix) * 100).toFixed(2)}
-                                            </Button>
-                                        </TableCell>
-                                    )
-                                } else {
+                                }
+                                else {
                                     return (
                                         <TableCell key={`similarity-value-${keyB}`}>
                                             {"N/A"}

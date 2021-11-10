@@ -17,8 +17,8 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Typography from '@material-ui/core/Typography';
 
-
-var SERVER_ADDRESS = "http://127.0.0.1:5000/";
+//var SERVER_ADDRESS = "http://127.0.0.1:5000/";
+var SERVER_ADDRESS = "http://svresessp1.ece.ubc.ca/api/";
 
 const FilePage = () => {
     let fileReader;
@@ -126,6 +126,7 @@ const FilePage = () => {
                                         <em>None</em>
                                     </MenuItem>
                                     <MenuItem value={"PartsUnlimitedMRP"}>PartsUnlimitedMRP</MenuItem>
+                                    <MenuItem value={"MotivatingExample"}>Motivating Example</MenuItem>
                                 </Select>
                             </FormControl>
                         </TableCell>

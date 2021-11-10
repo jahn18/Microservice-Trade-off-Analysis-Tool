@@ -8,6 +8,7 @@ import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import IconButton from '@material-ui/core/IconButton';
 import TableHead from '@material-ui/core/TableHead';
+import Utils from "../../../utils/utils";
 
 /**
  * A table that shows coupling and cohesion metrics for a given microservice decomposition (uses Normalized TurboMQ)
@@ -24,8 +25,6 @@ import TableHead from '@material-ui/core/TableHead';
  */
 export const CouplingAndCohesionTable = (props) => {
 
-    const {calculateNormalizedTurboMQ} = require('./../../Utils/utils');
-
     const relationshipTypeTable = Object.keys(props.dependencies).map(
         (dependencyKey) => 
             <TableRow key={dependencyKey}>
@@ -36,7 +35,7 @@ export const CouplingAndCohesionTable = (props) => {
                     Object.keys(props.decompositions).map((decompositionKey) => 
                         <TableCell>
                             {
-                                calculateNormalizedTurboMQ(
+                                Utils.calculateNormalizedTurboMQ(
                                     props.dependencies[dependencyKey],
                                     props.decompositions[decompositionKey]
                                 ).toFixed(2)

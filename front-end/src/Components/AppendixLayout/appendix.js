@@ -185,7 +185,7 @@ AppendixLayout.prototype.run = function() {
         let common_nodes = cy_partition_node.children().filter((ele) => {
             return (ele.data('element_type') === 'common' || ele.data('element_type') === 'invisible');
         });
-
+        
         let boundingBox = {
             x1: common_nodes[0].boundingBox().x1,
             x2: common_nodes[0].boundingBox().x2,

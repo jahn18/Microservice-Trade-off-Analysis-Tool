@@ -1,6 +1,6 @@
 import React from "react";
 import cytoscape from 'cytoscape';
-import Utils from '../../Utils';
+import Utils from '../../../utils';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
@@ -19,25 +19,19 @@ import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import Slider from '@material-ui/core/Slider';
 import 'react-pro-sidebar/dist/css/styles.css';
 import {connect} from 'react-redux';
-import {updateDiffGraph, updateWeightedRelationshipGraph} from '../../../Actions';
+import {updateDiffGraph} from '../../../Actions';
 import storeProvider from '../../../storeProvider';
 import Button from '@material-ui/core/Button';
 
 
 cytoscape.use( coseBilkent );
 
-class Decompositions extends React.Component {
+class IndividualView extends React.Component {
     constructor(props) {
         super(props);
 
-        const element_types = {
-            partition: 'partition',
-            common_node: 'common',
-        };
-
         this.state = {
             nodes: [],
-            element_types: element_types,
             openTable: false,
         }
         this.ref = React.createRef();
@@ -46,7 +40,7 @@ class Decompositions extends React.Component {
     componentDidMount() {
         let cy = cytoscape({
             container: this.ref,
-            elements: this.props.elements,
+            elements: this.props.decomposition.getCytoscapeData(),
             style: [
                 {
                     'selector': 'node',
@@ -158,7 +152,7 @@ class Decompositions extends React.Component {
         const num_of_partitions_per_row = 5;
         this.adjustPartitionPositions(
             cy, 
-            this.props.num_of_partitions, //parsedGraph.num_of_partitions, 
+            this.props.decomposition.getNumOfPartitions(), //parsedGraph.num_of_partitions, 
             num_of_partitions_per_row
         )
 
@@ -173,39 +167,23 @@ class Decompositions extends React.Component {
                 ele.removeClass('highlight');
             });
         });
-        cy.fit();
+
+        cy.fit(cy.elements(), 100);
 
         // Load elements from redux
         let edgeRelationshipTypes;
         if(Object.keys(storeProvider.getStore().getState().diff_graph).length === 0) {
-            edgeRelationshipTypes = Utils.getEdgeRelationshipTypes(this.props.graphData, this.props.colors);
+            edgeRelationshipTypes =  {...this.props.relationshipTypeEdges};
         } else {
             edgeRelationshipTypes = storeProvider.getStore().getState().diff_graph.edgeRelationshipTypes; 
+            cy.viewport(storeProvider.getStore().getState().diff_graph.viewports[this.props.selectedTab])
         }
 
+        
         this.setState({
             cy: cy,
             edgeRelationshipTypes: edgeRelationshipTypes,
         })
-    }
-
-    getDecomposition(cy, elements, numPartitions) {
-        const {
-            element_types
-        } = this.state;
-
-        let decomposition = [];
-
-        for(let i = 0; i < numPartitions; i++) {
-            decomposition.push([]);
-        }
-
-        for(let ele of elements) {
-            if(ele.data.element_type === element_types.common_node) {
-                decomposition[parseInt(ele.data.parent.match('[0-9]'))].push(ele.data.id); 
-            }
-        }
-        return decomposition;
     }
 
     adjustPartitionPositions(cy, numPartitions, partitions_per_row) {
@@ -237,8 +215,6 @@ class Decompositions extends React.Component {
                 previous_partition_position.first_row_y2_pos = partition.boundingBox().y2;
             }
         }
-
-        cy.fit();
     }
 
     // When the user clicks on a tab it changes the relationship type.
@@ -249,7 +225,7 @@ class Decompositions extends React.Component {
         } = this.state;
 
         cy.remove('node');
-        cy.add(this.props.elements)
+        cy.add(this.props.decomposition.getCytoscapeData())
         cy.layout({
             name: 'cose-bilkent',
             nodeDimensionsIncludeLabels: true,
@@ -258,9 +234,10 @@ class Decompositions extends React.Component {
             fit: true,
             animate: false
         }).run();
-        this.adjustPartitionPositions(cy, this.props.num_of_partitions, 5)
+        this.adjustPartitionPositions(cy, this.props.decomposition.getNumOfPartitions(), 5)
         cy.fit();
 
+        // This updates the relationship type table and keeps it consistent when the user switches between tabs with edges toggled. 
         let relationshipTypeTable = [];
         Object.keys(edgeRelationshipTypes).map(
             (key, index) => {
@@ -272,7 +249,7 @@ class Decompositions extends React.Component {
                         {
                             Utils.calculateNormalizedTurboMQ(
                                 edgeRelationshipTypes[key]["links"],
-                                this.getDecomposition(cy, this.props.elements, this.props.num_of_partitions)
+                                this.props.decomposition.getClassNodeList(true)
                             ).toFixed(2)
                         }
                     </TableCell>
@@ -308,44 +285,29 @@ class Decompositions extends React.Component {
     onSelectedNode(ele) { 
         const {
             cy,
-            element_types
         } = this.state; 
 
         let sel = ele.target;
-        let selected_elements = (sel.data('element_type') === element_types.partition) ? cy.collection(sel) :
-                                cy.collection([sel, sel.parent()]); 
-
-        switch(sel.data().element_type) {
-            case element_types.partition:
-                selected_elements = selected_elements.union(sel.children()).union(
-                    cy.elements().filter((ele)=> {
-                        return (ele.data().partition === sel.id());
-                    }),
-                )
-                break;
-            case element_types.common_node:
-                selected_elements = selected_elements.union(cy.getElementById(sel.data().partition)); 
-                break;
-            default: 
-                selected_elements = cy.collection();
-        }
-
-        selected_elements = selected_elements.union(selected_elements.incomers()).union(selected_elements.outgoers());
-        selected_elements.incomers().forEach((ele) => {
-            selected_elements = selected_elements.union(cy.getElementById(ele.data('target')))
-                                                .union(cy.getElementById(ele.data('target')).parent());
-        })
-        selected_elements.outgoers().forEach((ele) => {
-            selected_elements = selected_elements.union(cy.getElementById(ele.data('source')))
-                                                .union(cy.getElementById(ele.data('source')).parent());
-        })
+        let selectedElements = (sel.isParent()) ? cy.collection([sel]).union(sel.children()) : cy.collection([sel, sel.parent()]);
+        selectedElements = selectedElements
+            .union(
+                cy.collection(selectedElements.incomers().map((ele) => (ele.isEdge()) ? ele : [ele, ele.parent()]).flat())
+            ).union(
+                cy.collection(selectedElements.outgoers().map((ele) => (ele.isEdge()) ? ele : [ele, ele.parent()]).flat())
+            );
         
-        let unselected_elements = cy.elements().difference(selected_elements);
-        unselected_elements.addClass('deactivate');
-        selected_elements.addClass('highlight');
+        selectedElements.addClass('highlight');
+        cy.elements().difference(selectedElements).addClass('deactivate');
     }
 
-    componentDidUpdate(prevProps, prevState, snapshot) {
+    shouldComponentUpdate(nextProps, nextState) {
+        if(this.props.selectedTab !== nextProps.selectedTab) {
+            this.updateRedux();
+        }
+        return true;
+    }
+
+    componentDidUpdate(prevProps, prevState) {
         const {
             cy,
             edgeRelationshipTypes,
@@ -357,33 +319,32 @@ class Decompositions extends React.Component {
             cy.remove('edge')
             cy.add(edges);
             // Do not highlight any node if the toggles are pressed. 
-            cy.elements().forEach((ele) => {
-                ele.removeClass('deactivate');
-                ele.removeClass('highlight');
-            });
+            cy.batch(() => {cy.elements().removeClass("deactivate").removeClass("highlight")});
         }
 
         if(prevProps.selectedTab !== this.props.selectedTab) {
             this.onRelationshipTypeChange();
+            cy.fit(cy.elements(), 100);
+            cy.viewport(storeProvider.getStore().getState().diff_graph.viewports[this.props.selectedTab])
         }
     }
 
     updateRedux() {
         const {
             cy,
-            element_types,
             edgeRelationshipTypes,
         } = this.state;
 
-        cy.elements().forEach(ele => {
-            if(ele.data().element_type !== element_types.invisible_node) {
-                ele.removeClass('hide');
-            }
-        });
-        cy.remove('edge');
+        // cy.remove('edge');
         this.props.updateDiffGraph({
             edgeRelationshipTypes: edgeRelationshipTypes,
-            // graph: cy.json()
+            viewports: {
+                ...storeProvider.getStore().getState().diff_graph.viewports,
+                [this.props.selectedTab]: {
+                    zoom: cy.zoom(),
+                    pan: cy.pan()
+                }
+            }
         });
     }
 
@@ -411,7 +372,7 @@ class Decompositions extends React.Component {
                             {
                                 Utils.calculateNormalizedTurboMQ(
                                     edgeRelationshipTypes[key]["links"],
-                                    this.getDecomposition(cy, this.props.elements, this.props.num_of_partitions) 
+                                    this.props.decomposition.getClassNodeList(true)
                                 ).toFixed(2)
                             }
                         </TableCell>
@@ -522,4 +483,4 @@ class Decompositions extends React.Component {
 };
 
 // export default Test;
-export default connect(null, { updateDiffGraph })(Decompositions);
+export default connect(null, { updateDiffGraph })(IndividualView);
