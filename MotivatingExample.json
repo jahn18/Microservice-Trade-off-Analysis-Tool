@@ -1,0 +1,399 @@
+{
+    "static": {
+        "links": [
+            {
+                "source": "CatalogController",
+                "target": "CatalogItem",
+                "weight": 7
+            },
+            {
+                "source": "OrderController",
+                "target": "Order",
+                "weight": 5
+            },
+            {
+                "source": "ShipmentController",
+                "target": "ShipmentRecord",
+                "weight": 10
+            },
+            {
+                "source": "ShipmentController",
+                "target": "Order",
+                "weight": 3
+            },
+            {
+                "source": "Order",
+                "target": "CatalogItem",
+                "weight": 3
+            }
+        ],
+        "decomposition": {
+            "partition0": [
+                {
+                    "id": "CatalogController"
+                },
+                {
+                    "id": "CatalogItem"
+                }
+            ],
+            "partition1": [
+                {
+                    "id": "ShipmentController"
+                },
+                {
+                    "id": "ShipmentRecord"
+                },
+                {
+                    "id": "OrderController"
+                },
+                {
+                    "id": "Order"
+                }
+            ]
+        }
+    },
+    "dynamic": {
+        "links": [
+            {
+                "source": "CatalogController",
+                "target": "CatalogItem",
+                "weight": 41
+            },
+            {
+                "source": "OrderController",
+                "target": "Order",
+                "weight": 16
+            },
+            {
+                "source": "ShipmentController",
+                "target": "ShipmentRecord",
+                "weight": 19
+            },
+            {
+                "source": "ShipmentController",
+                "target": "Order",
+                "weight": 6
+            },
+            {
+                "source": "Order",
+                "target": "CatalogItem",
+                "weight": 20
+            }
+        ],
+        "decomposition": {
+            "partition0": [
+                {
+                    "id": "CatalogController"
+                },
+                {
+                    "id": "CatalogItem"
+                },
+                {
+                    "id": "OrderController"
+                },
+                {
+                    "id": "Order"
+                }
+            ],
+            "partition1": [
+                {
+                    "id": "ShipmentController"
+                },
+                {
+                    "id": "ShipmentRecord"
+                }
+            ]
+        }
+    },
+    "class-names": {
+        "links": [
+            {
+                "source": "CatalogController",
+                "target": "CatalogItem",
+                "weight": 0.5
+            },
+            {
+                "source": "OrderController",
+                "target": "Order",
+                "weight": 1
+            },
+            {
+                "source": "ShipmentController",
+                "target": "ShipmentRecord",
+                "weight": 0.5
+            }
+        ],
+        "decomposition": {
+            "partition0": [
+                {
+                    "id": "CatalogController"
+                },
+                {
+                    "id": "CatalogItem"
+                }
+            ],
+            "partition1": [
+                {
+                    "id": "ShipmentController"
+                },
+                {
+                    "id": "ShipmentRecord"
+                }
+            ],
+            "partition2": [
+                {
+                    "id": "OrderController"
+                },
+                {
+                    "id": "Order"
+                }
+            ]
+        }
+    },
+    "class-terms": {
+        "links": [
+            {
+                "source": "Order",
+                "target": "CatalogItem",
+                "weight": 0.036
+            },
+            {
+                "source": "Order",
+                "target": "ShipmentRecord",
+                "weight": 0.094
+            },
+            {
+                "source": "Order",
+                "target": "CatalogController",
+                "weight": 0.075
+            },
+            {
+                "source": "Order",
+                "target": "ShipmentController",
+                "weight": 0.147
+            },
+            {
+                "source": "Order",
+                "target": "OrderController",
+                "weight": 0.6
+            },
+            {
+                "source": "CatalogItem",
+                "target": "ShipmentRecord",
+                "weight": 0.011
+            },
+            {
+                "source": "CatalogItem",
+                "target": "CatalogController",
+                "weight": 0.848
+            },
+            {
+                "source": "CatalogItem",
+                "target": "ShipmentController",
+                "weight": 0.0189
+            },
+            {
+                "source": "CatalogItem",
+                "target": "OrderController",
+                "weight": 0.058
+            },
+            {
+                "source": "ShipmentRecord",
+                "target": "CatalogController",
+                "weight": 0.026
+            },
+            {
+                "source": "ShipmentRecord",
+                "target": "ShipmentController",
+                "weight": 0.71
+            },
+            {
+                "source": "ShipmentRecord",
+                "target": "OrderController",
+                "weight": 0.085
+            },
+            {
+                "source": "CatalogController",
+                "target": "ShipmentController",
+                "weight": 0.133
+            },
+            {
+                "source": "CatalogController",
+                "target": "OrderController",
+                "weight": 0.292
+            },
+            {
+                "source": "ShipmentController",
+                "target": "OrderController",
+                "weight": 0.365
+            }
+        ],
+        "decomposition": {
+            "partition0": [
+                {
+                    "id": "CatalogController"
+                },
+                {
+                    "id": "CatalogItem"
+                }
+            ],
+            "partition1": [
+                {
+                    "id": "ShipmentController"
+                },
+                {
+                    "id": "ShipmentRecord"
+                },
+                {
+                    "id": "OrderController"
+                },
+                {
+                    "id": "Order"
+                }
+            ]
+        }
+    },
+    "commits": {
+        "links": [
+            {
+                "source": "CatalogController",
+                "target": "OrderController",
+                "weight": 0.4
+            },
+            {
+                "source": "CatalogController",
+                "target": "ShipmentController",
+                "weight": 0.38
+            },
+            {
+                "source": "CatalogController",
+                "target": "CatalogItem",
+                "weight": 0.7
+            },
+            {
+                "source": "OrderController",
+                "target": "ShipmentController",
+                "weight": 0.42
+            },
+            {
+                "source": "OrderController",
+                "target": "Order",
+                "weight": 0.73
+            },
+            {
+                "source": "ShipmentController",
+                "target": "Order",
+                "weight": 0.2
+            },
+            {
+                "source": "ShipmentController",
+                "target": "ShipmentRecord",
+                "weight": 0.8
+            },
+            {
+                "source": "CatalogItem",
+                "target": "Order",
+                "weight": 0.2
+            }
+        ],
+        "decomposition": {
+            "partition0": [
+                {
+                    "id": "CatalogController"
+                },
+                {
+                    "id": "CatalogItem"
+                }
+            ],
+            "partition1": [
+                {
+                    "id": "ShipmentController"
+                },
+                {
+                    "id": "ShipmentRecord"
+                }
+            ],
+            "partition2": [
+                {
+                    "id": "OrderController"
+                },
+                {
+                    "id": "Order"
+                }
+            ]
+        }
+    },
+    "contributors": {
+        "links": [
+            {
+                "source": "CatalogController",
+                "target": "OrderController",
+                "weight": 0.05
+            },
+            {
+                "source": "CatalogController",
+                "target": "ShipmentController",
+                "weight": 0.06
+            },
+            {
+                "source": "CatalogController",
+                "target": "CatalogItem",
+                "weight": 0.72
+            },
+            {
+                "source": "OrderController",
+                "target": "ShipmentController",
+                "weight": 0.31
+            },
+            {
+                "source": "OrderController",
+                "target": "Order",
+                "weight": 0.73
+            },
+            {
+                "source": "ShipmentController",
+                "target": "Order",
+                "weight": 0.33
+            },
+            {
+                "source": "ShipmentController",
+                "target": "ShipmentRecord",
+                "weight": 0.8
+            },
+            {
+                "source": "CatalogItem",
+                "target": "Order",
+                "weight": 0.04
+            },
+            {
+                "source": "Order",
+                "target": "ShipmentRecord",
+                "weight": 0.2
+            }
+        ],
+        "decomposition": {
+            "partition0": [
+                {
+                    "id": "CatalogController"
+                },
+                {
+                    "id": "CatalogItem"
+                }
+            ],
+            "partition1": [
+                {
+                    "id": "ShipmentController"
+                },
+                {
+                    "id": "ShipmentRecord"
+                },
+                {
+                    "id": "OrderController"
+                },
+                {
+                    "id": "Order"
+                }
+            ]
+        }
+    }
+}
