@@ -23,18 +23,20 @@ export class JSONGraphParserUtils {
         let i = 0;
         for (const [key, value] of Object.entries(jsonGraph)) {
             let edgeFilter = {};
+            const maxEdgeWeight = this._findMaxEdgeWeight(value["links"]);
+            let allEdges = this.getCytoscapeEdges(value["links"], maxEdgeWeight, edgeColors[i]);
+
             edgeRelationshipTypes[key] = {
                 checked: false,
                 links: value["links"],
                 minimumEdgeWeight: 0,
                 color: edgeColors[i],
+                cytoscapeEdges: allEdges
             }
 
-            const maxEdgeWeight = this._findMaxEdgeWeight(value["links"]);
-            let allEdges = this._getCytoscapeEdges(value["links"], edgeColors[i]);
             for(let j = 0; j <= 100; j += 10) {
                 edgeFilter[j] = allEdges.filter((edge) => {
-                    return (maxEdgeWeight * (1 - (j / 100))) < edge.getEdgeWeight();
+                    return ((1 - (j / 100))) < edge.getEdgeWeight();
                 }).map((cytoscapeEdge) => cytoscapeEdge.getCytoscapeData());
             }
             edgeRelationshipTypes[key]['edgeFilter'] = edgeFilter;
@@ -43,8 +45,8 @@ export class JSONGraphParserUtils {
         return edgeRelationshipTypes;
     }
 
-    _getCytoscapeEdges(edges, color) {
-        return edges.map((edge) => new CytoscapeEdge(edge.source, edge.target, parseFloat(edge.weight).toFixed(2), color))
+    getCytoscapeEdges(edges, maxEdgeWeight, color) {
+        return edges.map((edge) => new CytoscapeEdge(edge.source, edge.target, (parseFloat(edge.weight) / maxEdgeWeight).toFixed(2), color))
     }
 
     _findMaxEdgeWeight(edges) {

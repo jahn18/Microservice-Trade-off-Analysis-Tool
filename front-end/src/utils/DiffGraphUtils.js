@@ -7,6 +7,10 @@ import { GraphMatchingUtils } from "./GraphMatchingUtils";
 
 export class DiffGraphUtils {
 
+    showEdgesForSelectedNode() {
+        
+    }
+
     /**
      * Returns a decomposition used for the diff-view. 
      */

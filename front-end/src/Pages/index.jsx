@@ -25,10 +25,6 @@ const FilePage = () => {
     const [data, setData] = useState(null);
     const [selectedDemoFile, setDemoFile] = useState("");
 
-    const clearAllFiles = (e) => {
-        
-    }
-
     const handleFileRead = (e) => {
         const content = fileReader.result;
         let json_data; 

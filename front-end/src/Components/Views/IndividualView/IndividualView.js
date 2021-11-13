@@ -86,12 +86,15 @@ class IndividualView extends React.Component {
                 {
                     'selector': 'edge',
                     'style': {
-                        'width': 2,
+                        // 'width': 3,
+                        'width': function(edge) {
+                            return (parseFloat(edge.data("weight")) * 3.5 + 3)  
+                        },
                         'line-color': 'data(color)',
                         'target-arrow-color': 'data(color)',
                         'target-arrow-shape': 'vee',
                         'curve-style': 'bezier',
-                        'arrow-scale': 2.25
+                        'arrow-scale': 1.25
                     }
                 },
                 {
@@ -110,7 +113,6 @@ class IndividualView extends React.Component {
                     'selector': 'edge.highlight',
                     'style': {
                         'mid-target-arrow-color': 'black',
-                        'width': '3',
                         'label': 'data(weight)',
                         'text-outline-width': '3',
                         'text-outline-color': 'white',
@@ -159,8 +161,8 @@ class IndividualView extends React.Component {
         /*
             All event handlers when interacting with the graph. 
         */       
-        cy.on('tap', 'node', (e) => {this.onSelectedNode(e)});
-        cy.on('click', (e) => { 
+        cy.on('mouseover', 'node', (e) => {this.onSelectedNode(e)});
+        cy.on('mouseout', (e) => { 
             cy.elements().forEach((ele) => {
                 ele.data().showMinusSign = false; 
                 ele.removeClass('deactivate');
@@ -288,16 +290,19 @@ class IndividualView extends React.Component {
         } = this.state; 
 
         let sel = ele.target;
-        let selectedElements = (sel.isParent()) ? cy.collection([sel]).union(sel.children()) : cy.collection([sel, sel.parent()]);
-        selectedElements = selectedElements
-            .union(
-                cy.collection(selectedElements.incomers().map((ele) => (ele.isEdge()) ? ele : [ele, ele.parent()]).flat())
-            ).union(
-                cy.collection(selectedElements.outgoers().map((ele) => (ele.isEdge()) ? ele : [ele, ele.parent()]).flat())
-            );
-        
-        selectedElements.addClass('highlight');
-        cy.elements().difference(selectedElements).addClass('deactivate');
+        if (!sel.isParent()) {
+            // let selectedElements = (sel.isParent()) ? cy.collection([sel]).union(sel.children()) : cy.collection([sel, sel.parent()]);
+            let selectedElements = cy.collection([sel, sel.parent()]);
+            selectedElements = selectedElements
+                .union(
+                    cy.collection(selectedElements.incomers().map((ele) => (ele.isEdge()) ? ele : [ele, ele.parent()]).flat())
+                ).union(
+                    cy.collection(selectedElements.outgoers().map((ele) => (ele.isEdge()) ? ele : [ele, ele.parent()]).flat())
+                );
+            
+            selectedElements.addClass('highlight');
+            cy.elements().difference(selectedElements).addClass('deactivate');
+        }
     }
 
     shouldComponentUpdate(nextProps, nextState) {

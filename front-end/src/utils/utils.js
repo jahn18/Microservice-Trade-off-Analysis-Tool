@@ -69,6 +69,7 @@ export default class Utils {
         let edge_dependencies = [];
         let targets = [];
         let sources = [];
+        let maxEdgeWeight = this.findMaxEdgeWeight(edge_graph);
         for(let i = 0; i < edge_graph.length; i++) {
             let edge = edge_graph[i];
             // if ((this.findMaxEdgeWeight(edge_graph) * (1 - ( minimumEdgeWeight / 100 ))) < parseFloat(edge.weight)) {
@@ -82,7 +83,7 @@ export default class Utils {
                             data: {
                                 source: targetNode.data('id'),
                                 target: (common_elements.includes(edge.target)) ? `graph_0_${edge.target}` : `graph_${j}_${edge.target}`,
-                                weight: parseFloat(edge.weight).toFixed(2),
+                                weight: (parseFloat(edge.weight) / maxEdgeWeight).toFixed(2),
                                 element_type: 'edge',
                                 color: color
                             }
@@ -98,7 +99,7 @@ export default class Utils {
                             data: {
                                 source: (common_elements.includes(edge.source)) ? `graph_0_${edge.source}` : `graph_${j}_${edge.source}`,
                                 target: targetNode.data('id'),
-                                weight: parseFloat(edge.weight).toFixed(2),
+                                weight: (parseFloat(edge.weight) / maxEdgeWeight).toFixed(2),
                                 element_type: 'edge',
                                 color: color
                             }

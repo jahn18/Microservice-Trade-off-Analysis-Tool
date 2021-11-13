@@ -132,7 +132,12 @@ class DiffView extends React.Component {
                 {
                     'selector': 'edge',
                     'style': {
-                        'width': 2,
+                        'width': function(edge) {
+                            if(!edge.data("weight")) {
+                                return 3;
+                            }
+                            return (parseFloat(edge.data("weight")) * 3.5 + 3)  
+                        },
                         'line-style': 'dashed',
                         'line-color': 'data(color)',
                         'target-arrow-color': 'data(color)',
@@ -316,7 +321,11 @@ class DiffView extends React.Component {
 
         // Clear the selected nodes when right clicking on a new node
         this.onUnhighlightNodes();
-        targetNode = cy.getElementById(targetNode.data('realNodeId'))
+        // let edges = consideredRelationshipEdges.map((key) => relationshipTypes[key].cytoscapeEdges).flat();
+        // cy.add(edges.map((edge) => edge.getCytoscapeData()));
+        targetNode = cy.getElementById(targetNode.data('realNodeId'));
+        // let targetNodeEdges = new Set(targetNode.)
+
         Utils.showCustomGraphEdges(cy, consideredRelationshipEdges, relationshipTypes, common_elements, targetNode);
         let selectedElements = cy.collection(targetNode);
         selectedElements = selectedElements.union(cy.elements().filter((ele) => {
