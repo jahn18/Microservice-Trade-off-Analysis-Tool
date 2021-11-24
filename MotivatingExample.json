@@ -19,7 +19,7 @@
             {
                 "source": "ShipmentController",
                 "target": "Order",
-                "weight": 3
+                "weight": 7
             },
             {
                 "source": "Order",
@@ -38,16 +38,18 @@
             ],
             "partition1": [
                 {
-                    "id": "ShipmentController"
-                },
-                {
-                    "id": "ShipmentRecord"
-                },
-                {
                     "id": "OrderController"
                 },
                 {
                     "id": "Order"
+                }
+            ],
+            "partition2": [
+                {
+                    "id": "ShipmentController"
+                },
+                {
+                    "id": "ShipmentRecord"
                 }
             ]
         }
@@ -57,27 +59,27 @@
             {
                 "source": "CatalogController",
                 "target": "CatalogItem",
-                "weight": 41
+                "weight": 63
             },
             {
                 "source": "OrderController",
                 "target": "Order",
-                "weight": 16
+                "weight": 13
             },
             {
                 "source": "ShipmentController",
                 "target": "ShipmentRecord",
-                "weight": 19
+                "weight": 35
             },
             {
                 "source": "ShipmentController",
                 "target": "Order",
-                "weight": 6
+                "weight": 3
             },
             {
                 "source": "Order",
                 "target": "CatalogItem",
-                "weight": 20
+                "weight": 59
             }
         ],
         "decomposition": {
@@ -113,13 +115,28 @@
                 "weight": 0.5
             },
             {
+                "source": "CatalogItem",
+                "target": "CatalogController",
+                "weight": 0.5
+            },
+            {
                 "source": "OrderController",
                 "target": "Order",
                 "weight": 1
             },
             {
+                "source": "Order",
+                "target": "OrderController",
+                "weight": 1
+            },
+            {
                 "source": "ShipmentController",
                 "target": "ShipmentRecord",
+                "weight": 0.5
+            },
+            {
+                "source": "ShipmentRecord",
+                "target": "ShipmentController",
                 "weight": 0.5
             }
         ],
@@ -160,7 +177,7 @@
             {
                 "source": "Order",
                 "target": "ShipmentRecord",
-                "weight": 0.094
+                "weight": 0.29
             },
             {
                 "source": "Order",
@@ -170,12 +187,12 @@
             {
                 "source": "Order",
                 "target": "ShipmentController",
-                "weight": 0.147
+                "weight": 0.385
             },
             {
                 "source": "Order",
                 "target": "OrderController",
-                "weight": 0.6
+                "weight": 0.8
             },
             {
                 "source": "CatalogItem",
@@ -210,7 +227,7 @@
             {
                 "source": "ShipmentRecord",
                 "target": "OrderController",
-                "weight": 0.085
+                "weight": 0.35
             },
             {
                 "source": "CatalogController",
@@ -225,7 +242,7 @@
             {
                 "source": "ShipmentController",
                 "target": "OrderController",
-                "weight": 0.365
+                "weight": 0.53
             }
         ],
         "decomposition": {
@@ -258,12 +275,12 @@
             {
                 "source": "CatalogController",
                 "target": "OrderController",
-                "weight": 0.4
+                "weight": 0.15
             },
             {
                 "source": "CatalogController",
                 "target": "ShipmentController",
-                "weight": 0.38
+                "weight": 0.14
             },
             {
                 "source": "CatalogController",
@@ -273,7 +290,7 @@
             {
                 "source": "OrderController",
                 "target": "ShipmentController",
-                "weight": 0.42
+                "weight": 0.18
             },
             {
                 "source": "OrderController",
@@ -283,7 +300,7 @@
             {
                 "source": "ShipmentController",
                 "target": "Order",
-                "weight": 0.2
+                "weight": 0.11
             },
             {
                 "source": "ShipmentController",
@@ -293,7 +310,7 @@
             {
                 "source": "CatalogItem",
                 "target": "Order",
-                "weight": 0.2
+                "weight": 0.11
             }
         ],
         "decomposition": {
@@ -343,22 +360,22 @@
             {
                 "source": "OrderController",
                 "target": "ShipmentController",
-                "weight": 0.31
+                "weight": 0.575
             },
             {
                 "source": "OrderController",
                 "target": "Order",
-                "weight": 0.73
+                "weight": 0.70
             },
             {
                 "source": "ShipmentController",
                 "target": "Order",
-                "weight": 0.33
+                "weight": 0.59
             },
             {
                 "source": "ShipmentController",
                 "target": "ShipmentRecord",
-                "weight": 0.8
+                "weight": 0.7
             },
             {
                 "source": "CatalogItem",
@@ -368,7 +385,7 @@
             {
                 "source": "Order",
                 "target": "ShipmentRecord",
-                "weight": 0.2
+                "weight": 0.59
             }
         ],
         "decomposition": {
