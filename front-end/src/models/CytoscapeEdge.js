@@ -24,6 +24,14 @@ export class CytoscapeEdge {
         };
     }
 
+    getSourceNode() {
+        return this._source;
+    }
+
+    getTargetNode() {
+        return this._target;
+    }
+
     getEdgeWeight() {
         return this._weight;
     }

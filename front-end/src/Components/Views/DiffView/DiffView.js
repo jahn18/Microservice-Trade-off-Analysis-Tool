@@ -36,8 +36,17 @@ class DiffView extends React.Component {
     constructor(props) {
         super(props);
 
+        let consideredRelationshipEdges = this.props.selectedDecompositions.map((sel) => sel[0]);
+        if (consideredRelationshipEdges.includes('weighted-view')) {
+            const index = consideredRelationshipEdges.indexOf('weighted-view');
+            if (index > -1) {
+                consideredRelationshipEdges.splice(index, 1);
+            }
+            consideredRelationshipEdges = Array.from(new Set(consideredRelationshipEdges.concat(this.props.consideredWeightedRelationships)));
+        }
+
         this.state = {
-            consideredRelationshipEdges: this.props.selectedDecompositions.map((sel) => sel[0]),
+            consideredRelationshipEdges: consideredRelationshipEdges,
             allMovedElements: [],
             savePreviousState: true,
             common_elements: this.props.decomposition.getClassNodeList().flat().filter((node) => node.getType() === "common").map((node) => node.getLabel()), // TODO: update the usage of this.,
@@ -295,7 +304,7 @@ class DiffView extends React.Component {
 
         const allDependencies = {};
         Object.keys(relationshipTypes).map((key) => {
-            allDependencies[key] = relationshipTypes[key]["links"];
+            allDependencies[key] = relationshipTypes[key]["cytoscapeEdges"];
         });
 
         this.setState({
@@ -821,7 +830,7 @@ class DiffView extends React.Component {
                                 <TableCell>
                                     {
                                         Utils.calculateNormalizedTurboMQ(
-                                            relationshipTypes[key]["links"],
+                                            relationshipTypes[key]["cytoscapeEdges"],
                                             this._getCurrentDecomposition(i + 1, cy)
                                         ).toFixed(2)
                                     }

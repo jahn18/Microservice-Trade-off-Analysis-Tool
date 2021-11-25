@@ -58,16 +58,17 @@ export class JSONGraphParserUtils {
                 maxEdgeWeight = parseFloat(edge.weight);
             }
         }
-        return maxEdgeWeight.toFixed(0);
+        return maxEdgeWeight;
     }
 
     /**
      * Parses the decomposition given in the JSON graph 
      * 
      * @param {*} jsonGraph the JSON graph inputted into the tool
+     * @param {number} version the version number of the decomposition 
      * @returns {Decomposition}
      */
-    getDecomposition(jsonGraph) {
+    getDecomposition(jsonGraph, version) {
         let classNodeList = [];
         let partitionList = [];
         
@@ -85,7 +86,7 @@ export class JSONGraphParserUtils {
             classNodeList.push(this._getClassNodes(jsonGraph["unobserved"], `partition${partitions.length}`));
         }
 
-        return new Decomposition(classNodeList, partitionList);
+        return new Decomposition(classNodeList, partitionList, version);
     }
 
     _getClassNodes(partition, parent) {

@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Bunch">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/weightGraphScripts/Bunch.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

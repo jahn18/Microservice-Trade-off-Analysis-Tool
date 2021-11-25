@@ -7,10 +7,6 @@ import { GraphMatchingUtils } from "./GraphMatchingUtils";
 
 export class DiffGraphUtils {
 
-    showEdgesForSelectedNode() {
-        
-    }
-
     /**
      * Returns a decomposition used for the diff-view. 
      */
@@ -40,7 +36,7 @@ export class DiffGraphUtils {
                 commonClassNodes.push(new InvisibleClassNode(`invisible_node_partition${index}`, `invisible_node${index}`, `partition${index}`));
             }
             classNodeList.push(commonClassNodes.concat(this._getDiffClassNodes(partitionOne, partitionTwo, diffNodeOneColor, diffNodeTwoColor, `partition${index}`)));
-            matchedPartitionList.push(new MatchedPartitionNode(`partition${index}`, partitionLabelOne, partitionLabelTwo))
+            matchedPartitionList.push(new MatchedPartitionNode(`partition${index}`, decompositionOne.getVersion(), decompositionTwo.getVersion(), partitionLabelOne, partitionLabelTwo))
         });
 
         return new Decomposition(classNodeList, matchedPartitionList); 

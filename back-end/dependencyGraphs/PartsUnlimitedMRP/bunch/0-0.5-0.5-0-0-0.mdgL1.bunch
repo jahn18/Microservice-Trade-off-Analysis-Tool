@@ -1,5 +1,5 @@
-SS(MongoDealersRepository.ss) = Dealer, DealerInfo, DealerController, DealersRepository, MongoDealersRepository
-SS(MockOrderRepository.ss) = MongoDBProperties, PostgresqlProperties, Order, OrderingInitializer, OrderDetails, OrderingServiceProperties, OrderController, OrderingConfiguration, OrderStatus, SimpleCORSFilter, AppInsightsFilter, PhoneInfo, OrderUpdateInfo, ShipmentEventInfo, OrderEventInfo, MockOrderRepository, OrderRepository, MongoOrderRepository
+SS(MongoDealersRepository.ss) = Dealer, DealerInfo, DealerController, DealersRepository, MongoDealersRepository, SimpleCORSFilter, AppInsightsFilter
+SS(MockOrderRepository.ss) = MongoDBProperties, PostgresqlProperties, OrderingInitializer, OrderDetails, OrderingServiceProperties, OrderingConfiguration, OrderStatus, Order, MockOrderRepository, OrderController, PhoneInfo, OrderUpdateInfo, ShipmentEventInfo, OrderEventInfo, OrderRepository, MongoOrderRepository
 SS(MockQuoteRepository.ss) = QuoteDetails, Utility, QuoteController, Quote, QuoteItemInfo, MockDealersRepository, MockQuoteRepository, MongoQuoteRepository, QuoteRepository
 SS(RepositoryFactory.ss) = MongoCatalogItemsRepository, CatalogController, CatalogItem, CatalogItemsRepository, MockCatalogItemsRepository, RepositoryFactory, MongoOperationsWithRetry
-SS(MockShipmentRepository.ss) = BadRequestException, ConflictingRequestException, MockShipmentRepository, ShipmentRepository, MongoShipmentRepository, DeliveryAddress, Delivery, ShipmentRecord, ShipmentDetails, ShipmentController
+SS(MockShipmentRepository.ss) = BadRequestException, ConflictingRequestException, MockShipmentRepository, ShipmentRepository, MongoShipmentRepository, ShipmentRecord, ShipmentDetails, ShipmentController, DeliveryAddress, Delivery

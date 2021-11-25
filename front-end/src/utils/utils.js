@@ -17,23 +17,23 @@ export default class Utils {
      *  @returns {float} the normalized TurboMQ value.
      *
      */
-    static calculateNormalizedTurboMQ = (edge_dependencies, decomposition) => {
+    static calculateNormalizedTurboMQ = (cytoscapeEdges, decomposition) => {
         let CF = decomposition.reduce((CF, partition) => {
             let internal_edges = 0.0;
             let external_edges = 0.0;
 
-            for(let j = 0; j < edge_dependencies.length; j++) {
-                let edge = edge_dependencies[j];
-                if(partition.includes(edge.source) && partition.includes(edge.target)) {
-                    internal_edges += parseFloat(edge.weight);
-                } else if (partition.includes(edge.source)) {
-                    external_edges += parseFloat(edge.weight);
-                }
-            }
+            cytoscapeEdges.forEach((edge) => {
+                if(partition.includes(edge.getSourceNode()) && partition.includes(edge.getTargetNode())) {
+                    internal_edges += parseFloat(edge.getEdgeWeight());
+                } else if (partition.includes(edge.getSourceNode()) || partition.includes(edge.getTargetNode())) {
+                    external_edges += parseFloat(edge.getEdgeWeight());
+                } 
+            })
+
             let value = (internal_edges !== 0) ? ((internal_edges) / ( (internal_edges) + external_edges)) : 0;
             return CF + value;
         }, 0.0);
-        
+
         return ( CF / (decomposition.length) ) * 100;
     };
 

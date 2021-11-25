@@ -250,7 +250,7 @@ class IndividualView extends React.Component {
                     <TableCell align="left" style={{'font-size': 'Normal'}}>
                         {
                             Utils.calculateNormalizedTurboMQ(
-                                edgeRelationshipTypes[key]["links"],
+                                edgeRelationshipTypes[key]["cytoscapeEdges"],
                                 this.props.decomposition.getClassNodeList(true)
                             ).toFixed(2)
                         }
@@ -376,7 +376,7 @@ class IndividualView extends React.Component {
                         <TableCell align="left" style={{'font-size': 'Normal'}}>
                             {
                                 Utils.calculateNormalizedTurboMQ(
-                                    edgeRelationshipTypes[key]["links"],
+                                    edgeRelationshipTypes[key]["cytoscapeEdges"],
                                     this.props.decomposition.getClassNodeList(true)
                                 ).toFixed(2)
                             }

@@ -4,10 +4,15 @@
  * @class Decomposition
  */
 export class Decomposition {
-    constructor(classNodeList, partitionList) {
+    constructor(classNodeList, partitionList, version) {
         this._classNodeList = classNodeList;
         this._partitionList = partitionList;
+        this._version = version;
         this._movedNodes = [];
+    }
+
+    getVersion() {
+        return this._version;
     }
 
     getNodeById(id) {

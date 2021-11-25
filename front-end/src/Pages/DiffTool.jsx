@@ -28,7 +28,7 @@ export default class DiffTool extends React.Component {
 
         let decompositions = {};
         // Store all decompositions from the json file.  
-        Object.keys(json_graph_data).forEach((key) => decompositions[key] = new JSONGraphParserUtils().getDecomposition(json_graph_data[key].decomposition));
+        Object.keys(json_graph_data).forEach((key, index) => decompositions[key] = new JSONGraphParserUtils().getDecomposition(json_graph_data[key].decomposition, index + 1));
         decompositions["weighted-view"] = new Decomposition([], []);
 
         this.state = {
@@ -44,7 +44,7 @@ export default class DiffTool extends React.Component {
                     'class-terms': '#F4145B', 
                     'commits': '#dfb63d', 
                     'contributors': '#824f7d', 
-                    'weighted-view': 'grey',
+                    'weighted-view': '#a1665e',
                     'trade-off': 'grey'
                 }
             },
@@ -139,7 +139,7 @@ export default class DiffTool extends React.Component {
                 let status = xhr.status;
                 if (status !== 400) {
                     let decompositionsCopy = {...decompositions};
-                    decompositionsCopy["weighted-view"] = new JSONGraphParserUtils().getDecomposition(JSON.parse(xhr.responseText));
+                    decompositionsCopy["weighted-view"] = new JSONGraphParserUtils().getDecomposition(JSON.parse(xhr.responseText), Object.keys(this.props.location.state.data).length + 1);
                     this.setState(
                         {
                             decompositions: decompositionsCopy,
@@ -228,6 +228,7 @@ export default class DiffTool extends React.Component {
                             colors={colors} 
                             relationshipTypeEdges={edges}
                             selectedDecompositions={selectedDecompositions}
+                            consideredWeightedRelationships={Object.keys(relationshipWeights).filter((key) => {return relationshipWeights[key] > 0})}
                             onChange={this.resetTradeOffConfiguration}
                         /> 
                     )

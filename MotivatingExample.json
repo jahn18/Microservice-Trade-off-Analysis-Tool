@@ -243,6 +243,81 @@
                 "source": "ShipmentController",
                 "target": "OrderController",
                 "weight": 0.53
+            },
+            {
+                "target": "Order",
+                "source": "CatalogItem",
+                "weight": 0.036
+            },
+            {
+                "target": "Order",
+                "source": "ShipmentRecord",
+                "weight": 0.29
+            },
+            {
+                "target": "Order",
+                "source": "CatalogController",
+                "weight": 0.075
+            },
+            {
+                "target": "Order",
+                "source": "ShipmentController",
+                "weight": 0.385
+            },
+            {
+                "target": "Order",
+                "source": "OrderController",
+                "weight": 0.8
+            },
+            {
+                "target": "CatalogItem",
+                "source": "ShipmentRecord",
+                "weight": 0.011
+            },
+            {
+                "target": "CatalogItem",
+                "source": "CatalogController",
+                "weight": 0.848
+            },
+            {
+                "target": "CatalogItem",
+                "source": "ShipmentController",
+                "weight": 0.0189
+            },
+            {
+                "target": "CatalogItem",
+                "source": "OrderController",
+                "weight": 0.058
+            },
+            {
+                "target": "ShipmentRecord",
+                "source": "CatalogController",
+                "weight": 0.026
+            },
+            {
+                "target": "ShipmentRecord",
+                "source": "ShipmentController",
+                "weight": 0.71
+            },
+            {
+                "target": "ShipmentRecord",
+                "source": "OrderController",
+                "weight": 0.35
+            },
+            {
+                "target": "CatalogController",
+                "source": "ShipmentController",
+                "weight": 0.133
+            },
+            {
+                "target": "CatalogController",
+                "source": "OrderController",
+                "weight": 0.292
+            },
+            {
+                "target": "ShipmentController",
+                "source": "OrderController",
+                "weight": 0.53
             }
         ],
         "decomposition": {
@@ -310,6 +385,46 @@
             {
                 "source": "CatalogItem",
                 "target": "Order",
+                "weight": 0.11
+            },
+            {
+                "target": "CatalogController",
+                "source": "OrderController",
+                "weight": 0.15
+            },
+            {
+                "target": "CatalogController",
+                "source": "ShipmentController",
+                "weight": 0.14
+            },
+            {
+                "target": "CatalogController",
+                "source": "CatalogItem",
+                "weight": 0.7
+            },
+            {
+                "target": "OrderController",
+                "source": "ShipmentController",
+                "weight": 0.18
+            },
+            {
+                "target": "OrderController",
+                "source": "Order",
+                "weight": 0.73
+            },
+            {
+                "target": "ShipmentController",
+                "source": "Order",
+                "weight": 0.11
+            },
+            {
+                "target": "ShipmentController",
+                "source": "ShipmentRecord",
+                "weight": 0.8
+            },
+            {
+                "target": "CatalogItem",
+                "source": "Order",
                 "weight": 0.11
             }
         ],
@@ -385,6 +500,51 @@
             {
                 "source": "Order",
                 "target": "ShipmentRecord",
+                "weight": 0.59
+            },
+            {
+                "target": "CatalogController",
+                "source": "OrderController",
+                "weight": 0.05
+            },
+            {
+                "target": "CatalogController",
+                "source": "ShipmentController",
+                "weight": 0.06
+            },
+            {
+                "target": "CatalogController",
+                "source": "CatalogItem",
+                "weight": 0.72
+            },
+            {
+                "target": "OrderController",
+                "source": "ShipmentController",
+                "weight": 0.575
+            },
+            {
+                "target": "OrderController",
+                "source": "Order",
+                "weight": 0.70
+            },
+            {
+                "target": "ShipmentController",
+                "source": "Order",
+                "weight": 0.59
+            },
+            {
+                "target": "ShipmentController",
+                "source": "ShipmentRecord",
+                "weight": 0.7
+            },
+            {
+                "target": "CatalogItem",
+                "source": "Order",
+                "weight": 0.04
+            },
+            {
+                "target": "Order",
+                "source": "ShipmentRecord",
                 "weight": 0.59
             }
         ],
