@@ -8,6 +8,9 @@
  * @param {*} options - padding: how much the partition should expand before the child node is pulled out.
  *                    - dropTarget: (filter function) specifies what can be the drop target. n => ... funciton
  *                    - grabbedNode: (filter function) specifies which nodes are valid to grab and drop
+ *                    - dropBoundary: (node: selectedNode) => {bb: boundingBox} determine the x1, x2, y1, y2 bounds where a node can be dropped on a compound node. 
+ *                    - canMoveNode: string[] the node type that can move. 
+ *                    - onMovedNode: when a node is moved
  */
 function CompoundDragAndDrop( cy, options ) {
     this.cy = cy;
@@ -18,7 +21,9 @@ CompoundDragAndDrop.prototype.run = function() {
     let cy = this.cy;
     const options = this.options;
 
-    // Instantiate variables
+    options.canMoveNode = ["ghost", ...options.canMoveNode];
+
+    // init variables
     let potentialMovingNode = cy.collection();
     let clickedNode = false;
 
@@ -46,24 +51,25 @@ CompoundDragAndDrop.prototype.run = function() {
 
     // Updated this function so that the bounds of the partitions will be restricted to the "common node" space.
     const updateBoundsTuples = () => {
-        return cy.nodes(canBeInBoundsTuple).map( ele => {
-            let appendices = ele.children().filter(
-                (ele) => {
-                    return ele.data('element_type') === 'appendix';
-                }
-            );
-            // Get the current bounding-box where the common nodes should lie. 
-            const boundingBox = {
-                x1: ele.boundingBox().x1,
-                x2: ele.boundingBox().x2,
-                y1: ele.boundingBox().y1,
-                y2: appendices[0].boundingBox().y1 
-            };
-            return {
-                node: ele,
-                bb: boundingBox
-            }
-        })
+        return cy.nodes(canBeInBoundsTuple).map( ele => {return {node: ele, ...options.dropBoundary(ele)} }); 
+        // {
+        //     let appendices = ele.children().filter(
+        //         (ele) => {
+        //             return ele.data('element_type') === 'appendix';
+        //         }
+        //     );
+        //     // Get the current bounding-box where the common nodes should lie. 
+        //     const boundingBox = {
+        //         x1: ele.boundingBox().x1,
+        //         x2: ele.boundingBox().x2,
+        //         y1: ele.boundingBox().y1,
+        //         y2: appendices[0].boundingBox().y1 
+        //     };
+        //     return {
+        //         node: ele,
+        //         bb: boundingBox
+        //     }
+        // })
     };
 
     const boundsOverlap = (bb1, bb2) => {
@@ -101,16 +107,13 @@ CompoundDragAndDrop.prototype.run = function() {
     let boundsTuples = updateBoundsTuples();
     let chosenParent = cy.collection();
 
-    // Fix a bug if the node clicks. 
-
     cy.on('mouseover', 'node', e => {
         const node = e.target;
 
-        // If you're not hovering over a common node, then remove the "Ghost node" that 
-        // is currently being highlighted. 
-        if(node.data('element_type') === 'partition' || 
-            node.data('element_type') === 'appendix' || 
-            node.data('element_type') === 'invisible') {
+        if (!options.canMoveNode.includes(node.data("element_type"))) {
+            if (node.data("element_type") === "common*") {
+                options.onMouseOver(node);
+            }
             let collection = cy.nodes(e => e.data('element_type') === 'ghost');
             cy.remove(collection);
             return;
@@ -120,6 +123,7 @@ CompoundDragAndDrop.prototype.run = function() {
         // has not been selected then set the potential moving node. 
         if(node.data('element_type') !== 'ghost' && potentialMovingNode.length === 0) {
             potentialMovingNode = node;
+            options.onMouseOver(potentialMovingNode);
             // Add the ghost node. 
             cy.add({
                 classes: 'eh-source',
@@ -135,15 +139,21 @@ CompoundDragAndDrop.prototype.run = function() {
                     realNodeId: node.id(),
                     isMovedGhostNode: (potentialMovingNode.data('element_type') === 'common*') ? true : false
                 },
-                position: getPositionCopy(node.position())
+                position: getPositionCopy(node.position()),
+                classes: "l1"
             });
-        }
-        // mouseoverNode.addClass('hide');
-        // cy.remove(node);
+        } 
     });
+
+    cy.on('mouseout', (e) => {
+        if (!e.target.data || !options.canMoveNode.includes(e.target.data("element_type"))) {
+            options.onMouseOut();
+        }
+    })
 
     cy.on('mouseout', 'node', (e) => {
         if((e.target.data('element_type') !== 'ghost' && e.target.id() !== potentialMovingNode.id())) {
+            // options.onMouseOut();
             let collection = cy.nodes(e => e.data('element_type') === 'ghost');
             cy.remove(collection);
             potentialMovingNode.removeClass('hide');
@@ -158,10 +168,10 @@ CompoundDragAndDrop.prototype.run = function() {
     })
 
     cy.on('grab', 'node', e => {
-        // MODIFY** This is to remove the highlights if edges are shown
-        cy.remove('edge');
+        // cy.remove('edge'); <--- to prevent the edges from being removed when I move a node. 
         cy.elements().forEach((ele) => {
             ele.removeClass('deactivate');
+            // TODO: Not sure if this needed?
             if(ele.data().element_type !== 'diff') {
                 ele.data().showMinusSign = false;
             }
@@ -172,11 +182,8 @@ CompoundDragAndDrop.prototype.run = function() {
 
     cy.on('drag', 'node', (e) => {
         const node = e.target;
-        if(node.data('element_type') === 'partition' || 
-            node.data('element_type') === 'appendix' || 
-            node.data('element_type') === 'invisible' ||
-            // Prevents all children of the partition from being called in this event. A potential moving node will only have length > 0 if a non-compound node is dragged.
-            potentialMovingNode.length === 0 ) {
+        // Prevents all children of the partition from being called in this event. A potential moving node will only have length > 0 if a non-compound node is dragged.
+        if(!options.canMoveNode.includes(node.data("element_type")) || potentialMovingNode.length === 0 ) {
             return;
         }
         const bb = expandBounds( getBounds(node), 0 );
@@ -197,6 +204,7 @@ CompoundDragAndDrop.prototype.run = function() {
     cy.on('free', 'node', (event) => {
         // Add the node here. 
         if (chosenParent.length > 0 && event.target.data('element_type') !== 'partition') {
+        // if (chosenParent.length > 0 && !canBeDropTarget(event.target)) {
             const position = getPositionCopy(event.target.position());
             // Just move the node within the partition itself if the a user moves it. 
             if ((potentialMovingNode.data('element_type') === 'common*' || potentialMovingNode.data('element_type') === 'common') 
@@ -208,6 +216,7 @@ CompoundDragAndDrop.prototype.run = function() {
             } else {
                 // Move it to a new partition
                 options.onMovedNode(position, potentialMovingNode, chosenParent);
+                cy.elements().addClass('addPlusSign');
             }
         }
         

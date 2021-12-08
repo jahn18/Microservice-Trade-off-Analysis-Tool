@@ -19,7 +19,6 @@ import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import Slider from '@material-ui/core/Slider';
 import 'react-pro-sidebar/dist/css/styles.css';
 import {connect} from 'react-redux';
-import {updateDiffGraph} from '../../../Actions';
 import storeProvider from '../../../storeProvider';
 import Button from '@material-ui/core/Button';
 

@@ -7,47 +7,52 @@ import IndividualView from '../components/Views/IndividualView';
 import DiffView from '../components/Views/DiffView';
 import TradeOffSelectionTable from "./../components/SelectionTables/TradeOffTable";
 import WeightedRelationshipSelectionTable from "./../components/SelectionTables/WeightedRelationshipTable";
-import SelectionTabs from "../components/Tabs";
 import { JSONGraphParserUtils } from "../utils/JSONGraphParserUtils";
 import { DiffGraphUtils } from "../utils/DiffGraphUtils";
 import { Decomposition } from "../models/Decomposition";
+import CustomDecomposition from "../views/custom-decomposition/CustomDecomposition";
+import { Navigation } from "../features/navigation/src/ui/NavigationUI";
 
 //var SERVER_ADDRESS = "http://127.0.0.1:5000/";
 var SERVER_ADDRESS = "http://svresessp1.ece.ubc.ca/api/";
 
 export default class DiffTool extends React.Component {
+
     constructor(props) {
         super(props);
 
-        let json_graph_data = this.props.location.state.data; 
-
         let relationshipWeights = {};
-        for(let relationshipType in json_graph_data) {
+        for(let relationshipType in this.props.location.state.data) {
             relationshipWeights[relationshipType] = 0;
         }
 
         let decompositions = {};
         // Store all decompositions from the json file.  
-        Object.keys(json_graph_data).forEach((key, index) => decompositions[key] = new JSONGraphParserUtils().getDecomposition(json_graph_data[key].decomposition, index + 1));
+        Object.keys(this.props.location.state.data).forEach((key, index) => decompositions[key] = new JSONGraphParserUtils().getDecomposition(this.props.location.state.data[key].decomposition, index + 1));
         decompositions["weighted-view"] = new Decomposition([], []);
 
+        // Get different colors for the total number of decompositions that exist in the JSON file. 
+        let colors = {
+            relationship_type_colors: [],
+            relationships: {}
+        };
+
+        let selectedColors =  ['#61a14a', '#4987c0', '#eb8227', '#F4145B', '#dfb63d', '#824f7d'];
+
+        let decompositionColors = Object.keys(this.props.location.state.data).map((key, index) => {
+            return selectedColors[index % 6]
+        })
+
+        colors.relationship_type_colors = [...decompositionColors, '#a1665e'];
+        colors.relationships = {
+            ...Object.keys(this.props.location.state.data).reduce((relationship, key, index) => { return relationship = {...relationship, [key]: decompositionColors[index]}}, {}), 
+            ...{'weighted-view': '#a1665e','trade-off': 'grey'}
+        }
+
         this.state = {
-            selectedTab: 'static',
-            graphData: json_graph_data,
+            selectedTab: Object.keys(this.props.location.state.data)[0],
             decompositions: decompositions,
-            colors: { 
-                relationship_type_colors: ['#61a14a', '#4987c0', '#eb8227', '#F4145B', '#dfb63d', '#824f7d', '#a1665e'],
-                relationships: {
-                    'static': '#61a14a', 
-                    'dynamic': '#4987c0', 
-                    'class-names': '#eb8227', 
-                    'class-terms': '#F4145B', 
-                    'commits': '#dfb63d', 
-                    'contributors': '#824f7d', 
-                    'weighted-view': '#a1665e',
-                    'trade-off': 'grey'
-                }
-            },
+            colors: colors,
             // Fields for the Trade-off view
             selectedDecompositionsCompare: false,
             selectedDecompositions: [],
@@ -154,6 +159,8 @@ export default class DiffTool extends React.Component {
 
         // Accept the server address and the relationship-weights through props. 
         const PROJECT_NAME = "PartsUnlimitedMRP";
+
+        // TODO: change this so that it accepts the keys put into the json file. 
         const address = SERVER_ADDRESS + PROJECT_NAME + "/" + relationshipWeights['static'] + "/" + relationshipWeights['dynamic'] + "/" + relationshipWeights['class-names'] + "/" + relationshipWeights['class-terms'] + "/" + relationshipWeights['commits'] + "/" + relationshipWeights['contributors'];
         xhr.open("POST", address);
         xhr.setRequestHeader("Accept", "application/json");
@@ -167,7 +174,6 @@ export default class DiffTool extends React.Component {
 
     render() {
         let {
-            graphData,
             selectedTab,
             selectedDecompositionsCompare,
             selectedDecompositions,
@@ -178,7 +184,7 @@ export default class DiffTool extends React.Component {
             colors
         } = this.state;
 
-        const edges = new JSONGraphParserUtils().getEdges(graphData, colors.relationship_type_colors);
+        const edges = new JSONGraphParserUtils().getEdges(this.props.location.state.data, colors.relationship_type_colors);
 
         let decomposition;
         if (selectedTab !== "trade-off") {
@@ -196,20 +202,19 @@ export default class DiffTool extends React.Component {
 
         return (
             <div>
-                <SelectionTabs
-                    graphData={graphData}
-                    colors={colors}
-                    selectedDecompositionsCompare={selectedDecompositionsCompare}
-                    resetTradeOffConfiguration={this.resetTradeOffConfiguration}
-                    selectedTab={selectedTab}
-                    setSelectedTab={this.setSelectedTab}
-                />
+                <Navigation />
                 {
                     (selectedTab !== "trade-off" && selectedTab !== 'weighted-view') &&
-                    <IndividualView 
+                    // <IndividualView 
+                    //     decomposition={decomposition}
+                    //     relationshipTypeEdges={edges}
+                    //     graphData={this.props.location.state.data} 
+                    //     colors={colors} 
+                    //     selectedTab={selectedTab}
+                    // />
+                    <CustomDecomposition 
                         decomposition={decomposition}
-                        relationshipTypeEdges={edges}
-                        graphData={graphData} 
+                        relationshipTypes={edges}
                         colors={colors} 
                         selectedTab={selectedTab}
                     />
@@ -218,11 +223,21 @@ export default class DiffTool extends React.Component {
                     (selectedTab === "trade-off") && 
                     (
                         (!selectedDecompositionsCompare) ? 
+                        <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            '-ms-transform': 'translateX(-50%) translateY(-50%)',
+                            '-webkit-transform': 'translate(-50%,-50%)',
+                            transform: 'translate(-50%,-50%)',
+                            maxHeight: '75%'
+                        }}>
                         <TradeOffSelectionTable 
                             updateSelectedDecompositions={this.selectDecompositions2Diff}
                             decompositions={decompositions}
                             weightedViewExists={fetchedWeightedRelationshipDecomposition}
-                        /> :
+                        /> 
+                        </div> :
                         <DiffView
                             decomposition={decomposition} 
                             colors={colors} 
@@ -236,19 +251,29 @@ export default class DiffTool extends React.Component {
                 {
                     (selectedTab === "weighted-view" &&
                         ((!fetchedWeightedRelationshipDecomposition) ?
-                        <WeightedRelationshipSelectionTable
-                            updateRelationshipWeights={this.updateRelationshipWeights}
-                            graphData={graphData}
-                            setClickCluster={this.setClickCluster}
-                            relationshipWeights={relationshipWeights}
-                            clickedCluster={clickedCluster}
-                            fetchedWeightedRelationshipDecomposition={fetchedWeightedRelationshipDecomposition}
-                            getWeightedDecomposition={this.getWeightedDecomposition}
-                            getTotalRelationshipWeightSum={this.getTotalRelationshipWeightSum}
-                        /> :
+                        <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            '-ms-transform': 'translateX(-50%) translateY(-50%)',
+                            '-webkit-transform': 'translate(-50%,-50%)',
+                            transform: 'translate(-50%,-50%)',
+                            maxHeight: '75%'
+                        }}>
+                            <WeightedRelationshipSelectionTable
+                                // updateRelationshipWeights={this.updateRelationshipWeights}
+                                graphData={this.props.location.state.data}
+                                // setClickCluster={this.setClickCluster}
+                                // relationshipWeights={relationshipWeights}
+                                // clickedCluster={clickedCluster}
+                                fetchedWeightedRelationshipDecomposition={fetchedWeightedRelationshipDecomposition}
+                                // getWeightedDecomposition={this.getWeightedDecomposition}
+                                // getTotalRelationshipWeightSum={this.getTotalRelationshipWeightSum}
+                            /> 
+                        </div> :
                         <IndividualView
                             decomposition={decomposition}
-                            graphData={graphData} 
+                            graphData={this.props.location.state.data} 
                             colors={colors} 
                             selectedTab={selectedTab}
                             onChange={this.resetWeightedRelationshipConfiguration}

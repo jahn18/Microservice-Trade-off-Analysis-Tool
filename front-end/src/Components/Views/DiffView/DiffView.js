@@ -7,32 +7,14 @@ import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
 import nodeHtmlLabel from 'cytoscape-node-html-label';
-import storeProvider from '../../../storeProvider';
-import {updateTradeOffGraph} from '../../../Actions';
-import {connect} from 'react-redux';
-import Paper from "@material-ui/core/Paper";
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import TableRow from '@material-ui/core/TableRow';
 import 'react-pro-sidebar/dist/css/styles.css';
-import Button from '@material-ui/core/Button';
 import cxtmenu from 'cytoscape-cxtmenu';
-import { Typography } from "@material-ui/core";
-
-// import {ChangeHistoryStore} from '@service/ChangeHistoryStore';
-import {ChangeHistoryStore} from '../../../service/ChangeHistoryStore';
-import {ChangeHistoryTable} from '../../tables/ChangeHistoryTable/ChangeHistoryTable';
-import {CouplingAndCohesionTable} from '../../tables/MetricsTable/CouplingAndCohesionTable';
 
 cytoscape.use( cxtmenu );
 cytoscape.use( nodeHtmlLabel );
 
 
-class DiffView extends React.Component {
-    _changeHistory = new ChangeHistoryStore();
-
+export class DiffDecomposition extends React.Component {
     constructor(props) {
         super(props);
 
@@ -42,14 +24,16 @@ class DiffView extends React.Component {
             if (index > -1) {
                 consideredRelationshipEdges.splice(index, 1);
             }
-            consideredRelationshipEdges = Array.from(new Set(consideredRelationshipEdges.concat(this.props.consideredWeightedRelationships)));
+            // consideredRelationshipEdges = Array.from(new Set(consideredRelationshipEdges.concat(this.props.consideredWeightedRelationships)));
         }
+
+        let cytoscapeElements = (this.props.decomposition.elements.nodes) ? this.props.decomposition.elements.nodes : this.props.decomposition.elements;
 
         this.state = {
             consideredRelationshipEdges: consideredRelationshipEdges,
             allMovedElements: [],
             savePreviousState: true,
-            common_elements: this.props.decomposition.getClassNodeList().flat().filter((node) => node.getType() === "common").map((node) => node.getLabel()), // TODO: update the usage of this.,
+            common_elements: cytoscapeElements.filter((node) => node.data.element_type === "common").map((node) => node.data.label), // TODO: update the usage of this.,
             colors: this.props.colors,
             selectedDecompositions: this.props.selectedDecompositions,
             relationshipTypeTable: [],
@@ -75,7 +59,6 @@ class DiffView extends React.Component {
 
     componentDidMount() {
         const {
-            numOfDiffDecompositions,
             selectedDecompositions,
             element_types,
             colors
@@ -83,7 +66,7 @@ class DiffView extends React.Component {
 
         const cy = cytoscape({
             container: this.ref,
-            elements: this.props.decomposition.getCytoscapeData(),
+            wheelSensitivity: 0.015,
             style: [
                 {
                     'selector': 'node',
@@ -122,9 +105,9 @@ class DiffView extends React.Component {
                         'border-color': function(node) {
                             if(node.data('element_type') === element_types.appendix) {
                                 if(node.data('version') === 1) {
-                                    return colors.relationship_type_colors[selectedDecompositions[0][1]];
+                                    return colors[selectedDecompositions[0][0]];
                                 } else {
-                                    return colors.relationship_type_colors[selectedDecompositions[1][1]];
+                                    return colors[selectedDecompositions[1][0]];
                                 }
                             } else {
                                 return '#cdcdcd';
@@ -166,6 +149,12 @@ class DiffView extends React.Component {
                     }
                 },
                 {
+                    'selector': 'node.addPlusSign',
+                    'style': {
+                        'opacity': 1.0
+                    }
+                },
+                {
                     'selector': 'node.hide',
                     'style': {
                         'opacity': 0.0
@@ -187,11 +176,13 @@ class DiffView extends React.Component {
             ],
         });
 
-        let lastRenderedState;
-        
-        let relationshipTypes = storeProvider.getStore().getState().diff_graph.edgeRelationshipTypes;
-        // If the custom graph hasn't been loaded yet then load the positions of the current diff-graph. 
-        if(storeProvider.getStore().getState().trade_off_graph.graph.length === 0) {
+        let relationshipTypes = this.props.relationshipTypes;
+        if(this.props.decomposition.elements.nodes) {
+            cy.add(this.props.decomposition.elements.nodes).layout({name: 'preset'}).run()
+            cy.pan(this.props.decomposition.pan);
+            cy.zoom(this.props.decomposition.zoom);
+        } else {
+            cy.add(this.props.decomposition.elements);
             let options = {
                 num_of_versions: 2,
                 partitions_per_row: 5,
@@ -200,29 +191,13 @@ class DiffView extends React.Component {
             };
             let layout = new AppendixLayout( cy, options );
             layout.run()
-
-            cy.nodes().forEach((ele) => {
-                if(ele.data('element_type') === element_types.invisible_node) {
-                    ele.addClass('hide');
-                }
-            });
-        } else {
-            this._changeHistory.loadChangeHistoryStore(storeProvider.getStore().getState().trade_off_graph.changeHistory);
-            cy.elements().remove();
-            lastRenderedState = storeProvider.getStore().getState().trade_off_graph.graph;
-            let principle_elements = [];
-            for(let i = 0; i < lastRenderedState.elements.nodes.length; i++) {
-                if(lastRenderedState.elements.nodes[i].data.element_type === element_types.appendix 
-                    || lastRenderedState.elements.nodes[i].data.element_type === element_types.partition) {
-                        principle_elements.push(lastRenderedState.elements.nodes[i]);
-                }
-            }
-            cy.add(principle_elements);
-            cy.json({elements:lastRenderedState.elements}).layout({name: 'preset'}).run();
-
-            cy.pan(storeProvider.getStore().getState().trade_off_graph.graph.pan);
-            cy.zoom(storeProvider.getStore().getState().trade_off_graph.graph.zoom);
         }
+
+        cy.nodes().forEach((ele) => {
+            if(ele.data('element_type') === element_types.invisible_node) {
+                ele.addClass('hide');
+            }
+        });
 
         // This must be rendered first before the menu or else the DOM elements will not be configured correctly.
         cy.nodeHtmlLabel([{
@@ -239,8 +214,8 @@ class DiffView extends React.Component {
                         return '<h1 style="color:white;">' + '-' + '</h1>';
                     } else if(data.element_type === element_types.appendix) { // add the labels to the appendices
                         const color = (data.showMinusSign) ? 
-                            this.props.colors.relationship_type_colors[this.props.selectedDecompositions[data.version - 1][1]] + '27' : 
-                            this.props.colors.relationship_type_colors[this.props.selectedDecompositions[data.version - 1][1]]; 
+                            this.props.colors[this.props.selectedDecompositions[data.version - 1][0]] + '27' : 
+                            this.props.colors[this.props.selectedDecompositions[data.version - 1][0]]; 
                         return `<div> <h3 style="color:${color};font-weight: bold; position: absolute; top: ${element.boundingBox().y1 - element.position().y + 5}; right: ${element.position().x - element.boundingBox().x1 - 45};">` 
                                 + `V${this.props.selectedDecompositions[data.version - 1][1] + 1}` 
                                 + '</h3> </div>';
@@ -278,7 +253,28 @@ class DiffView extends React.Component {
                 padding: 10, 
                 grabbedNode: node => true, 
                 dropTarget: node => node.data('element_type') === element_types.partition,
-                onMovedNode: (event, sourceNode, targetNode) => this.onMovedNode(event, sourceNode, targetNode)
+                onMovedNode: (event, sourceNode, targetNode) => this.onMovedNode(event, sourceNode, targetNode),
+                dropBoundary: (ele) => { 
+                    let appendices = ele.children().filter(
+                        (ele) => {
+                            return ele.data('element_type') === 'appendix';
+                        }
+                    );
+                    // Get the current bounding-box where the common nodes should lie. 
+                    const boundingBox = {
+                        x1: ele.boundingBox().x1,
+                        x2: ele.boundingBox().x2,
+                        y1: ele.boundingBox().y1,
+                        y2: appendices[0].boundingBox().y1 
+                    };
+                    return {
+                        node: ele,
+                        bb: boundingBox
+                    }
+               },
+                canMoveNode: [element_types.common_node, element_types.diff_node],
+                onMouseOver: () => {cy.elements().addClass('addPlusSign')},
+                onMouseOut: () => {cy.elements().removeClass('addPlusSign')}
             }
         );
         cdnd.run();
@@ -288,34 +284,15 @@ class DiffView extends React.Component {
         */
         cy.on('tap', () => this.onUnhighlightNodes());
         cy.on('mouseover', 'node', (e) => this.disableHandleAndInteraction(e.target));
-        cy.on('mouseout', 'node', (e) => { 
+        cy.on('mouseout','node', (e) => { 
             if(e.target.data().element_type !== undefined) {
                 e.target.grabify();
             }
         });
 
-        const allDecompositions = {};
-        const styles = {};
-        for(let i = 0; i < numOfDiffDecompositions; i++) {
-            let decompositionName = `V${this.props.selectedDecompositions[i][1] + 1}`;
-            allDecompositions[decompositionName] = this._getCurrentDecomposition(i + 1, cy);
-            styles[decompositionName] = {'color': this.props.colors.relationship_type_colors[this.props.selectedDecompositions[i][1]]}
-        }
-
-        const allDependencies = {};
-        Object.keys(relationshipTypes).map((key) => {
-            allDependencies[key] = relationshipTypes[key]["cytoscapeEdges"];
-        });
-
         this.setState({
             cy: cy,
-            couplingAndCohesionTable: {
-                decompositions: allDecompositions,
-                styles: styles,
-                dependencies: allDependencies
-            },
             relationshipTypes: relationshipTypes,
-            allMovedElements: this._changeHistory.getAllMoveOperations()
         });
     }
 
@@ -365,15 +342,6 @@ class DiffView extends React.Component {
         } 
     } 
 
-    _getLastRenderedNodePositions(lastRenderedGraph) {
-        let previous_graph_positions = {};
-        for(let node_i in lastRenderedGraph.elements.nodes) {
-            let element_name = lastRenderedGraph.elements.nodes[node_i].data.id;
-            previous_graph_positions[element_name] = lastRenderedGraph.elements.nodes[node_i].position;
-        }
-        return previous_graph_positions;
-    }
-
     _isNodeCommonBetweenDecompositions(element_type) {
         const {
             element_types
@@ -414,7 +382,6 @@ class DiffView extends React.Component {
                     break;
                 }
             case element_types.moved_node:
-                // REFACTOR
                 if(sel.data('prev_element_type') !== element_types.common_node || sel.data('element_type') === element_types.diff_node) {
                     sel = cy.getElementById(sel.data('label'));
                     for(let i = 1; i <= numOfDiffDecompositions; i++) {
@@ -427,7 +394,7 @@ class DiffView extends React.Component {
                             data: {
                                 target: sel.id(),
                                 source: `graph_${i}_${sel.id()}`,
-                                color: this.props.colors.relationship_type_colors[this.props.selectedDecompositions[i - 1][1]]
+                                color: this.props.colors[this.props.selectedDecompositions[i - 1][0]]
                             }
                         }])
                     }
@@ -473,7 +440,7 @@ class DiffView extends React.Component {
         cy.remove('edge');
     }
 
-    highlightSelectedElements = (changeHistoryRowElementInfo, elementsSelectedOnTable) => {
+    highlightSelectedElements = (elementsSelectedOnTable) => {
         let {
             cy,
             numOfDiffDecompositions,
@@ -481,15 +448,11 @@ class DiffView extends React.Component {
         } = this.state; 
 
         // This is where I'm trying to highlight all objects that were being selected. 
-        let selectedElementsInChangedHistory = elementsSelectedOnTable.slice();
-        if(changeHistoryRowElementInfo !== null && !selectedElementsInChangedHistory.includes(changeHistoryRowElementInfo)) {
-            selectedElementsInChangedHistory.push(changeHistoryRowElementInfo);
-        }
         let selected_elements = cy.collection();
-
-        for(let movedElementInfo of selectedElementsInChangedHistory) {
+        elementsSelectedOnTable = [...new Set(elementsSelectedOnTable)];
+        for(let movedElementInfo of elementsSelectedOnTable) {
             let sel = cy.getElementById(movedElementInfo.movedNode.data('label'));
-            if(this._changeHistory.isFirstMove(movedElementInfo)) {
+            // if(this._changeHistory.isFirstMove(movedElementInfo)) {
                 selected_elements = selected_elements.union(sel).union(movedElementInfo.targetPartition); 
                 if(sel.data('prev_element_type') === element_types.diff_node) {
                     for(let i = 1; i <= numOfDiffDecompositions; i++) {
@@ -502,7 +465,7 @@ class DiffView extends React.Component {
                             data: {
                                 target: sel.id(),
                                 source: `graph_${i}_${sel.id()}`,
-                                color: this.props.colors.relationship_type_colors[this.props.selectedDecompositions[i - 1][1]]
+                                color: this.props.colors[this.props.selectedDecompositions[i - 1][0]]
                             }
                         }])
                     }
@@ -517,23 +480,6 @@ class DiffView extends React.Component {
                         }
                     }]);
                 }
-            } else {
-                selected_elements = selected_elements.union(
-                                            movedElementInfo.movedNode
-                                        ).union(
-                                            movedElementInfo.targetPartition
-                                        ).union(
-                                            cy.getElementById(movedElementInfo.movedNode.data('partition'))
-                                        ); 
-                cy.add({
-                    group: 'edges',
-                    data: {
-                        target: movedElementInfo.movedNode.id(),
-                        source: movedElementInfo.movedNode.data('partition'),
-                        color: 'grey'
-                    }
-                });
-            }
         }
 
         selected_elements = selected_elements.union(cy.elements().filter((ele) => {
@@ -553,12 +499,11 @@ class DiffView extends React.Component {
         const {
             cy,
             numOfDiffDecompositions,
-            element_types,
-            couplingAndCohesionTable
+            element_types
         } = this.state; 
 
         if(sourceNode.data().showMinusSign === false && 
-            this.props.decomposition.getAllPartitionIds().includes(targetNode.id()) &&
+            targetNode.data('element_type') === element_types.partition &&
             !sourceNode.hasClass('deactivate') &&
             sourceNode.data().element_type !== element_types.partition) 
             {
@@ -625,17 +570,16 @@ class DiffView extends React.Component {
             }
 
             // Update the evolutionary history table. 
-            this._changeHistory.addNewMove(sourceNode, cy.getElementById(sourceNode.data('partition')), targetNode);
+            let diffNode;
+            if (sourceNode.data('element_type') === element_types.diff_node) {
+                diffNode = cy.elements().filter((ele) => ele.data('label') === sourceNode.data('label') && ele.data('version') !== sourceNode.data('version') && ele.data('element_type') === element_types.diff_node);
+            }
+
+            const originalPartition = sourceNode.data('prev_partition') ? sourceNode.data('prev_partition') : sourceNode.data('partition');
+            this.props.addMove(sourceNode, cy.getElementById(originalPartition), targetNode, diffNode);
+            this.props.saveGraph(cy.json());
         }
         this._renderNodes(); 
-
-        this.setState({
-            allMovedElements: this._changeHistory.getAllMoveOperations(),
-            couplingAndCohesionTable: {
-                ...couplingAndCohesionTable,
-                decompositions: this._getDecompositions()
-            }
-        });
     }
 
     _renderNodes() {
@@ -647,109 +591,23 @@ class DiffView extends React.Component {
         cy.nodes().removeClass('deactivate');
     }
 
-    _getCurrentDecomposition(decomposition_version_number, cy) {
-        const {
-            numOfDiffDecompositions,
-            element_types
-        } = this.state; 
-
-        let decomposition_versions = [];
-        for(let i = 1; i <= numOfDiffDecompositions; i++) {
-            if(i !== decomposition_version_number) {
-                decomposition_versions.push(i);
-            }
-        }
-
-        // Get all moved elements. 
-        let moved_elements = cy.nodes().map((ele) => {
-            if(ele.data('element_type') === element_types.moved_node) {
-                return ele.data('label');
-            }
-        });
-
-        let decomposition = [];
-
-        for(let i = 0; i < this.props.decomposition.getNumOfPartitions(); i++) {
-            let partition = []; 
-            cy.nodes().forEach((ele) => {
-                if(ele.data('partition') === `partition${i}`) {
-                    if(ele.data('element_type') === element_types.common_node || ele.data('element_type') === element_types.moved_node) {
-                        partition.push(ele.data().label);
-                    } else if (ele.data('element_type') === element_types.diff_node 
-                        && !moved_elements.includes(ele.data().label)
-                        && !decomposition_versions.includes(ele.data('version'))) {
-                        partition.push(ele.data().label);
-                    }
-                }
-            })
-            if(partition.length !== 0) {
-                decomposition.push(partition);
-            }
-        }
-
-        return decomposition;
-    }
-
-    updateRedux() {
-        const {
-            cy,
-            // changeHistory,
-            savePreviousState
-        } = this.state;
-
-        if(savePreviousState) {
-            this.props.updateTradeOffGraph(
-                {
-                    graph: cy.json(),
-                    changeHistory: this._changeHistory.getChangeHistory()
-                }
-            );
-        } else {
-            this.props.updateTradeOffGraph({
-                graph: cy.collection(),
-                changeHistory: {},
-            });
-        }
-
-    }
-
-    _getDecompositions() {
-        const {
-            cy,
-            numOfDiffDecompositions
-        } = this.state;
-
-        // Update the metrics once a node is moved
-        const allDecompositions = {};
-        for(let i = 0; i < numOfDiffDecompositions; i++) {
-            let decompositionName = `V${this.props.selectedDecompositions[i][1] + 1}`;
-            allDecompositions[decompositionName] = this._getCurrentDecomposition(i + 1, cy);
-        }
-
-        return allDecompositions;
-    }
-
     _onDeleteRowsFromChangeHistory = (elementsSelectedOnTable) => {
         const {
             cy,
-            tableBodyRenderKey,
             numOfDiffDecompositions,
             element_types,
-            couplingAndCohesionTable
         } = this.state;
 
         const zoom = cy.zoom();
         const pan = cy.pan();
 
         elementsSelectedOnTable.forEach((movedElementInfo) => {
-            const {movedNode, currPartition, currPartitionRelativePos, moveNumber} = movedElementInfo; 
-            this._changeHistory.undoMove(movedNode);  
-
+            const {movedNode, currPartition, currPartitionRelativePos} = movedElementInfo; 
             // Remove the moved node. 
             cy.remove(cy.getElementById(movedNode.data('label'))); 
-
-            if(moveNumber > 0 || movedNode.data('element_type') === element_types.common_node) {
-                cy.add(movedNode.move({parent: currPartition.id()}).position({
+            if(movedNode.data('element_type') === element_types.common_node) {
+                movedNode.data().parent = currPartition.id();
+                cy.add(movedNode.position({
                     x: currPartition.position('x') + currPartitionRelativePos.x,
                     y: currPartition.position('y') + currPartitionRelativePos.y
                 }));
@@ -760,98 +618,30 @@ class DiffView extends React.Component {
                 }
             }
         });
+        this.props.saveGraph(cy.json());
         cy.pan(pan);
         cy.zoom(zoom);
-
-        this.onUnhighlightNodes();
-        this._renderNodes();
-
-        this.setState(() => ({
-            allMovedElements: this._changeHistory.getAllMoveOperations(),
-            tableBodyRenderKey: tableBodyRenderKey + 1,
-            couplingAndCohesionTable: {
-                ...couplingAndCohesionTable,
-                decompositions: this._getDecompositions()
-            }
-        }));
-    }
-
-    _printEvolutionaryHistoryText = (movedElementInfo) => {
-        const {
-            cy,
-            numOfDiffDecompositions,
-            element_types
-        } = this.state;
-
-        const nodeMoveHistory = this._changeHistory.getChangeHistory().indivElementHistories;
-        let target_node = movedElementInfo.movedNode.data('label');
-        let previous_partitions = "";
-
-        if(movedElementInfo.movedNode.data('element_type') === element_types.common_node || movedElementInfo.movedNode.data('prev_element_type') === element_types.common_node) {
-            let partition_num = parseInt(movedElementInfo.movedNode.data('partition').match('[0-9]')) + 1;
-            previous_partitions = `M${partition_num}`;
-        } else if (this._changeHistory.isFirstMove(movedElementInfo)) {
-            for(let i = 1; i <= numOfDiffDecompositions; i++) {
-                let partition_num = parseInt(cy.getElementById(`graph_${i}_${movedElementInfo.movedNode.data('label')}`).data().partition.match('[0-9]')) + 1;
-                previous_partitions = previous_partitions.concat(`V${this.props.selectedDecompositions[i - 1][1] + 1}-M${partition_num}`);
-                if(i !== numOfDiffDecompositions) {
-                    previous_partitions = previous_partitions.concat(" ᐱ ");
-                }
-            }
-        } else {
-            let index = movedElementInfo.moveNumber;
-            let previous_node = nodeMoveHistory[movedElementInfo.movedNode.data('label')][index].movedNode
-            let partition_num = parseInt(previous_node.data('partition').match('[0-9]')) + 1;
-            previous_partitions = `M${partition_num}`;
-        }
-
-        let target_partition = parseInt(movedElementInfo.targetPartition.id().match('[0-9]')) + 1;
-        return `${target_node}: ${previous_partitions} → M${target_partition}`;
-    }
-
-    _createRelationshipTypeTable() {
-        const {
-            relationshipTypes,
-            numOfDiffDecompositions,
-            cy
-        } = this.state;
-
-        let relationshipTypeTable = []
-
-        Object.keys(relationshipTypes).map(
-            (key, index) => {
-                relationshipTypeTable.push(
-                    <TableRow>
-                        <TableCell style={{'font-size': 'Normal'}}>
-                            {key.charAt(0).toUpperCase() + key.slice(1)}
-                        </TableCell>
-                        {
-                            [...Array(numOfDiffDecompositions)].map((x, i) => 
-                                <TableCell>
-                                    {
-                                        Utils.calculateNormalizedTurboMQ(
-                                            relationshipTypes[key]["cytoscapeEdges"],
-                                            this._getCurrentDecomposition(i + 1, cy)
-                                        ).toFixed(2)
-                                    }
-                                </TableCell>
-                            )
-                        }
-                    </TableRow>
-                )
-            }
-        )
-        return relationshipTypeTable;
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        // if(JSON.stringify(prevState.relationshipTypeTable) !== JSON.stringify(this._createRelationshipTypeTable())) {
-        //     this.setState({relationshipTypeTable: this._createRelationshipTypeTable()});
-        // }
-    }
-    
-    componentWillUnmount() {
-        this.updateRedux();
+        const {
+            cy
+        } = this.state;
+
+        if (this.props.resetMoves) {
+            this._onDeleteRowsFromChangeHistory(prevProps.selectedElements);
+            this.props.clearChangeHistoryTable();
+        }
+
+        if (prevProps.selectedElements !== this.props.selectedElements) {
+            cy.elements().removeClass('deactivate');
+            cy.edges().remove();
+            if (this.props.mouseOverChangeHistory) {
+                this.highlightSelectedElements(this.props.selectedElements);
+            } else {
+                this.onUnhighlightNodes();
+            }
+        }
     }
 
     highlightElements = (movedElementInfo, allSelectedElements) => {
@@ -860,100 +650,17 @@ class DiffView extends React.Component {
         }
     }
 
-    updateRelationshipMetrics = (movedElementOperation) => {
-        if(this._changeHistory.isLastestMove(movedElementOperation)) {
-            this.onUnhighlightNodes();
-            this.setState({relationshipTypeTable: this._createRelationshipTypeTable()});
-        }
+    componentWillUnmount() {
+        this.props.saveGraph(this.state.cy.json());
     }
 
     render() {
-        let {
-            allMovedElements,
-            tableBodyRenderKey,
-            openTable,
-            couplingAndCohesionTable
-        } = this.state;
-
         return (
             <div>
                 <div className="custom-graph-container">
                     <div style={{height: '100%', width: '100%', position: 'fixed'}} ref={ref => (this.ref = ref)}></div>
                 </div>
-                <div
-                    style={{
-                        position: 'fixed',
-                        'margin-top': '0.75%',
-                        'left': '1%',
-                        display: 'flex'
-                    }}
-                >
-                    <Typography style={{'margin-top': '1%', display: 'flex'}} variant="h5"> 
-                        <div style={{'margin-right': '8px', color: this.props.colors.relationship_type_colors[this.props.selectedDecompositions[0][1]]}}>
-                            {`V${this.props.selectedDecompositions[0][1] + 1}`}
-                        </div>
-                        <div style={{'margin-right': '3px'}}>
-                            {'vs.'}
-                        </div>
-                        <div style={{color: this.props.colors.relationship_type_colors[this.props.selectedDecompositions[1][1]]}}>
-                            {`V${this.props.selectedDecompositions[1][1] + 1}`}
-                        </div>
-                    </Typography>
-                    <Button variant="outlined" color="primary"
-                        style={{
-                            'left': '10%'
-                        }}
-                        onClick={() => {
-                            this.state.savePreviousState = false;
-                            this.props.onChange(true);
-                        }
-                    }>
-                        Compare new 
-                    </Button>
-                </div>
-                <TableContainer 
-                component={Paper} 
-                style={
-                        {
-                            width: '30%',
-                            border: '1px solid grey',
-                            'left': '69%',
-                            'margin-top': '1%',
-                            position: 'fixed',
-                            maxHeight: '700px'
-                        }
-                    } 
-                size="small">
-                    <Table stickyHeader aria-label="simple table" size="small">
-                        <TableBody key={tableBodyRenderKey}>
-                            <TableRow>
-                                <CouplingAndCohesionTable 
-                                    styles={couplingAndCohesionTable?.styles || {}}
-                                    decompositions={couplingAndCohesionTable?.decompositions || []}
-                                    dependencies={couplingAndCohesionTable?.dependencies || []}
-                                    openTable={openTable.metrics}
-                                    onOpenTableChange={() => this.setState({openTable: {...openTable, metrics: !openTable.metrics}})}
-                                />
-                            </TableRow>
-                            <TableRow>
-                                <ChangeHistoryTable
-                                    allMoveOperations={allMovedElements}
-                                    enableHover={this._changeHistory.isLastestMove}
-                                    onMouseOver={this.highlightElements}
-                                    onMouseOut={this.updateRelationshipMetrics}
-                                    disable={this._changeHistory.isLastestMove}
-                                    moveOperationContent={this._printEvolutionaryHistoryText}
-                                    onAllSelectedElements={this._onDeleteRowsFromChangeHistory}
-                                    openTable={openTable.changeHistoryTable}
-                                    onOpenTableChange={() => this.setState({openTable: {...openTable, changeHistoryTable: !openTable.changeHistoryTable}})}
-                                />
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                </TableContainer>
             </div>
         );
     }
 };
-
-export default connect(null, { updateTradeOffGraph })(DiffView);

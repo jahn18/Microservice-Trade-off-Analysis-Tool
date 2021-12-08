@@ -24,13 +24,13 @@ export class JSONGraphParserUtils {
         for (const [key, value] of Object.entries(jsonGraph)) {
             let edgeFilter = {};
             const maxEdgeWeight = this._findMaxEdgeWeight(value["links"]);
-            let allEdges = this.getCytoscapeEdges(value["links"], maxEdgeWeight, edgeColors[i]);
+            let allEdges = this.getCytoscapeEdges(value["links"], maxEdgeWeight, edgeColors[key]);
 
             edgeRelationshipTypes[key] = {
                 checked: false,
                 links: value["links"],
                 minimumEdgeWeight: 0,
-                color: edgeColors[i],
+                color: edgeColors[key],
                 cytoscapeEdges: allEdges
             }
 

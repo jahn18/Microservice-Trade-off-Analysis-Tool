@@ -13,6 +13,9 @@ import LinearProgress from '@material-ui/core/LinearProgress';
 
 
 export default function WeightedRelationshipSelectionTable(props) {
+    const [weightedSum, setWeightedSum] = useState(0);
+    const [relationshipWeights, setRelationshipWeights] = useState(props.weights || Object.keys(props.graphData).reduce((weights, key) => {return weights = {...weights, [key]: 0}}, {}));
+    
     let weightedRelationshipTable = [];
     Object.keys(props.graphData).map(
         (key, index) => {
@@ -22,8 +25,11 @@ export default function WeightedRelationshipSelectionTable(props) {
                         <TextField 
                             id="standard-basic" 
                             label={key.toUpperCase()} 
-                            defaultValue={props.relationshipWeights[key]}
-                            onChange={(event) => props.updateRelationshipWeights(key, event.target.value)}
+                            defaultValue={relationshipWeights[key]}
+                            onChange={(event) => {
+                                relationshipWeights[key] = parseFloat(event.target.value);
+                                setWeightedSum(Object.keys(relationshipWeights).reduce((sum, key) => {return sum = sum + relationshipWeights[key]}, 0.0))
+                            }}
                         />
                     </TableCell>
                 </TableRow>
@@ -36,11 +42,8 @@ export default function WeightedRelationshipSelectionTable(props) {
         component={Paper} 
         style={
                 {
-                    width: '50%',
+                    width: '100%',
                     border: '1px solid grey',
-                    left: '25%',
-                    bottom: '15%',
-                    position: 'fixed',
                 }
             } 
         size="small">
@@ -57,7 +60,7 @@ export default function WeightedRelationshipSelectionTable(props) {
                 <TableBody>
                     {weightedRelationshipTable}
                     <TableRow>
-                        { (props.clickedCluster && !props.fetchedWeightedRelationshipDecomposition) ?
+                        { (props.clustering) ?
                             <TableCell>
                                 <LinearProgress /> 
                             </TableCell> :
@@ -66,10 +69,11 @@ export default function WeightedRelationshipSelectionTable(props) {
                                     width: '100%'
                                 }}
                                 onClick={() => {
-                                    props.setClickCluster();
-                                    props.getWeightedDecomposition()
+                                    props.fetchWeightedDecomposition(relationshipWeights, props.graphData);
+                                    props.setNewWeights();
+                                    props.setWeights(relationshipWeights);
                                 }}
-                                disabled={props.getTotalRelationshipWeightSum() < 0.99 || props.getTotalRelationshipWeightSum() > 1}
+                                disabled={weightedSum < 0.99 || weightedSum > 1}
                             >
                                 Cluster
                             </Button> 

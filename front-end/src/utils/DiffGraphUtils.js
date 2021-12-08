@@ -10,25 +10,17 @@ export class DiffGraphUtils {
     /**
      * Returns a decomposition used for the diff-view. 
      */
-    getDiffDecomposition(decompositionOne, decompositionTwo, diffNodeOneColor, diffNodeTwoColor) {
+    getDiffDecomposition(decompositionOne, decompositionTwo, diffNodeOneColor, diffNodeTwoColor, versionOne, versionTwo) {
         let classNodeList = [];
         let matchedPartitionList = [];
 
-        new GraphMatchingUtils().matchPartitions(decompositionOne, decompositionTwo).matching.forEach((match, index) => {
-            let partitionOne = [];
-            let partitionTwo = [];
-            let partitionLabelOne = undefined;
-            let partitionLabelTwo = undefined;
-
-            try {
-                partitionOne = decompositionOne.getPartitionClassNodes(match[0], true);
-                partitionLabelOne = decompositionOne.getPartitionNode(match[0]).getLabel();
-            } catch (e) {} 
-
-            try {
-                partitionTwo = decompositionTwo.getPartitionClassNodes(match[1], true);
-                partitionLabelTwo = decompositionTwo.getPartitionNode(match[1]).getLabel();
-            } catch (e) {}
+        new GraphMatchingUtils().matchPartitions(decompositionOne, decompositionTwo).partitionMatching.forEach((match, index) => {
+            let cytoscapeElementsOne = (decompositionOne.elements.nodes) ? decompositionOne.elements.nodes : decompositionOne.elements;
+            let cytoscapeElementsTwo = (decompositionTwo.elements.nodes) ? decompositionTwo.elements.nodes : decompositionTwo.elements;
+            let partitionLabelOne = cytoscapeElementsOne.filter((ele) => ele.data.id === `partition${match[0]}`)[0]?.data.label || undefined
+            let partitionLabelTwo = cytoscapeElementsTwo.filter((ele) => ele.data.id === `partition${match[1]}`)[0]?.data.label || undefined
+            let partitionOne = cytoscapeElementsOne.filter((ele) => ele.data.parent && ele.data.parent === `partition${match[0]}` && ele.data.element_type !== "invisible").map((ele) => ele.data.id); 
+            let partitionTwo = cytoscapeElementsTwo.filter((ele) => ele.data.parent && ele.data.parent === `partition${match[1]}` && ele.data.element_type !== "invisible").map((ele) => ele.data.id);
 
             let commonClassNodes = this._getCommonClassNodes(partitionOne, partitionTwo, `partition${index}`);
             // There are no common nodes between the matched partitions, then add an invisible node. 
@@ -36,7 +28,7 @@ export class DiffGraphUtils {
                 commonClassNodes.push(new InvisibleClassNode(`invisible_node_partition${index}`, `invisible_node${index}`, `partition${index}`));
             }
             classNodeList.push(commonClassNodes.concat(this._getDiffClassNodes(partitionOne, partitionTwo, diffNodeOneColor, diffNodeTwoColor, `partition${index}`)));
-            matchedPartitionList.push(new MatchedPartitionNode(`partition${index}`, decompositionOne.getVersion(), decompositionTwo.getVersion(), partitionLabelOne, partitionLabelTwo))
+            matchedPartitionList.push(new MatchedPartitionNode(`partition${index}`, versionOne, versionTwo, partitionLabelOne, partitionLabelTwo))
         });
 
         return new Decomposition(classNodeList, matchedPartitionList); 

@@ -3,12 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@emotion/react": "^11.7.0",
+    "@emotion/styled": "^11.6.0",
     "@fontsource/roboto": "^4.5.0",
     "@material-ui/core": "^4.11.4",
     "@material-ui/icons": "^4.11.2",
+    "@mui/material": "^5.2.2",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
+    "@types/react": "^17.0.37",
+    "@types/react-dom": "^17.0.11",
+    "@types/styled-components": "^5.1.16",
+    "baseui": "^10.6.0",
     "bootstrap": "^5.0.2",
     "cytoscape": "3.2.19",
     "cytoscape-automove": "^1.10.2",
@@ -26,12 +33,17 @@
     "react-cytoscapejs": "^1.2.1",
     "react-dom": "^17.0.2",
     "react-icons": "^4.2.0",
+    "react-jss": "^10.8.2",
     "react-pro-sidebar": "^0.6.0",
     "react-redux": "^7.2.4",
     "react-router-dom": "^5.2.0",
     "react-scripts": "4.0.3",
     "react-tabs-redux": "^4.0.0",
     "redux": "^4.1.0",
+    "styletron-engine-atomic": "^1.4.8",
+    "styletron-react": "^6.0.2",
+    "typescript": "^4.5.2",
+    "underscore": "^1.13.1",
     "web-vitals": "^1.0.1"
   },
   "scripts": {
@@ -59,6 +71,11 @@
     ]
   },
   "devDependencies": {
+    "@types/cytoscape": "^3.19.2",
+    "@types/cytoscape-cxtmenu": "^3.4.0",
+    "@types/react-router-dom": "^5.3.2",
+    "@types/styletron-engine-atomic": "^1.1.1",
+    "@types/styletron-react": "^5.0.3",
     "write-file-webpack-plugin": "^4.5.1"
   }
 }

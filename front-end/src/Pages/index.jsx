@@ -130,7 +130,7 @@ const FilePage = () => {
                     <TableRow>
                         <TableCell colSpan={2}>
                             <Link to={{
-                                pathname: '/tool',
+                                pathname: '/static',
                                 state: {data},
                             }}>
                                 <Button
