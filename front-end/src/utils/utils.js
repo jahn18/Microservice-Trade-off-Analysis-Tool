@@ -18,6 +18,8 @@ export default class Utils {
      *
      */
     static calculateNormalizedTurboMQ = (cytoscapeEdges, decomposition) => {
+        
+        let normalizePartitions = 0;
         let CF = decomposition.reduce((CF, partition) => {
             let internal_edges = 0.0;
             let external_edges = 0.0;
@@ -30,11 +32,15 @@ export default class Utils {
                 } 
             })
 
+            if (internal_edges > 0 || external_edges > 0) {
+                normalizePartitions += 1;
+            }
+
             let value = (internal_edges !== 0) ? ((internal_edges) / ( (internal_edges) + external_edges)) : 0;
             return CF + value;
         }, 0.0);
 
-        return ( CF / (decomposition.length) ) * 100;
+        return ( CF / normalizePartitions ) * 100;
     };
 
     static updateGraphEdges(edgeRelationshipTypes) {
@@ -90,6 +96,22 @@ export default class Utils {
                         };
                         if(!targets.includes(add_edge.data.target)) {
                             edge_dependencies.push(add_edge);
+                            if (!targets.includes(edge.target)) {
+                                edge_dependencies.push(
+                                    {
+                                        classes: 'dependency',
+                                        group: 'edges',
+                                        data: {
+                                            source: targetNode.data('id'),
+                                            target: edge.target,
+                                            weight: (parseFloat(edge.weight) / maxEdgeWeight).toFixed(2),
+                                            element_type: 'edge',
+                                            color: color
+                                        }
+                                    }
+                                );
+                                targets.push(edge.target);
+                            }
                         }
                         targets.push(add_edge.data.target);
                     } else if (edge.target === targetNode.data('label')) {
@@ -106,6 +128,22 @@ export default class Utils {
                         };
                         if(!sources.includes(add_edge.data.source)) {
                             edge_dependencies.push(add_edge);
+                            if (!sources.includes(edge.source)) {
+                                edge_dependencies.push(
+                                    {
+                                        classes: 'dependency',
+                                        group: 'edges',
+                                        data: {
+                                            source: edge.source,
+                                            target: targetNode.data('id'),
+                                            weight: (parseFloat(edge.weight) / maxEdgeWeight).toFixed(2),
+                                            element_type: 'edge',
+                                            color: color
+                                        }
+                                    }
+                                );
+                                sources.push(edge.source);
+                            }
                         }
                         sources.push(add_edge.data.source);
                     }

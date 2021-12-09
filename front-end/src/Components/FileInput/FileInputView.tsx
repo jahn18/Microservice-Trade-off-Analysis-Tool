@@ -82,6 +82,7 @@ export class FileInputView extends React.Component<IFileInputViewProps, IFileInp
                                         </MenuItem>
                                         <MenuItem value={"PartsUnlimitedMRP"}>PartsUnlimitedMRP</MenuItem>
                                         <MenuItem value={"MotivatingExample"}>Motivating Example</MenuItem>
+                                        <MenuItem value={"7epDemo"}>7epDemo</MenuItem>
                                     </Select>
                                 </FormControl>
                             </TableCell>

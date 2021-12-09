@@ -309,7 +309,9 @@ export class DiffDecomposition extends React.Component {
         this.onUnhighlightNodes();
         // let edges = consideredRelationshipEdges.map((key) => relationshipTypes[key].cytoscapeEdges).flat();
         // cy.add(edges.map((edge) => edge.getCytoscapeData()));
-        targetNode = cy.getElementById(targetNode.data('realNodeId'));
+        if (cy.getElementById(targetNode.data('realNodeId')).length !== 0) {
+            targetNode = cy.getElementById(targetNode.data('realNodeId'));
+        }
         // let targetNodeEdges = new Set(targetNode.)
 
         Utils.showCustomGraphEdges(cy, consideredRelationshipEdges, relationshipTypes, common_elements, targetNode);

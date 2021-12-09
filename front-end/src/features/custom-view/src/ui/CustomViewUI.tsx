@@ -171,7 +171,18 @@ class CustomViewBase extends React.PureComponent<CustomViewProps> {
     }
 
     _getRelationshipTypes(selectedTab: string) {
-        return this.props.relationshipTypes[selectedTab] || this.props.relationships;
+        return this.props.relationshipTypes[selectedTab] || this._getPresetRelationshipType(selectedTab);
+    }
+
+    _getPresetRelationshipType(selectedTab: string) {
+        Object.keys(this.props.relationships).forEach((key) => {
+            if (selectedTab === key) {
+                this.props.relationships[key].minimumEdgeWeight = 100; 
+            } else {
+                this.props.relationships[key].minimumEdgeWeight = 0;
+            }
+        }); 
+        return this.props.relationships;
     }
 
     _updateRelationshipType(selectedTab: string, relationshipTypes: any) {

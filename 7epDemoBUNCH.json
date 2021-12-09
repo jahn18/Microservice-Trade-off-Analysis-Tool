@@ -1020,6 +1020,22 @@
                 {
                     "id": "Ackermann",
                     "package": "com.coveros.training.mathematics"
+                },
+                {
+                    "id": "LibraryBookListSearchServlet",
+                    "package": "com.coveros.training.library"
+                },
+                {
+                    "id": "Book",
+                    "package": "com.coveros.training.library.domainobjects"
+                },
+                {
+                    "id": "Borrower",
+                    "package": "com.coveros.training.library.domainobjects"
+                },
+                {
+                    "id": "Loan",
+                    "package": "com.coveros.training.library.domainobjects"
                 }
             ],
             "partition1": [
@@ -1086,24 +1102,6 @@
                 {
                     "id": "SqlData",
                     "package": "com.coveros.training.persistence"
-                }
-            ],
-            "partition4": [
-                {
-                    "id": "LibraryBookListSearchServlet",
-                    "package": "com.coveros.training.library"
-                },
-                {
-                    "id": "Book",
-                    "package": "com.coveros.training.library.domainobjects"
-                },
-                {
-                    "id": "Borrower",
-                    "package": "com.coveros.training.library.domainobjects"
-                },
-                {
-                    "id": "Loan",
-                    "package": "com.coveros.training.library.domainobjects"
                 }
             ],
             "unobserved": [
