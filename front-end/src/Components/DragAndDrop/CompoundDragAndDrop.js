@@ -52,24 +52,6 @@ CompoundDragAndDrop.prototype.run = function() {
     // Updated this function so that the bounds of the partitions will be restricted to the "common node" space.
     const updateBoundsTuples = () => {
         return cy.nodes(canBeInBoundsTuple).map( ele => {return {node: ele, ...options.dropBoundary(ele)} }); 
-        // {
-        //     let appendices = ele.children().filter(
-        //         (ele) => {
-        //             return ele.data('element_type') === 'appendix';
-        //         }
-        //     );
-        //     // Get the current bounding-box where the common nodes should lie. 
-        //     const boundingBox = {
-        //         x1: ele.boundingBox().x1,
-        //         x2: ele.boundingBox().x2,
-        //         y1: ele.boundingBox().y1,
-        //         y2: appendices[0].boundingBox().y1 
-        //     };
-        //     return {
-        //         node: ele,
-        //         bb: boundingBox
-        //     }
-        // })
     };
 
     const boundsOverlap = (bb1, bb2) => {
@@ -113,15 +95,18 @@ CompoundDragAndDrop.prototype.run = function() {
         if (!options.canMoveNode.includes(node.data("element_type"))) {
             if (node.data("element_type") === "common*") {
                 options.onMouseOver(node);
+            } else {
+                options.onMouseOut();
             }
-            let collection = cy.nodes(e => e.data('element_type') === 'ghost');
-            cy.remove(collection);
+            cy.remove(cy.getElementById('ghost_node'));
             return;
-        }
+        } 
 
         // If the element being hovered over is not a ghost node, and a potential moving node
         // has not been selected then set the potential moving node. 
-        if(node.data('element_type') !== 'ghost' && potentialMovingNode.length === 0) {
+        if(node.data('element_type') !== 'ghost' && potentialMovingNode.length === 0 || (e.target.id() !== "ghost_node" && potentialMovingNode.length > 0)) {
+            cy.remove(cy.getElementById('ghost_node'));
+
             potentialMovingNode = node;
             options.onMouseOver(potentialMovingNode);
             // Add the ghost node. 
@@ -146,7 +131,7 @@ CompoundDragAndDrop.prototype.run = function() {
     });
 
     cy.on('mouseout', (e) => {
-        if (!e.target.data || !options.canMoveNode.includes(e.target.data("element_type"))) {
+        if (e.target.data && (e.target.data("element_type") !== "common" && e.target.data("element_type") !== "common*" && e.target.data("element_type") !== "ghost")) { 
             options.onMouseOut();
         }
     })
@@ -154,8 +139,7 @@ CompoundDragAndDrop.prototype.run = function() {
     cy.on('mouseout', 'node', (e) => {
         if((e.target.data('element_type') !== 'ghost' && e.target.id() !== potentialMovingNode.id())) {
             // options.onMouseOut();
-            let collection = cy.nodes(e => e.data('element_type') === 'ghost');
-            cy.remove(collection);
+            cy.remove(cy.getElementById("ghost_node"));
             potentialMovingNode.removeClass('hide');
             potentialMovingNode = cy.collection();
         }
@@ -169,13 +153,14 @@ CompoundDragAndDrop.prototype.run = function() {
 
     cy.on('grab', 'node', e => {
         // cy.remove('edge'); <--- to prevent the edges from being removed when I move a node. 
+        cy.startBatch();
+        cy.elements().removeClass('deactivate');
         cy.elements().forEach((ele) => {
-            ele.removeClass('deactivate');
-            // TODO: Not sure if this needed?
             if(ele.data().element_type !== 'diff') {
                 ele.data().showMinusSign = false;
             }
         })
+        cy.endBatch();
         potentialMovingNode.addClass('hide');
         boundsTuples = updateBoundsTuples();
     });
@@ -216,7 +201,10 @@ CompoundDragAndDrop.prototype.run = function() {
             } else {
                 // Move it to a new partition
                 options.onMovedNode(position, potentialMovingNode, chosenParent);
+
+                cy.startBatch();
                 cy.elements().addClass('addPlusSign');
+                cy.endBatch();
             }
         }
         

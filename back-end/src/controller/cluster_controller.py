@@ -2,6 +2,7 @@ from flask import request, jsonify, Flask, Blueprint, send_file
 import os
 import csv
 import _thread
+import json
 
 cluster_dir = os.path.dirname(os.path.realpath(__file__))
 dependency_files_dir = os.path.dirname(cluster_dir) + '/../dependencyGraphs/'
@@ -11,7 +12,8 @@ main = Blueprint('main', __name__)
 @main.route('/<projectname>/<static>/<dynamic>/<classnames>/<classterms>/<commits>/<contributors>', methods=['GET', 'POST'])
 def main_index(projectname, static, dynamic, classnames, classterms, commits, contributors):
     try:
-        graphData = request.json
+        #graphData = request.json
+        graphData = json.loads(request.data)
         weightedRelationships = {
             'static': float(static),
             'dynamic': float(dynamic),
@@ -39,23 +41,35 @@ def main_index(projectname, static, dynamic, classnames, classterms, commits, co
         filteredEdgeGraph = {}
         for key in edgeRelationships:
             for edge_dep in edgeRelationships[key]['links']:
+
+                if weightedRelationships[key] == 0:
+                    continue
+
                 caller_class, callee_class, edgeWeight = edge_dep
                 # Normalize the edge weight
-                edgeWeight = float(edgeWeight)/edgeRelationships[key]['max_weight'] * (weightedRelationships[key] * 100)
-                edgeWeight = round(edgeWeight)
+                edgeWeight = (float(edgeWeight) / edgeRelationships[key]['max_weight']) * (weightedRelationships[key])
+                # edgeWeight = round(edgeWeight)
 
-                if key == 'commits' or key == 'contributors':
-                    edgeWeight = edgeWeight - round(edgeWeight * 0.5)
-                elif key == 'classnames':
-                    edgeWeight = edgeWeight - round(edgeWeight * 0.2)
+                # Perform a linear conversion 
+                OldRange = 1  
+                NewRange = 10
+                NewValue = round(((edgeWeight * NewRange) / OldRange))
+                
+                if NewValue == 0:
+                    NewValue = 1
+
+                # if key == 'commits' or key == 'contributors':
+                #     edgeWeight = edgeWeight - round(edgeWeight * 0.5)
+                # elif key == 'classnames':
+                #     edgeWeight = edgeWeight - round(edgeWeight * 0.2)
 
                 if caller_class not in filteredEdgeGraph:
                     filteredEdgeGraph[caller_class] = {}
 
-                if callee_class not in filteredEdgeGraph[caller_class] and edgeWeight > 0:
-                    filteredEdgeGraph[caller_class][callee_class] = edgeWeight
+                if callee_class not in filteredEdgeGraph[caller_class] and NewValue > 0:
+                    filteredEdgeGraph[caller_class][callee_class] = NewValue
                 elif edgeWeight > 0:
-                    filteredEdgeGraph[caller_class][callee_class] += edgeWeight
+                    filteredEdgeGraph[caller_class][callee_class] += NewValue
 
         # Write the edge graph to an mdg file with combined relationship types
         dependency_graph_file_name = dependency_files_dir + projectname + "/" + static + "-" + dynamic + "-" + classnames + "-" + classterms + "-" + commits + "-" + contributors + ".mdg"
@@ -81,6 +95,7 @@ def main_index(projectname, static, dynamic, classnames, classterms, commits, co
         # Now convert the generated decomposition into json format and return it back to the client.
         decomposition_file_name = output_dir + "/" + static + "-" + dynamic + "-" + classnames + "-" + classterms + "-" + commits + "-" + contributors + ".mdg.bunch"
         partitions = {}
+
         existing_class_names = []
         with open(decomposition_file_name, 'r') as bunchFile:
             lines = bunchFile.readlines()
@@ -97,7 +112,6 @@ def main_index(projectname, static, dynamic, classnames, classterms, commits, co
                 entities = entities.split(', ')
                 for entity in entities:
                     entity = entity.replace('\n', '')
-                    entity = entity.split('.')[-1]
                     partitions['partition{}'.format(i)].append({"id": entity})
                     existing_class_names.append(entity)
                 i += 1
@@ -115,7 +129,6 @@ def main_index(projectname, static, dynamic, classnames, classterms, commits, co
                 missing_class_names.append(className)
 
         partitions['unobserved'] = []
-
         for missing_class in missing_class_names:
             partitions['unobserved'].append(
                 {
@@ -138,4 +151,4 @@ def fetch_demo_json_file(projectname):
         return "ERROR: The demo JSON file does not exist...", 400
 
 
-        
+

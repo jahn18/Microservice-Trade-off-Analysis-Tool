@@ -71,7 +71,11 @@ export class FileInputView extends React.Component<IFileInputViewProps, IFileInp
                                         id="Demo-file-selection"
                                         variant="outlined"
                                         // value={selectedDemoFile}
-                                        onChange={(event, projectName: any) => this.props.getDemoGraph(projectName.props.value)}
+                                        onChange={(event, projectName: any) => {
+                                            if(projectName.props.value !== "") {
+                                                this.props.getDemoGraph(projectName.props.value)
+                                            }
+                                        }}
                                     >
                                         <MenuItem value="">
                                             <em>None</em>

@@ -1,3 +1,5 @@
+import * as LocalStorage from "../../../store/localStorage";
+
 export const STORE_ALIAS = "FileInput";
 
 export interface IFileInputViewUIState {
@@ -11,5 +13,5 @@ export interface IFileInputViewStoreState {
 }
 
 export const defaultState: IFileInputViewStoreState = {
-    jsonGraph: {}
+    jsonGraph: LocalStorage.loadInputFile() || {}
 }

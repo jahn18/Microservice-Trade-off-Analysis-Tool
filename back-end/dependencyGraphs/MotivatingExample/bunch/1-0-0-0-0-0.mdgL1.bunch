@@ -1,0 +1,3 @@
+SS(IPersistenceLayer.ss) = DinnerPrices, AlcoholResult, AlcoholCalculator, IPersistenceLayer, WebAppListener, DbServlet, LoginUtils, LoginServlet
+SS(PersistenceLayer.ss) = CheckUtils, AssertionException, LibraryRegisterBorrowerServlet, LibraryActionResults, LibraryLendServlet, LibraryRegisterBookServlet, EmptyDataSource, NotImplementedException, LibraryBorrowerListSearchServlet, LibraryUtils, LibraryBookListAvailableServlet, Borrower, LibraryBookListSearchServlet, ParameterObject, User, SqlRuntimeException, PersistenceLayer, SqlData, Book, Loan
+SS(RegistrationUtils.ss) = RegisterServlet, RegistrationUtils, PasswordResultEnums, PasswordResult, RegistrationResult, RegistrationStatusEnums

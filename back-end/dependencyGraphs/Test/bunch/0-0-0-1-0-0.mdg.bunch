@@ -1,0 +1,13 @@
+SS(LoginServlet.ss) = LoginUtils, LoginServlet
+SS(NotImplementedException.ss) = EmptyDataSource, IPersistenceLayer, SqlRuntimeException, PersistenceLayer, SqlData, ParameterObject, NotImplementedException
+SS(MathServlet.ss) = FibServlet, ServletUtils, AckServlet, RegisterServlet, DbServlet, MathServlet
+SS(Ackermann.ss) = FibonacciIterative, Fibonacci, AckermannIterative, Ackermann
+SS(DinnerPrices.ss) = AlcoholResult, AlcoholCalculator, DinnerPrices
+SS(WebAppListener.ss) = CartesianProduct, WebAppListener
+SS(Calculator.ss) = FunctionalField, TailRecursive, Calculator
+SS(StringUtils.ss) = AssertionException, CheckUtils, StringUtils
+SS(RegistrationUtils.ss) = User, RegistrationStatusEnums, RegistrationResult, PasswordResult, PasswordResultEnums, RegistrationUtils
+SS(LibraryBookListAvailableServlet.ss) = LibraryRegisterBookServlet, LibraryBookListSearchServlet, LibraryBookListAvailableServlet
+SS(LibraryBorrowerListSearchServlet.ss) = LibraryRegisterBorrowerServlet, LibraryLendServlet, LibraryBorrowerListSearchServlet
+SS(Loan.ss) = Borrower, Loan
+SS(LibraryUtils.ss) = Book, LibraryActionResults, LibraryUtils

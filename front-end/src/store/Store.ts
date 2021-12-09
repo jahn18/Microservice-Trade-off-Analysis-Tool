@@ -1,10 +1,10 @@
 import { Action } from './ActionTools';
 import { Reducer } from 'react';
-import { combineReducers, applyMiddleware } from 'redux';
-import { createStore } from 'redux'
+import { applyMiddleware, combineReducers, createStore } from 'redux'
 import createSagaMiddleware, { Saga } from 'redux-saga';
 import { put, select, takeEvery } from 'redux-saga/effects';
 import { IActionPayload, IPlugin, IPluginStoreState, pluginReducer, PLUGIN_ADD } from './Plugin';
+import { saveInputFile } from './localStorage';
 
 export default class Store {
     public static sagaMiddleware = createSagaMiddleware();
@@ -15,6 +15,11 @@ export default class Store {
         Store.addSaga(watchAdd);
 
         store.getState().plugin.replaceReducer = store.replaceReducer.bind(store);
+
+        store.subscribe(() => {
+            saveInputFile(store.getState());
+        });
+
         // Return the modified store
         return store
     }

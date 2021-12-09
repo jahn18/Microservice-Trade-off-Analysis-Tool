@@ -1,0 +1,13 @@
+SS(com.coveros.training.cartesianproduct.package-info.ss) = SqlData, com.coveros.training.authentication.package-info, com.coveros.training.expenses.package-info, IPersistenceLayer, Loan, com.coveros.training.tomcat.package-info, com.coveros.training.persistence.package-info, com.coveros.training.authentication.domainobjects.package-info, AckermannIterative, RegistrationResult, PasswordResultEnums, StringUtils, EmptyDataSource, CartesianProduct, AckServlet, SqlRuntimeException, DinnerPrices, AlcoholCalculator, Ackermann, ServletUtils, com.coveros.training.cartesianproduct.package-info
+SS(LoginServlet.ss) = FibonacciIterative, com.coveros.training.mathematics.package-info, LoginServlet
+SS(User.ss) = LibraryRegisterBorrowerServlet, NotImplementedException, User
+SS(CheckUtils.ss) = RegistrationUtils, LoginUtils, Calculator, AssertionException, PersistenceLayer, CheckUtils
+SS(LibraryActionResults.ss) = AlcoholResult, LibraryActionResults
+SS(FunctionalField.ss) = TailRecursive, FunctionalField
+SS(com.coveros.training.helpers.package-info.ss) = com.coveros.training.library.package-info, com.coveros.training.helpers.package-info
+SS(MathServlet.ss) = RegisterServlet, WebAppListener, MathServlet
+SS(Fibonacci.ss) = LibraryBookListAvailableServlet, ParameterObject, com.coveros.training.library.domainobjects.package-info, Fibonacci
+SS(Borrower.ss) = RegistrationStatusEnums, Borrower
+SS(LibraryRegisterBookServlet.ss) = Book, DbServlet, LibraryRegisterBookServlet
+SS(LibraryBookListSearchServlet.ss) = LibraryLendServlet, LibraryBorrowerListSearchServlet, LibraryBookListSearchServlet
+SS(LibraryUtils.ss) = PasswordResult, FibServlet, LibraryUtils

@@ -1,0 +1,6 @@
+SS(com.coveros.training.tomcat.package-info.ss) = com.coveros.training.authentication.package-info, com.coveros.training.persistence.package-info, com.coveros.training.helpers.package-info, com.coveros.training.library.package-info, com.coveros.training.library.domainobjects.package-info, com.coveros.training.mathematics.package-info, com.coveros.training.cartesianproduct.package-info, com.coveros.training.expenses.package-info, com.coveros.training.authentication.domainobjects.package-info, com.coveros.training.tomcat.package-info
+SS(ServletUtils.ss) = Book, LibraryBookListAvailableServlet, LibraryBookListSearchServlet, Borrower, LibraryBorrowerListSearchServlet, DbServlet, MathServlet, FibServlet, ServletUtils, AckServlet, LoginServlet, LibraryRegisterBorrowerServlet, LibraryRegisterBookServlet, RegisterServlet, LibraryLendServlet, LibraryUtils, RegistrationUtils, CheckUtils, LoginUtils, StringUtils
+SS(FibonacciIterative.ss) = AckermannIterative, Ackermann, FibonacciIterative, Fibonacci
+SS(LibraryActionResults.ss) = AlcoholCalculator, Calculator, LibraryActionResults, AlcoholResult, RegistrationResult, RegistrationStatusEnums, PasswordResult, PasswordResultEnums
+SS(PersistenceLayer.ss) = IPersistenceLayer, PersistenceLayer
+SS(SqlData.ss) = EmptyDataSource, SqlRuntimeException, SqlData

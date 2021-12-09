@@ -49,11 +49,11 @@ class App extends React.Component<typeof mapDispatchToProps> {
         <Router>
           <StyletronProvider value={engine} debugAfterHydration>
             <BaseProvider theme={LightTheme}>
-              <Switch>
-                <Route exact path="/" component={FileInput}/>
-                <Route exact path="/tool" component={DashboardView} />
-                {/* <Route exact path="/diff-view" component={DiffViewUI} /> */}
-              </Switch>
+                <Switch>
+                  <Route exact path="/" component={FileInput}/>
+                  <Route exact path="/tool" component={DashboardView} />
+                  {/* <Route exact path="/diff-view" component={DiffViewUI} /> */}
+                </Switch>
             </BaseProvider>
           </StyletronProvider>
         </Router>
