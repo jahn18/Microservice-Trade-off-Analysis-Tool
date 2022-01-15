@@ -265,7 +265,7 @@ export class DiffDecomposition extends React.Component {
                         x1: ele.boundingBox().x1,
                         x2: ele.boundingBox().x2,
                         y1: ele.boundingBox().y1,
-                        y2: appendices[0].boundingBox().y1 
+                        y2: appendices.length > 0 ? appendices[0].boundingBox().y1 : ele.boundingBox().y2
                     };
                     return {
                         node: ele,
@@ -605,8 +605,14 @@ export class DiffDecomposition extends React.Component {
 
         elementsSelectedOnTable.forEach((movedElementInfo) => {
             const {movedNode, currPartition, currPartitionRelativePos} = movedElementInfo; 
+
+            let currentMovedNode = cy.getElementById(movedNode.data('label'));           
+            let parentNode = currentMovedNode.parent();
+            if (parentNode.children().length === 1) {
+                this.state.cy.remove(parentNode);
+            }
             // Remove the moved node. 
-            cy.remove(cy.getElementById(movedNode.data('label'))); 
+            cy.remove(currentMovedNode); 
             if(movedNode.data('element_type') === element_types.common_node) {
                 movedNode.data().parent = currPartition.id();
                 cy.add(movedNode.position({
@@ -644,11 +650,29 @@ export class DiffDecomposition extends React.Component {
                 this.onUnhighlightNodes();
             }
         }
+
+        if(prevProps.searchedClassName !== this.props.searchedClassName) {
+            this._onSearchedClassName();
+        }
     }
 
-    highlightElements = (movedElementInfo, allSelectedElements) => {
-        if(this._changeHistory.isLastestMove(movedElementInfo)) {
-            this.highlightSelectedElements(movedElementInfo, allSelectedElements);
+    _onSearchedClassName() {
+        if(this.props.searchedClassName !== "") {
+            let selectedElements = this.state.cy.elements().filter((ele) => {
+                return (ele.data("label") && ele.data().label.toLowerCase().startsWith(this.props.searchedClassName.toLowerCase()) && !ele.isEdge()) || ele.data('element_type') === this.state.element_types.invisible_node;
+            });
+
+            selectedElements.forEach((ele) => {
+                if (!ele.isParent()) {
+                    selectedElements = selectedElements.union(ele.parent());
+                    if (ele.parent().parent()) {
+                        selectedElements = selectedElements.union(ele.parent().parent());
+                    }
+                }
+            });
+
+            let unselectedElements = this.state.cy.elements().difference(selectedElements);
+            unselectedElements.addClass('deactivate');
         }
     }
 
@@ -660,7 +684,7 @@ export class DiffDecomposition extends React.Component {
         return (
             <div>
                 <div className="custom-graph-container">
-                    <div style={{height: '100%', width: '100%', position: 'fixed'}} ref={ref => (this.ref = ref)}></div>
+                    <div style={{height: '100%', width: '79%', position: 'fixed'}} ref={ref => (this.ref = ref)}></div>
                 </div>
             </div>
         );

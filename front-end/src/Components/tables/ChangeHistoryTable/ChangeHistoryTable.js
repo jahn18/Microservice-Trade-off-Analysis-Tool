@@ -4,10 +4,9 @@ import TableCell from '@material-ui/core/TableCell';
 import Checkbox from '@material-ui/core/Checkbox';
 import Tooltip from '@material-ui/core/Tooltip';
 import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import Collapse from '@material-ui/core/Collapse';
-import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
-import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
+import TableBody from '@material-ui/core/TableBody'
+import { Typography } from "@mui/material";
+import { TableContainer, TableHead } from "@mui/material";
 import IconButton from '@material-ui/core/IconButton';
 import UndoIcon from '@material-ui/icons/Undo';
 
@@ -25,8 +24,6 @@ import UndoIcon from '@material-ui/icons/Undo';
  * @param {(allSelectedElements) => void} props.onSelectedElements function to deal with elements when they are selected.
  */
 export const ChangeHistoryTable = (props) => {
-    const [tableState, setTableState] = useState(false);
-
     const changeSelectedEles = (isSelected, newSelectedEle) => {
         if (isSelected) {
             props.onSelectedElements([...props.selectedElements, newSelectedEle]) 
@@ -45,7 +42,7 @@ export const ChangeHistoryTable = (props) => {
         formatMoveOperationContent,
     } = props;
 
-    const changeHistoryList = allMoveOperations.map((movedElementOperation, index) =>
+    let changeHistoryList = allMoveOperations.map((movedElementOperation, index) =>
         <TableRow key={`move-operation-${index}`}
             hover={true}
             onMouseOver={() => onMouseOver(movedElementOperation)}
@@ -63,54 +60,75 @@ export const ChangeHistoryTable = (props) => {
         </TableRow>
     );
 
+    if (changeHistoryList.length === 0) {
+        changeHistoryList = [
+            <TableRow>
+                <TableCell>
+                    <Typography style={{color: "grey"}} variant="overline">
+                        Move an element...
+                    </Typography>
+                </TableCell>
+            </TableRow>
+        ]
+    }
+
+    let margin = 2;
+    if (props.selectedElements.length > 0) {
+        margin = 0;
+    }
+
     return (
-        <Table stickyHeader aria-label="change-history-table" size="small">
-            <TableBody>
-                <TableRow>
-                    {props.selectedElements.length > 0 ? (
-                        <TableCell // onMouseOver={() => this.highlightSelectedElements(null)}
-                        >
-                            <IconButton 
-                                size="small" 
-                                onClick={() => setTableState(!tableState)}
+        <>
+        <TableContainer sx={{marginTop: `${margin}%`}}>
+            <Table stickyHeader aria-label="change-history-table" size="small">
+                <TableHead>
+                    <TableRow>
+                        {props.selectedElements.length > 0 ? (
+                            <TableCell // onMouseOver={() => this.highlightSelectedElements(null)}
+                                style={{position: "sticky"}}
                             >
-                                {tableState ? <KeyboardArrowUpIcon/> : <KeyboardArrowDownIcon/>}
-                            </IconButton>
-                        {props.selectedElements.length} selected
-                            <Tooltip title="Undo">
-                                <IconButton 
-                                    aria-label="undo" 
-                                    onClick={() => {
-                                        props.resetChangeHistory();
-                                        props.onSelectedElements([]);
-                                    }}
-                                >
-                                    <UndoIcon/>
-                                </IconButton>
-                            </Tooltip>
-                        </TableCell>
-                        ) : (
-                        <TableCell style={{'font-weight': 'bold'}}>
-                            <IconButton 
-                                size="small" 
-                                onClick={() => setTableState(!tableState)}
-                            >
-                                {tableState ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                            </IconButton>
-                            Change History
-                        </TableCell> 
-                    )}
-                </TableRow>
-                <TableRow>
-                    <TableCell style={{ paddingBottom: 0, paddingTop: 0}} >
-                        <Collapse in={tableState} timeout="auto" unmountOnExit>
-                            <Table size="small">
-                                {changeHistoryList}
-                            </Table>
-                        </Collapse>
-                    </TableCell>
-                </TableRow>
-            </TableBody>
-        </Table>
+                            {props.selectedElements.length} selected
+                                <Tooltip title="Undo">
+                                    <IconButton 
+                                        aria-label="undo" 
+                                        onClick={() => {
+                                            props.resetChangeHistory();
+                                            props.onSelectedElements([]);
+                                        }}
+                                    >
+                                        <UndoIcon/>
+                                    </IconButton>
+                                </Tooltip>
+                            </TableCell>
+                            ) : (
+                            <TableCell style={{'font-weight': 'bold'}}>
+                                Change History
+                            </TableCell> 
+                        )}
+                    </TableRow>
+                </TableHead>
+            </Table>
+        </TableContainer>
+        <TableContainer
+                style={{
+                    // border: '1px solid grey',
+                    maxHeight: "48%",
+                }}
+            >
+                <Table stickyHeader aria-label="change-history-table" size="small">
+                    <TableBody>
+                        <TableRow>
+                            <TableCell style={{ paddingBottom: 0, paddingTop: 0}} >
+                                {/* <Collapse in={tableState} timeout="auto" unmountOnExit> */}
+                                    <Table size="small">
+                                        {changeHistoryList}
+                                    </Table>
+                                {/* </Collapse> */}
+                            </TableCell>
+                        </TableRow>
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </>
     );
 }

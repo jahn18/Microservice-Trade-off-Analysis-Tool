@@ -82,8 +82,8 @@ export class JSONGraphParserUtils {
         } 
 
         if (jsonGraph["unobserved"] && jsonGraph["unobserved"].length > 0) {
-            partitionList.push(new PartitionNode(`partition${partitions.length }`, 'unobserved')); 
-            classNodeList.push(this._getClassNodes(jsonGraph["unobserved"], `partition${partitions.length}`));
+            partitionList.push(new PartitionNode(`unobserved`, 'unobserved')); 
+            classNodeList.push(this._getClassNodes(jsonGraph["unobserved"], 'unobserved'));
         }
 
         return new Decomposition(classNodeList, partitionList, version);

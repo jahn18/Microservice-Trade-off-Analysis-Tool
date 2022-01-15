@@ -32,7 +32,7 @@ import Utils from "../../../utils/utils";
  * @param {Array} props.rows 
  */
 export const MetricTable = (props) => {    
-    const [tableState, setTableState] = React.useState(false);
+    // const [tableState, setTableState] = React.useState(false);
 
     const relationshipTypeTable = props.rows.map((row, i) => 
         <TableRow key={i}>
@@ -49,18 +49,18 @@ export const MetricTable = (props) => {
             <TableBody>
                 <TableRow>
                     <TableCell style={{'font-weight': 'bold'}}>
-                        <IconButton 
+                        {/* <IconButton 
                             size="small" 
                             onClick={() => setTableState(!tableState)}
                         >
                             {tableState ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                        </IconButton>
+                        </IconButton> */}
                         {props.title}
                     </TableCell>
                 </TableRow>
                 <TableRow>
                     <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} >
-                        <Collapse in={tableState} timeout="auto" unmountOnExit>
+                        {/* <Collapse in={tableState} timeout="auto" unmountOnExit> */}
                             <Table size="small">
                                 <TableHead>
                                     {props.headers.map((headerRow) => 
@@ -76,7 +76,7 @@ export const MetricTable = (props) => {
                                 </TableHead>
                                 {relationshipTypeTable}
                             </Table>
-                        </Collapse>
+                        {/* </Collapse> */}
                     </TableCell>
                 </TableRow>
             </TableBody>

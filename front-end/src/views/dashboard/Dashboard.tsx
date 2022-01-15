@@ -29,7 +29,7 @@ export class DashboardViewBase extends React.PureComponent<DashboardViewProps> {
         return (
             <>
             <Box>
-                <Grid container spacing={1}>
+                <Grid container>
                     <Grid item xs={12} md={12}>
                         <Navigation 
                             tabs={{

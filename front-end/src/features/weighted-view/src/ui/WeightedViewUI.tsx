@@ -6,7 +6,7 @@ import { IWeightedViewUIState } from "../WeightedViewTypes";
 import { getSelectors } from "./WeightedViewUISelectors";
 import { JSONGraphParserUtils } from "../../../../utils/JSONGraphParserUtils";
 import { fetchWeightedDecompositionAction, setWeightsAction } from "../WeightedViewActions";
-import { Table, TableContainer, TableBody, TableRow, Slider, Paper, Button } from "@mui/material";
+import { Table, TableContainer, TableBody, TableRow, Slider, Paper, Button, Grid, Box } from "@mui/material";
 import { Metrics } from "../../../metric-table/src/ui/MetricTableUI";
 import Utils from "../../../../utils";
 import { addNewMoveAction, selectElementsAction, undoMoveAction, resetChangeHistoryAction } from "../../../change-history-table/src/ChangeHistoryActions";
@@ -15,6 +15,7 @@ import { ChangeHistoryService } from "../../../change-history-table/service/Chan
 import { CustomDecomposition } from "../../../../views/custom-decomposition/CustomDecomposition";
 import { resetCytoscapeGraphAction, saveCytoscapeGraphAction, updateRelationshipTypeAction } from "../../../custom-view/src/CustomViewActions";
 import WeightedRelationshipSelectionTable from "../../../../components/SelectionTables/WeightedRelationshipTable";
+import { SearchBar } from "../../../../components/SearchBar/SearchBar";
 
 export interface WeightedViewProps extends WithStylesProps<typeof styles>, IWeightedViewUIState, TActionTypes {
     relationships: any,
@@ -25,6 +26,7 @@ interface WeightedViewState {
     mouseOverRow: any,
     reset: boolean,
     newWeights: boolean
+    searchedClassName: string
 }
 
 class WeightedViewBase extends React.PureComponent<WeightedViewProps> {
@@ -32,6 +34,7 @@ class WeightedViewBase extends React.PureComponent<WeightedViewProps> {
         mouseOverRow: [],
         reset: false,
         newWeights: false,
+        searchedClassName: ""
     }
 
     render() {
@@ -55,108 +58,107 @@ class WeightedViewBase extends React.PureComponent<WeightedViewProps> {
                     </div> 
                     : 
                     <div>
-                        <CustomDecomposition 
-                            decomposition={this._getCytoscapeGraph(this._getSelectedTab())}
-                            selectedTab={this._getSelectedTab()}
-                            relationshipTypes={this._getRelationshipTypes(this._getSelectedTab())}
-                            saveGraph={this._saveCytoscapeGraph.bind(this)}
-                            addMove={this._addMove.bind(this)}
-                            undoMove={this._undoMove.bind(this)}
-                            selectedElements={[...this._getSelectedElementsChangeHistory(), ...this.state.mouseOverRow]}
-                            mouseOverChangeHistory={this.state.mouseOverRow.length !== 0}
-                            resetMoves={this.state.reset}
-                            clearChangeHistoryTable={() => {
-                                this.setState({reset: false});
-                            }}
-                        />
-                          <div
-                                style={{
-                                    position: "fixed",
-                                    marginTop: "0.75%",
-                                    "left": "1%",
-                                    display: "flex"
-                                }}
-                            >
-                                <Button variant="outlined" color="primary"
-                                    style={{
-                                        'left': '10%'
+                        <Grid container direction={'row'} style={{position: "fixed", display: "flex"}}>
+                            <Grid item xs={9.5}>
+                                <CustomDecomposition 
+                                    decomposition={this._getCytoscapeGraph(this._getSelectedTab())}
+                                    selectedTab={this._getSelectedTab()}
+                                    relationshipTypes={this._getRelationshipTypes(this._getSelectedTab())}
+                                    saveGraph={this._saveCytoscapeGraph.bind(this)}
+                                    addMove={this._addMove.bind(this)}
+                                    undoMove={this._undoMove.bind(this)}
+                                    selectedElements={[...this._getSelectedElementsChangeHistory(), ...this.state.mouseOverRow]}
+                                    mouseOverChangeHistory={this.state.mouseOverRow.length !== 0}
+                                    resetMoves={this.state.reset}
+                                    clearChangeHistoryTable={() => {
+                                        this.setState({reset: false});
                                     }}
-                                    onClick={() => {
-                                        this._resetAllMoves();
-                                        this._setWeights({});
-                                        delete this.props.cytoscapeGraphs["weighted-view"];
-                                        this.setState({newWeights: true});
-                                    }
-                                }>
-                                    New Weights
+                                    searchedClassName={this.state.searchedClassName}
+                                />
+                                <Button variant="outlined" color="primary"
+                                        style={{
+                                            marginTop: 10,
+                                            marginLeft: 10
+                                        }}
+                                        onClick={() => {
+                                            this._resetAllMoves();
+                                            this._setWeights({});
+                                            delete this.props.cytoscapeGraphs["weighted-view"];
+                                            this.setState({newWeights: true});
+                                        }
+                                    }>
+                                        New Weights
                                 </Button>
-                            </div>
-                        <TableContainer 
-                            component={Paper}
-                            style={{
-                                width: "30%",
-                                border: '1px solid grey',
-                                'left': '69%',
-                                position: 'fixed',
-                                maxHeight: '700px'
-                            }}
-                        >
-                            <Table stickyHeader size="small">
-                                <TableBody >
-                                    <TableRow>
-                                        <Metrics 
-                                            headers={[["Coupling & Cohesion (0-100%)"], ["Dependencies", "Values", "Edge Filter"]]}
-                                            title={"Metrics + Edge Filter"}
-                                            rows={
-                                                Object.keys(this._getRelationshipTypes(this._getSelectedTab())).map((key) => {
-                                                    return [
-                                                        key, 
-                                                        Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig()).toFixed(2),
-                                                        <Slider 
-                                                            size="small"
-                                                            aria-labelledby="discrete-slider"
-                                                            valueLabelDisplay="auto"
-                                                            value={this._getRelationshipTypes(this._getSelectedTab())[key].minimumEdgeWeight}
-                                                            step={10}
-                                                            marks={true}
-                                                            defaultValue={0}
-                                                            min={0}
-                                                            max={100}
-                                                            style={{
-                                                                width: '100%',
-                                                                color: this.props.colors[key]
-                                                            }}
-                                                            onChange={(event, weight) => {
-                                                                const relationshipType = this._getRelationshipTypes(this._getSelectedTab());
-                                                                relationshipType[key].minimumEdgeWeight = weight; 
-                                                                this._updateRelationshipType(this._getSelectedTab(), relationshipType)
-                                                            }}
-                                                        />
-                                                    ];
-                                                })
-                                            }
-                                        />
-                                    </TableRow>
-                                    <TableRow>
-                                        <ChangeHistory 
-                                            selectedTab={this._getSelectedTab()}
-                                            formatMoveOperationContent={new ChangeHistoryService().printMoveOperationIndividualView}
-                                            onSelectedElements={(elementList: any) => {
-                                                this._setSelectedElementsChangeHistory(elementList);
-                                            } }
-                                            resetChangeHistory={() => {
-                                                this._getSelectedElementsChangeHistory().forEach((moveOperation: any) => {
-                                                    this._undoMove(moveOperation);
-                                                });
-                                                this.setState({reset: true});
-                                            } }
-                                            onMouseOver={(ele: any) => { this.setState({ mouseOverRow: [ele] }); } }
-                                            onMouseOut={() => { this.setState({ mouseOverRow: [] }); } } 
-                                        />
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
+                            </Grid>
+                            <Grid item xs={2.5}>
+                                <Box style={{width: "100%", height: "100vh", border: '1px solid grey'}}>
+                                    <TableContainer 
+                                        style={{
+                                            maxHeight: "100%"
+                                        }}
+                                    >
+                                        <Table stickyHeader size="small">
+                                            <TableBody >
+                                                <TableRow>
+                                                    <SearchBar 
+                                                        changeClassName={(className: string) => this.setState({searchedClassName: className})}
+                                                    />
+                                                </TableRow>
+                                                <TableRow>
+                                                    <Metrics 
+                                                        headers={[["Coupling & Cohesion"], ["Dependencies", "Values", "Edge Filter"]]}
+                                                        title={"Metrics + Edge Filter"}
+                                                        rows={
+                                                            Object.keys(this._getRelationshipTypes(this._getSelectedTab())).map((key) => {
+                                                                return [
+                                                                    key, 
+                                                                    Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig()).toFixed(2),
+                                                                    <Slider 
+                                                                        size="small"
+                                                                        aria-labelledby="discrete-slider"
+                                                                        valueLabelDisplay="auto"
+                                                                        value={this._getRelationshipTypes(this._getSelectedTab())[key].minimumEdgeWeight}
+                                                                        step={10}
+                                                                        marks={true}
+                                                                        defaultValue={0}
+                                                                        min={0}
+                                                                        max={100}
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            color: this.props.colors[key]
+                                                                        }}
+                                                                        onChange={(event, weight) => {
+                                                                            const relationshipType = this._getRelationshipTypes(this._getSelectedTab());
+                                                                            relationshipType[key].minimumEdgeWeight = weight; 
+                                                                            this._updateRelationshipType(this._getSelectedTab(), relationshipType)
+                                                                        }}
+                                                                    />
+                                                                ];
+                                                            })
+                                                        }
+                                                    />
+                                                </TableRow>
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                    <ChangeHistory 
+                                        selectedTab={this._getSelectedTab()}
+                                        formatMoveOperationContent={new ChangeHistoryService().printMoveOperationIndividualView}
+                                        onSelectedElements={(elementList: any) => {
+                                            this._setSelectedElementsChangeHistory(elementList);
+                                        } }
+                                        resetChangeHistory={() => {
+                                            this._getSelectedElementsChangeHistory().forEach((moveOperation: any) => {
+                                                this._undoMove(moveOperation);
+                                            });
+                                            this.setState({reset: true});
+                                        } }
+                                        onMouseOver={(ele: any) => { this.setState({ mouseOverRow: [ele] }); } }
+                                        onMouseOut={() => { this.setState({ mouseOverRow: [] }); } } 
+                                    />
+                                </Box>
+                            </Grid>
+                        </Grid>
                     </div>
                 }
             </>

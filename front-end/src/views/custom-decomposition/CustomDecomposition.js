@@ -8,7 +8,6 @@ import cxtmenu from 'cytoscape-cxtmenu';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import CompoundDragAndDrop from '../../components/DragAndDrop/CompoundDragAndDrop';
 import Utils from '../../utils';
-import _ from 'underscore';
 
 cytoscape.use( cxtmenu );
 cytoscape.use( nodeHtmlLabel );
@@ -213,9 +212,6 @@ export class CustomDecomposition extends React.Component {
             cy.zoom(this.props.decomposition.zoom);
         } else {
             cy.add(this.props.decomposition.elements);
-            let numOfPartitions = this.props.decomposition.elements.reduce((numOfPartitions, ele) => {
-                return (ele.data.element_type === "partition") ? numOfPartitions + 1 : numOfPartitions; 
-            }, 0);
             cy.layout({
                 name: 'cose-bilkent',
                 nodeDimensionsIncludeLabels: true,
@@ -224,7 +220,7 @@ export class CustomDecomposition extends React.Component {
                 fit: true,
                 animate: false
             }).run();
-            this.adjustPartitionPositions(cy, numOfPartitions, 5);
+            this.adjustPartitionPositions(cy, 5);
             cy.fit(cy.elements(), 100);
         }
 
@@ -242,7 +238,7 @@ export class CustomDecomposition extends React.Component {
         cy.elements().removeClass('highlight').removeClass('deactivate').removeClass('addPlusSign');
     }
 
-    adjustPartitionPositions(cy, numPartitions, partitions_per_row) {
+    adjustPartitionPositions(cy, partitions_per_row) {
         let previous_partition_position = {
             x: 0,
             y: 0,
@@ -250,8 +246,8 @@ export class CustomDecomposition extends React.Component {
             first_row_y2_pos: 0
         }
         
-        for(let i = 0; i < numPartitions; i++ ) {
-            let partition = cy.getElementById(`partition${i}`);
+        cy.elements().filter((ele) => ele.data().element_type === "partition").map((node) => node.data().id).sort().forEach((partitionName, i) => {
+            let partition = cy.getElementById(partitionName);
             if(i % partitions_per_row === 0) {
                 partition.shift({
                     x: previous_partition_position.first_row_x1_pos - partition.boundingBox().x1,
@@ -270,13 +266,12 @@ export class CustomDecomposition extends React.Component {
             if(partition.boundingBox().y2 > previous_partition_position.first_row_y2_pos) {
                 previous_partition_position.first_row_y2_pos = partition.boundingBox().y2;
             }
-        }
+        });
     }
 
     onSelectedNode(ele) { 
         const {
             cy,
-            edges
         } = this.state; 
 
         let sel = ele;
@@ -338,9 +333,7 @@ export class CustomDecomposition extends React.Component {
             edges
         } = this.state; 
 
-        if(
-            // !sourceNode.hasClass('deactivate') &&
-            sourceNode.data().element_type !== element_types.partition) {
+        if(sourceNode.data().element_type !== element_types.partition) {
 
             let prev_element = sourceNode.data().element_type;
             let prev_partition = sourceNode.data().partition; 
@@ -417,13 +410,20 @@ export class CustomDecomposition extends React.Component {
         elementsSelectedOnTable.forEach((movedElementInfo) => {
             const {movedNode, currPartition, currPartitionRelativePos} = movedElementInfo; 
             // Remove the moved node. 
-            cy.remove(cy.getElementById(movedNode.data('id'))); 
+            let currentMovedNode = cy.getElementById(movedNode.data('label'));
+            let parentNode = currentMovedNode.parent();
+            if (parentNode.children().length === 1) {
+                cy.remove(parentNode);
+            } 
+            cy.remove(currentMovedNode); 
             movedNode.data().parent = currPartition.id();
             cy.add(movedNode.position({
                 x: currPartition.position('x') + currPartitionRelativePos.x,
                 y: currPartition.position('y') + currPartitionRelativePos.y
             }));
         });
+
+        cy.elements().removeClass('addPlusSign');
         cy.edges().remove();
         cy.add(edges);
         this.props.saveGraph(cy.json());
@@ -431,7 +431,7 @@ export class CustomDecomposition extends React.Component {
         cy.zoom(zoom);
     }
 
-    componentDidUpdate(prevProps, prevState, snapshot) {
+    componentDidUpdate(prevProps) {
         const {
             cy
         } = this.state;
@@ -461,6 +461,27 @@ export class CustomDecomposition extends React.Component {
             cy.add(newEdges);
             this.setState({edges: newEdges});
         }
+
+        if(prevProps.searchedClassName !== this.props.searchedClassName) {
+            this._onSearchedClassName();
+        }
+    }
+
+    _onSearchedClassName() {
+        if(this.props.searchedClassName !== "") {
+            let selectedElements = this.state.cy.elements().filter((ele) => {
+                return ele.id().toLowerCase().startsWith(this.props.searchedClassName.toLowerCase()) && !ele.isEdge() || ele.data('element_type') === this.state.element_types.invisible_node;
+            });
+
+            selectedElements.forEach((ele) => {
+                if (!ele.isParent()) {
+                    selectedElements = selectedElements.union(ele.parent());
+                }
+            });
+
+            let unselectedElements = this.state.cy.elements().difference(selectedElements);
+            unselectedElements.addClass('deactivate');
+        }
     }
 
     _onDecompositionChange() {
@@ -470,7 +491,6 @@ export class CustomDecomposition extends React.Component {
             edges
         } = this.state;
 
-        let numOfPartitions;
         cy.remove('node');
         if(this.props.decomposition.elements.nodes) {
             let partitions = [];
@@ -481,16 +501,10 @@ export class CustomDecomposition extends React.Component {
             }
             cy.add(partitions);
             cy.json({elements:this.props.decomposition.elements.nodes}).layout({name: 'preset'}).run();
-            numOfPartitions = this.props.decomposition.elements.nodes.reduce((numOfPartitions, ele) => {
-                return (ele.data.element_type === "partition") ? numOfPartitions + 1 : numOfPartitions; 
-            }, 0);
             cy.pan(this.props.decomposition.pan);
             cy.zoom(this.props.decomposition.zoom);
         } else {
             cy.add(this.props.decomposition.elements);
-            numOfPartitions = this.props.decomposition.elements.reduce((numOfPartitions, ele) => {
-                return (ele.data.element_type === "partition") ? numOfPartitions + 1 : numOfPartitions; 
-            }, 0);
             cy.layout({
                 name: 'cose-bilkent',
                 nodeDimensionsIncludeLabels: true,
@@ -499,7 +513,7 @@ export class CustomDecomposition extends React.Component {
                 fit: true,
                 animate: false
             }).run();
-            this.adjustPartitionPositions(cy, numOfPartitions, 5);
+            this.adjustPartitionPositions(cy, 5);
             cy.fit(cy.elements(), 100);
         }
         cy.add(edges);
@@ -511,7 +525,7 @@ export class CustomDecomposition extends React.Component {
 
     render() {
         return (
-            <div style={{height: '100%', width: '100%', position: 'fixed'}} ref={ref => (this.ref = ref)}></div>
+            <div style={{height: '100%', width: '79%', position: 'fixed'}} ref={ref => (this.ref = ref)}></div>
         );
     }
 };
