@@ -5,7 +5,7 @@ export const WeightedViewService = {
     * fetchWeightedDecomposition(weights: any, jsonGraph: any): Generator<any, any, any> {
         let isError = false;
 
-        let serverName = "http://svresessp1.ece.ubc.ca/api/7epDemo";
+        let serverName = "http://127.0.0.1:5000/7epDemo";
         Object.keys(weights).forEach((key) => {
             serverName = serverName + `/${weights[key]}`;
         })

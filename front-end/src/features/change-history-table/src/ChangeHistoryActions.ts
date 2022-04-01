@@ -9,7 +9,8 @@ export const addNewMoveAction = new Action<IChangeHistoryStoreState,
 >(`${ChangeHistoryAlias}.ADD_NEW_MOVE`)
     .addSaga(function* (action) {
         let moveOperation: any = new ChangeHistoryService().formatMoveOperation(action.payload.sourceNode, action.payload.currPartitionNode, action.payload.newPartitionNode, action.payload.diffNode)
-        yield put(undoMoveAction.getReduxAction()({selectedTab: action.payload.selectedTab, moveOperation: moveOperation}));
+        // TODO: ** Why did I call undo move below? This needs to be looked into
+        // yield put(undoMoveAction.getReduxAction()({selectedTab: action.payload.selectedTab, moveOperation: moveOperation}));
         // If the node has moved back to its original position, then don't add it to the change history list
         yield put(addMoveAction.getReduxAction()({selectedTab: action.payload.selectedTab, moveOperation: moveOperation}));
     });

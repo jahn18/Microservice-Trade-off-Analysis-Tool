@@ -5,15 +5,77 @@ import { connect } from "react-redux";
 import { ICustomViewUIState } from "../CustomViewTypes";
 import { getSelectors } from "./CustomViewUISelectors";
 import {CustomDecomposition} from "../../../../views/custom-decomposition/CustomDecomposition";
-import { resetCytoscapeGraphAction, saveCytoscapeGraphAction, updateRelationshipTypeAction } from "../CustomViewActions";
+import { fetchClusterDecompositionAction, resetCytoscapeGraphAction, saveCytoscapeGraphAction, updateRelationshipTypeAction } from "../CustomViewActions";
 import { JSONGraphParserUtils } from "../../../../utils/JSONGraphParserUtils";
-import { Table, TableContainer, TableBody, TableRow, Slider, Paper, Grid, Box, Typography } from "@mui/material";
+import { Table, TableContainer, TableBody, TableRow, Slider, Paper, Grid, Box, Tabs, Button } from "@mui/material";
 import { Metrics } from "../../../metric-table/src/ui/MetricTableUI";
 import Utils from "../../../../utils";
 import { addNewMoveAction, selectElementsAction, undoMoveAction } from "../../../change-history-table/src/ChangeHistoryActions";
 import { ChangeHistory } from "../../../change-history-table/src/ui/ChangeHistoryUI";
 import { ChangeHistoryService } from "../../../change-history-table/service/ChangeHistoryService";
 import { SearchBar } from "../../../../components/SearchBar/SearchBar";
+import { styled } from '@mui/system';
+import TabsUnstyled from '@mui/base/TabsUnstyled';
+import TabPanelUnstyled from '@mui/base/TabPanelUnstyled';
+import TabsListUnstyled from '@mui/base/TabsListUnstyled';
+import { buttonUnstyledClasses } from '@mui/base/ButtonUnstyled';
+import TabUnstyled, { tabUnstyledClasses } from '@mui/base/TabUnstyled';
+import { ClusterTable } from "../../../../components/tables/ClusterTable/ClusterTable";
+
+  
+const Tab = styled(TabUnstyled)`
+    font-family: IBM Plex Sans, sans-serif;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    background-color: transparent;
+    width: 100%;
+    padding: 1px 3px;
+    margin: 2px 2px;
+    border: none;
+    border-radius: 2px;
+    display: flex;
+    justify-content: center;
+
+    &:hover {
+        background-color: grey;
+    }
+
+&.${buttonUnstyledClasses.focusVisible} {
+    color: #fff;
+    outline: none;
+    background-color: #585858;
+}
+
+&.${tabUnstyledClasses.selected} {
+    background-color: white;
+    color: #404040;
+}
+
+&.${buttonUnstyledClasses.disabled} {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+`;
+
+const TabPanel = styled(TabPanelUnstyled)`
+  width: 100%;
+  font-family: IBM Plex Sans, sans-serif;
+  font-size: 0.9rem;
+`;
+
+const TabsList = styled(TabsListUnstyled)`
+    background-color: #585858;
+    width: 50%;
+    margin-left: 30px;
+    // border-radius: 3px;
+    margin-bottom: 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-content: space-between;
+`;
 
 
 export interface CustomViewProps extends WithStylesProps<typeof styles>, ICustomViewUIState, TActionTypes {
@@ -24,20 +86,22 @@ export interface CustomViewProps extends WithStylesProps<typeof styles>, ICustom
 interface CustomViewState {
     mouseOverRow: any,
     reset: boolean,
-    searchedClassName: string
+    searchedClassName: string,
+    clusterGraph: boolean
 }
 
 class CustomViewBase extends React.PureComponent<CustomViewProps> {
     readonly state: CustomViewState = {
         mouseOverRow: [],
         searchedClassName: "",
-        reset: false
+        reset: false,
+        clusterGraph: false,
     }
 
     render() {
         return (
             <div>
-                <Grid container direction={'row'} style={{position: "fixed", display: "flex"}}>
+                <Grid container direction={'row'} style={{position: "fixed"}}>
                     <Grid item xs={9.5}>
                         <CustomDecomposition 
                             decomposition={this._getCytoscapeGraph(this._getSelectedTab())}
@@ -49,6 +113,7 @@ class CustomViewBase extends React.PureComponent<CustomViewProps> {
                             selectedElements={[...this._getSelectedElementsChangeHistory(), ...this.state.mouseOverRow]}
                             mouseOverChangeHistory={this.state.mouseOverRow.length !== 0}
                             resetMoves={this.state.reset}
+                            clusterGraph={this.props.cytoscapeGraphs[this._getSelectedTab()] === undefined}
                             clearChangeHistoryTable={() => {
                                 this.setState({reset: false});
                             }}
@@ -72,38 +137,57 @@ class CustomViewBase extends React.PureComponent<CustomViewProps> {
                                             />
                                         </TableRow>
                                         <TableRow>
-                                            <Metrics 
-                                                title={"Metrics + Edge Filter"}
-                                                headers={[["Coupling & Cohesion"], ["Dependencies", "Values", "Filter"]]}
-                                                rows={
-                                                    Object.keys(this._getRelationshipTypes(this._getSelectedTab())).map((key) => {
-                                                        return [
-                                                            key, 
-                                                            Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig()).toFixed(2),
-                                                            <Slider 
-                                                                size="small"
-                                                                aria-labelledby="discrete-slider"
-                                                                valueLabelDisplay="auto"
-                                                                value={this._getRelationshipTypes(this._getSelectedTab())[key].minimumEdgeWeight}
-                                                                step={10}
-                                                                marks={true}
-                                                                defaultValue={0}
-                                                                min={0}
-                                                                max={100}
-                                                                style={{
-                                                                    width: '100%',
-                                                                    color: this.props.colors[key]
-                                                                }}
-                                                                onChange={(event, weight) => {
-                                                                    const relationshipType = this._getRelationshipTypes(this._getSelectedTab());
-                                                                    relationshipType[key].minimumEdgeWeight = weight; 
-                                                                    this._updateRelationshipType(this._getSelectedTab(), relationshipType)
-                                                                }}
+                                            <TabsUnstyled defaultValue={0}>
+                                                <TabsList onChange={(tab: any) => this.setState({selectedTab: tab})}>
+                                                    <Tab>Metrics</Tab>
+                                                    {/* <Tab disabled={this.props.selectedTab !== "class-names"}>Cluster</Tab> */}
+                                                    {/* <Tab>Cluster</Tab> */}
+                                                </TabsList>
+                                                    <TabPanel value={0}>
+                                                        <Box sx={{border: '1px solid grey', borderStyle: 'solid none'}}>
+                                                            <Metrics 
+                                                                title={"Metrics + Edge Filter"}
+                                                                headers={[["Coupling & Cohesion"], ["Dependencies", "Values", "Filter"]]}
+                                                                rows={
+                                                                    Object.keys(this._getRelationshipTypes(this._getSelectedTab())).map((key) => {
+                                                                        return [
+                                                                            key, 
+                                                                            Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig(), key).toFixed(2),
+                                                                            <Slider 
+                                                                                size="small"
+                                                                                aria-labelledby="discrete-slider"
+                                                                                valueLabelDisplay="auto"
+                                                                                value={this._getRelationshipTypes(this._getSelectedTab())[key].minimumEdgeWeight}
+                                                                                step={10}
+                                                                                marks={true}
+                                                                                defaultValue={0}
+                                                                                min={0}
+                                                                                max={100}
+                                                                                style={{
+                                                                                    width: '100%',
+                                                                                    color: this.props.colors[key]
+                                                                                }}
+                                                                                onChange={(event, weight) => {
+                                                                                    const relationshipType = this._getRelationshipTypes(this._getSelectedTab());
+                                                                                    relationshipType[key].minimumEdgeWeight = weight; 
+                                                                                    this._updateRelationshipType(this._getSelectedTab(), relationshipType)
+                                                                                }}
+                                                                            />
+                                                                        ];
+                                                                    })
+                                                                }
                                                             />
-                                                        ];
-                                                    })
-                                                }
-                                            />
+                                                        </Box>
+                                                    </TabPanel>
+                                                    {/* <TabPanel value={1}>
+                                                        <Box sx={{border: '1px solid grey', borderStyle: 'solid none'}}>
+                                                            <ClusterTable 
+                                                                fetchGraph={this._fetchGraph.bind(this)}
+                                                                clusterGraph={() => this.setState({clusterGraph: true})}
+                                                            />
+                                                        </Box>
+                                                    </TabPanel> */}
+                                            </TabsUnstyled>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
@@ -130,6 +214,12 @@ class CustomViewBase extends React.PureComponent<CustomViewProps> {
         );
     }
 
+    _fetchGraph() {
+        delete this.props.cytoscapeGraphs[this._getSelectedTab()];
+        console.log("Here", this._getSelectedTab())
+        this.props.fetchDecomposition({graph: this.props.jsonGraph[this._getSelectedTab()], selectedTab: this._getSelectedTab()});
+    }
+
     _getDecompositionConfig() {
         // Get all moved elements. 
         let cytoscapeElements: any = this._getCytoscapeGraph(this._getSelectedTab());
@@ -151,6 +241,18 @@ class CustomViewBase extends React.PureComponent<CustomViewProps> {
             if(partition.length !== 0) {
                 decomposition.push(partition);
             }
+        }
+
+        let partition: any[] = []; 
+        elements.forEach((ele: any) => {
+            if (ele.data.partition === 'unobserved') {
+                if (ele.data.element_type === "common" || ele.data.element_type === "common*") {
+                    partition.push(ele.data.label);
+                } 
+            }
+        })
+        if(partition.length !== 0) {
+            decomposition.push(partition);
         }
 
         return decomposition;
@@ -219,7 +321,8 @@ const mapDispatchToProps = {
     selectElementsChangeHistory: selectElementsAction.getReduxAction(),
     updateRelationshipType: updateRelationshipTypeAction.getReduxAction(),
     addMove: addNewMoveAction.getReduxAction(),
-    undoMove: undoMoveAction.getReduxAction()
+    undoMove: undoMoveAction.getReduxAction(),
+    fetchDecomposition: fetchClusterDecompositionAction.getReduxAction()
 }
 
 type TActionTypes = typeof mapDispatchToProps;

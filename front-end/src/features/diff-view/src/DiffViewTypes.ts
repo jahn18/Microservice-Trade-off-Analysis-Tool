@@ -8,13 +8,25 @@ export interface IDiffViewUIState {
     selectedTab: string,
     selectedElements: any,
     jsonGraph: any,
-    selectedDecompositions: any
+    selectedDecompositions: any,
+    // loading: ILoadingState,
+    // error?: string
+}
+
+export enum ILoadingState {
+    NOT_LOADING,
+    FETCH_DECOMPOSITION_LOADING,
 }
 
 export interface IDiffViewStoreState { 
-    selectedDecompositions: any
+    selectedDecompositions: any,
+    loading: ILoadingState,
+    weights: any,
+    error?: string
 }
 
 export const defaultState: IDiffViewStoreState = {
-    selectedDecompositions: []
+    selectedDecompositions: [],
+    weights: {},
+    loading: ILoadingState.NOT_LOADING
 }

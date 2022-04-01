@@ -40,7 +40,7 @@ export class DashboardViewBase extends React.PureComponent<DashboardViewProps> {
                         />
                     </Grid>
                     <Grid item xs={12} md={12}>
-                        <Paper sx={{ height: "100%", width: "100%" }}> 
+                        <Paper> 
                             {this.props.selectedTab !== "diff-view" && this.props.selectedTab !== "weighted-view" &&
                                 <CustomView 
                                     relationships={new JSONGraphParserUtils().getEdges(this.props.jsonGraph, this._getColors())}

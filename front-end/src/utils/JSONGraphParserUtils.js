@@ -23,8 +23,14 @@ export class JSONGraphParserUtils {
         let i = 0;
         for (const [key, value] of Object.entries(jsonGraph)) {
             let edgeFilter = {};
-            const maxEdgeWeight = this._findMaxEdgeWeight(value["links"]);
-            let allEdges = this.getCytoscapeEdges(value["links"], maxEdgeWeight, edgeColors[key]);
+            const average = arr => arr.reduce((a,b) => a + b, 0) / arr.length;
+            const sd = (array) => {
+                const n = array.length
+                const mean = array.reduce((a, b) => a + b) / n
+                return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
+            }
+
+            let allEdges = this.getCytoscapeEdges(value["links"], average(value["links"].map((edge) => parseFloat(edge["weight"]))), sd(value["links"].map((edge) => parseFloat(edge["weight"]))), edgeColors[key]);
 
             edgeRelationshipTypes[key] = {
                 checked: false,
@@ -45,8 +51,11 @@ export class JSONGraphParserUtils {
         return edgeRelationshipTypes;
     }
 
-    getCytoscapeEdges(edges, maxEdgeWeight, color) {
-        return edges.map((edge) => new CytoscapeEdge(edge.source, edge.target, (parseFloat(edge.weight) / maxEdgeWeight).toFixed(2), color))
+    getCytoscapeEdges(edges, mean, sd, color) {
+        const sigmoid = (z) => {
+            return 1 / (1 + Math.exp(-z));
+        }
+        return edges.map((edge) => new CytoscapeEdge(edge.source, edge.target, sigmoid((parseFloat(edge.weight) - mean) / sd).toFixed(2), color));
     }
 
     _findMaxEdgeWeight(edges) {
@@ -91,5 +100,26 @@ export class JSONGraphParserUtils {
 
     _getClassNodes(partition, parent) {
         return partition.map((element) => new ClassNode(element.id, element.id, parent));
-    } 
+    }
+    
+    getWeightedDiffDecomposition(jsonGraph, version) {
+        let classNodeList = [];
+        let partitionList = [];
+        
+        const partitions = Object.keys(jsonGraph).filter((key) => {
+            return key !== "unobserved";
+        }).map((key) => jsonGraph[key]);
+
+        for (let i = 0; i < partitions.length; i++) {
+            partitionList.push(new PartitionNode(`partition${i}`, `P${i + 1}`)); 
+            classNodeList.push(this._getClassNodes(partitions[i], `partition${i}`));
+        } 
+
+        if (jsonGraph["unobserved"] && jsonGraph["unobserved"].length > 0) {
+            partitionList.push(new PartitionNode(`unobserved`, 'unobserved')); 
+            classNodeList.push(this._getClassNodes(jsonGraph["unobserved"], 'unobserved'));
+        }
+
+        return new Decomposition(classNodeList, partitionList, version);
+    }
 }

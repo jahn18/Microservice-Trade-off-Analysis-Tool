@@ -47,17 +47,17 @@ export const MetricTable = (props) => {
     return (
         <Table size="small">
             <TableBody>
-                <TableRow>
-                    <TableCell style={{'font-weight': 'bold'}}>
+                {/* <TableRow>
+                    <TableCell style={{'font-weight': 'bold'}}> */}
                         {/* <IconButton 
                             size="small" 
                             onClick={() => setTableState(!tableState)}
                         >
                             {tableState ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                         </IconButton> */}
-                        {props.title}
-                    </TableCell>
-                </TableRow>
+                        {/* {props.title} */}
+                    {/* </TableCell>
+                </TableRow> */}
                 <TableRow>
                     <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} >
                         {/* <Collapse in={tableState} timeout="auto" unmountOnExit> */}

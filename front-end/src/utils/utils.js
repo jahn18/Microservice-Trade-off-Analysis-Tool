@@ -17,13 +17,14 @@ export default class Utils {
      *  @returns {float} the normalized TurboMQ value.
      *
      */
-    static calculateNormalizedTurboMQ = (cytoscapeEdges, decomposition) => {
-        
-        let normalizePartitions = 0;
+    static calculateNormalizedTurboMQ = (cytoscapeEdges, decomposition, key) => {
+        let normalize = {static: 6.0672508181, dynamic: 2.4476190476, "class-names": 8.8597512609, "class-terms": 1.5302872070, commits: 2.9973752160, contributors: 1.5361126589}
+        // let normalize = {static: 4.642552, dynamic: 4.916976, "class-names": 5.980617, "class-terms": 1.740266, commits: 1.014243, contributors: 1.006837}
+        // let normalizePartitions = 0;
+        let CFvals = {}
         let CF = decomposition.reduce((CF, partition) => {
             let internal_edges = 0.0;
             let external_edges = 0.0;
-
             cytoscapeEdges.forEach((edge) => {
                 if(partition.includes(edge.getSourceNode()) && partition.includes(edge.getTargetNode())) {
                     internal_edges += parseFloat(edge.getEdgeWeight());
@@ -32,15 +33,20 @@ export default class Utils {
                 } 
             })
 
-            if (internal_edges > 0 || external_edges > 0) {
-                normalizePartitions += 1;
-            }
-
-            let value = (internal_edges !== 0) ? ((internal_edges) / ( (internal_edges) + external_edges)) : 0;
+            // if (internal_edges > 0 || external_edges > 0) {
+            //     normalizePartitions += 1;
+            // }
+            let value = (internal_edges !== 0) ? ((2*internal_edges) / ( (2*internal_edges) + external_edges)) : 0;
+            CFvals[partition] = CF;
             return CF + value;
         }, 0.0);
+        return CF;
+        let val = CF / normalize[key]
+        if (val >= 0.999999) {
+            val = 1
+        }
 
-        return ( CF / normalizePartitions ) * 100;
+        return val * 100;
     };
 
     static updateGraphEdges(edgeRelationshipTypes) {

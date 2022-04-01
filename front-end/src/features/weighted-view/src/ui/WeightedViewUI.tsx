@@ -112,7 +112,7 @@ class WeightedViewBase extends React.PureComponent<WeightedViewProps> {
                                                             Object.keys(this._getRelationshipTypes(this._getSelectedTab())).map((key) => {
                                                                 return [
                                                                     key, 
-                                                                    Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig()).toFixed(2),
+                                                                    Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig(), key).toFixed(2),
                                                                     <Slider 
                                                                         size="small"
                                                                         aria-labelledby="discrete-slider"
@@ -198,6 +198,18 @@ class WeightedViewBase extends React.PureComponent<WeightedViewProps> {
             if(partition.length !== 0) {
                 decomposition.push(partition);
             }
+        }
+
+        let partition: any[] = []; 
+        elements.forEach((ele: any) => {
+            if (ele.data.partition === 'unobserved') {
+                if (ele.data.element_type === "common" || ele.data.element_type === "common*") {
+                    partition.push(ele.data.label);
+                } 
+            }
+        })
+        if(partition.length !== 0) {
+            decomposition.push(partition);
         }
 
         return decomposition;

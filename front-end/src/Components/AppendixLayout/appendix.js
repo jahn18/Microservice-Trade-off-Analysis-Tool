@@ -360,4 +360,164 @@ AppendixLayout.prototype.run = function() {
     runLayout();
 }
 
+AppendixLayout.prototype.reformat = function() {
+    let cy = this.cy;
+    let options = this.options;
+
+    const getAppendicesInfo = function() {
+        let info = {};
+        for(let i = 0; i < partitions.length; i++) {
+            let partition_appendices = cy.filter((ele) => {
+                return ele.data('parent') === `partition${i}` && ele.data('element_type') === 'appendix';
+            })
+            let total_width = 0;
+            for(let j = 0; j < partition_appendices.length; j++) {
+                total_width += partition_appendices[j].width();
+                partition_appendices[j].data().width = partition_appendices[j].width();
+            }
+
+            info[`partition${i}`] = {
+                total_width: total_width,
+                largest_height: cy.collection(partition_appendices).max((ele) => {return ele.boundingBox().h})
+            }
+        }
+        return info;
+    } 
+    const getBoundingBoxOfCommonNodes = function(cy_partition_node) {
+        let common_nodes = cy_partition_node.children().filter((ele) => {
+            return (ele.data('element_type') === 'common' || ele.data('element_type') === 'invisible' || ele.data('element_type') === 'common*');
+        });
+        
+        let boundingBox = {
+            x1: common_nodes[0].boundingBox().x1,
+            x2: common_nodes[0].boundingBox().x2,
+            y1: common_nodes[0].boundingBox().y1,
+            y2: common_nodes[0].boundingBox().y2,
+        }
+        let center_point = {
+            x1: common_nodes[0].position().x,
+            x2: common_nodes[0].position().x,
+            y1: common_nodes[0].position().y,
+            y2: common_nodes[0].position().y,
+        }
+
+        for(let i = 1; i < common_nodes.length; i++) {
+            if (common_nodes[i].boundingBox().x1 < boundingBox.x1) {
+                boundingBox.x1 = common_nodes[i].boundingBox().x1; 
+                center_point.x1 = common_nodes[i].position().x; 
+            } else if (common_nodes[i].boundingBox().x2 > boundingBox.x2) {
+                boundingBox.x2 = common_nodes[i].boundingBox().x2; 
+                center_point.x2 = common_nodes[i].position().x; 
+            }
+
+            if (common_nodes[i].boundingBox().y1 < boundingBox.y1) {
+                boundingBox.y1 = common_nodes[i].boundingBox().y1; 
+                center_point.y1 = common_nodes[i].position().y; 
+            } else if (common_nodes[i].boundingBox().y2 > boundingBox.y2) {
+                boundingBox.y2 = common_nodes[i].boundingBox().y2; 
+                center_point.y2 = common_nodes[i].position().y; 
+            }
+        }
+
+        boundingBox['center_point'] = {
+            x: boundingBox.x1 + (boundingBox.x2 - boundingBox.x1) / 2,
+            y: boundingBox.y1 + (boundingBox.y2 - boundingBox.y1) / 2 
+        }
+
+        return boundingBox;
+    }
+
+    const adjustDimensionsOfAppendices = function(appendix_info) {
+        let adjusted_appendix_info = {};
+        for(let partition in appendix_info) {
+            let appendices = cy.filter((ele) => {
+                return ele.data('parent') === partition && ele.data('element_type') === 'appendix';
+            })
+            let added_width = 0;
+
+            for(let j = 0; j < appendices.length; j++) {
+                appendices[j].data().height = appendix_info[partition].largest_height.value;
+                if(cy.getElementById(partition).width() > appendix_info[partition].total_width) {
+                    let remaining_width = cy.getElementById(partition).width() - appendix_info[partition].total_width;
+                    appendices[j].data().width += (remaining_width / 2); // **Adjust this to add more width to the appendices
+                    added_width += (remaining_width / 2);
+                }
+            }
+
+            adjusted_appendix_info[partition] = {
+                total_width: appendix_info[partition].total_width + added_width,
+                largest_height: appendix_info[partition].largest_height.value
+            } 
+        }
+        return adjusted_appendix_info;
+    }
+
+    const shiftAppendices = function(appendix_info) {
+        for(let i = 0; i < partitions.length; i++) {
+            let boundingBox = getBoundingBoxOfCommonNodes(cy.getElementById(`partition${i}`));
+            let last_appendix_x_pos = boundingBox['center_point'].x + ( appendix_info[`partition${i}`].total_width / 2);
+            for(let j = options.num_of_versions; j > 0; j--) {
+                let appendix = cy.getElementById(`partition${i}_appendix${j}`);
+                appendix.shift({
+                    x: last_appendix_x_pos - appendix.boundingBox().x2,
+                    y: (boundingBox.y2 - appendix.boundingBox().y1) + 50
+                });
+                last_appendix_x_pos = appendix.boundingBox().x1; 
+            }
+        }
+    } 
+
+
+    const adjustPartitionPositions = function() {
+        const partitions_per_row = options.partitions_per_row;
+        let previous_partition_position = {
+            x: 0,
+            y: 0,
+            first_row_x1_pos: 0, 
+            first_row_y2_pos: 0
+        }
+
+        for(let i = 0; i < partitions.length; i++ ) {
+            let partition = cy.getElementById(`partition${i}`);
+            if(i % partitions_per_row === 0) {
+                partition.shift({
+                    x: previous_partition_position.first_row_x1_pos - partition.boundingBox().x1,
+                    y: previous_partition_position.first_row_y2_pos - partition.boundingBox().y1 + 100
+                });
+                previous_partition_position.first_row_x1_pos = partition.boundingBox().x1;
+                previous_partition_position.first_row_y2_pos = partition.boundingBox().y2;
+            } else {
+                partition.shift({
+                    x: previous_partition_position.x - partition.boundingBox().x1 + 100,
+                    y: previous_partition_position.y - partition.boundingBox().y1
+                });
+            }
+            previous_partition_position.x = partition.boundingBox().x2; 
+            previous_partition_position.y = partition.boundingBox().y1; 
+            if(partition.boundingBox().y2 > previous_partition_position.first_row_y2_pos) {
+                previous_partition_position.first_row_y2_pos = partition.boundingBox().y2;
+            }
+        }
+
+        cy.fit();
+    }
+
+    const partitionLayoutOptions = {
+        name: 'grid',
+        nodeDimensionsIncludeLabels: true,
+        avoidOverlap: true,
+        condense: true,
+    };
+    const partitions = cy.nodes().filter((ele) => {
+        return ele.data('element_type') === 'partition';
+    }); 
+    for(let i = 0; i < partitions.length; i++) {
+        partitions[i].children().layout(partitionLayoutOptions).run();
+    };
+    let appendix_info = getAppendicesInfo();
+    shiftAppendices(appendix_info);
+    // appendix_info = adjustDimensionsOfAppendices(appendix_info);
+    adjustPartitionPositions();
+}
+
 export default AppendixLayout;

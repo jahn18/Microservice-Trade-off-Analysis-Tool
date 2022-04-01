@@ -6,7 +6,7 @@ import { IDiffViewUIState } from "../DiffViewTypes";
 import { getSelectors } from "./DiffViewUISelectors";
 import { resetCytoscapeGraphAction, saveCytoscapeGraphAction} from "../../../custom-view/src/CustomViewActions";
 import { JSONGraphParserUtils } from "../../../../utils/JSONGraphParserUtils";
-import { Table, TableContainer, TableBody, TableRow, Slider, Paper, Typography, Button, Grid, Box } from "@mui/material";
+import { Table, TableContainer, TableBody, TableRow, Slider, Paper, Typography, Button, Grid, Box} from "@mui/material";
 import { Metrics } from "../../../metric-table/src/ui/MetricTableUI";
 import Utils from "../../../../utils";
 import { addNewMoveAction, resetChangeHistoryAction, selectElementsAction, undoMoveAction } from "../../../change-history-table/src/ChangeHistoryActions";
@@ -15,8 +15,71 @@ import { ChangeHistoryService } from "../../../change-history-table/service/Chan
 import { DiffDecomposition } from "../../../../components/Views/DiffView/DiffView";
 import TradeOffSelectionTable from "../../../../components/SelectionTables/TradeOffTable";
 import { DiffGraphUtils } from "../../../../utils/DiffGraphUtils";
-import { setSelectedDecompositionsAction } from "../DiffViewAction";
+import { fetchWeightedDiffDecompositionAction, setDiffWeightsAction, setSelectedDecompositionsAction } from "../DiffViewAction";
 import { SearchBar } from "../../../../components/SearchBar/SearchBar";
+import { styled } from '@mui/system';
+import TabsUnstyled from '@mui/base/TabsUnstyled';
+import TabPanelUnstyled from '@mui/base/TabPanelUnstyled';
+import TabsListUnstyled from '@mui/base/TabsListUnstyled';
+import { buttonUnstyledClasses } from '@mui/base/ButtonUnstyled';
+import TabUnstyled, { tabUnstyledClasses } from '@mui/base/TabUnstyled';
+import WeightedDiffRelationshipSelectionTable from "../../../../components/SelectionTables/WeightedDiffRelationshipTable";
+
+
+const Tab = styled(TabUnstyled)`
+    font-family: IBM Plex Sans, sans-serif;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    background-color: transparent;
+    width: 100%;
+    padding: 1px 3px;
+    margin: 2px 2px;
+    border: none;
+    border-radius: 2px;
+    display: flex;
+    justify-content: center;
+
+    &:hover {
+        background-color: grey;
+    }
+
+&.${buttonUnstyledClasses.focusVisible} {
+    color: #fff;
+    outline: none;
+    background-color: #585858;
+}
+
+&.${tabUnstyledClasses.selected} {
+    background-color: white;
+    color: #404040;
+}
+
+&.${buttonUnstyledClasses.disabled} {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+`;
+
+const TabPanel = styled(TabPanelUnstyled)`
+  width: 100%;
+  font-family: IBM Plex Sans, sans-serif;
+  font-size: 0.9rem;
+`;
+
+const TabsList = styled(TabsListUnstyled)`
+    background-color: #585858;
+    width: 50%;
+    margin-left: 30px;
+    // border-radius: 3px;
+    margin-bottom: 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-content: space-between;
+`;
+
 
 export interface DiffViewProps extends WithStylesProps<typeof styles>, IDiffViewUIState, TActionTypes {
     // might want to use selectTabs here. 
@@ -27,21 +90,24 @@ export interface DiffViewProps extends WithStylesProps<typeof styles>, IDiffView
 interface DiffViewState {
     mouseOverRow: any,
     reset: boolean,
-    searchedClassName: string
+    searchedClassName: string,
+    clicked: boolean
 }
 
 class DiffViewBase extends React.PureComponent<DiffViewProps> {
     readonly state: DiffViewState = {
         mouseOverRow: [],
         reset: false,
-        searchedClassName: ""
+        searchedClassName: "",
+        clicked: false
     }
 
     render() {
         if (this.props.selectedDecompositions.length === 0) {
             delete this.props.cytoscapeGraphs["diff-view"];
+            delete this.props.cytoscapeGraphs["weighted-diff-view"];
         }
-
+        
         return (
             <>
                 {
@@ -66,6 +132,7 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
                                     colors={this.props.colors} 
                                     weightedViewDecomposition={undefined} 
                                     decomposition={this._getDiffGraph()}
+                                    weightedDiffMoves={this._getWeightedDiffGraph()}
                                     saveGraph={this._saveCytoscapeGraph.bind(this)}
                                     addMove={this._addMove.bind(this)}
                                     undoMove={this._undoMove.bind(this)}
@@ -77,6 +144,47 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
                                     }}
                                     searchedClassName={this.state.searchedClassName}
                                 /> 
+                                {/* {!this.props.cytoscapeGraphs["weighted-diff-view"] ?
+                                    <DiffDecomposition
+                                        graphData={this.props.jsonGraph} 
+                                        selectedDecompositions={this.props.selectedDecompositions}
+                                        selectedTab={this._getSelectedTab()}
+                                        relationshipTypes={this._getRelationshipTypes(this._getSelectedTab())} 
+                                        colors={this.props.colors} 
+                                        weightedViewDecomposition={undefined} 
+                                        decomposition={this._getDiffGraph()}
+                                        weightedDiffMoves={this._getWeightedDiffGraph()}
+                                        weightedDiffMoves={undefined}
+                                        saveGraph={this._saveCytoscapeGraph.bind(this)}
+                                        addMove={this._addMove.bind(this)}
+                                        undoMove={this._undoMove.bind(this)}
+                                        selectedElements={[...this._getSelectedElementsChangeHistory(), ...this.state.mouseOverRow]}
+                                        mouseOverChangeHistory={this.state.mouseOverRow.length !== 0}
+                                        resetMoves={this.state.reset}
+                                        clearChangeHistoryTable={() => {
+                                            this.setState({reset: false});
+                                        }}
+                                        searchedClassName={this.state.searchedClassName}
+                                    /> :
+                                    <DiffDecomposition
+                                        graphData={this.props.jsonGraph} 
+                                        selectedDecompositions={this.props.selectedDecompositions}
+                                        selectedTab={this._getSelectedTab()}
+                                        relationshipTypes={this._getRelationshipTypes(this._getSelectedTab())} 
+                                        colors={this.props.colors} 
+                                        decomposition={this._getDiffGraph()}
+                                        saveGraph={this._saveCytoscapeGraph.bind(this)}
+                                        addMove={this._addMove.bind(this)}
+                                        undoMove={this._undoMove.bind(this)}
+                                        selectedElements={[...this._getSelectedElementsChangeHistory(), ...this.state.mouseOverRow]}
+                                        mouseOverChangeHistory={this.state.mouseOverRow.length !== 0}
+                                        resetMoves={this.state.reset}
+                                        clearChangeHistoryTable={() => {
+                                            this.setState({reset: false});
+                                        }}
+                                        searchedClassName={this.state.searchedClassName}
+                                    /> 
+                                } */}
                                 <Typography style={{marginTop: 10, marginLeft: 27.5, display: 'flex'}} variant="h5"> 
                                     <div style={{marginRight: '8px', color: this.props.colors[this.props.selectedDecompositions[0][0]]}}>
                                         {`V${this.props.selectedDecompositions[0][1] + 1}`}
@@ -116,19 +224,44 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
                                                     />
                                                 </TableRow>
                                                 <TableRow>
-                                                    <Metrics 
-                                                        title={"Metrics"}
-                                                        headers={[["Coupling & Cohesion"], ["Dependencies", `V${this.props.selectedDecompositions[0][1] + 1}`, `V${this.props.selectedDecompositions[1][1] + 1}`]]}
-                                                        rows={
-                                                            Object.keys(this._getRelationshipTypes(this._getSelectedTab())).map((key) => {
-                                                                return [
-                                                                    key, 
-                                                                    Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig(1)).toFixed(2),
-                                                                    Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig(2)).toFixed(2),
-                                                                ];
-                                                            })
-                                                        }
-                                                    />
+                                                    <TabsUnstyled defaultValue={0}>
+                                                        <TabsList onChange={(tab: any) => this.setState({selectedTab: tab})}>
+                                                            <Tab>Metrics</Tab>
+                                                            {/* <Tab disabled={this.props.selectedTab !== "class-names"}>Cluster</Tab> */}
+                                                            {/* <Tab>Automerge</Tab> */}
+                                                        </TabsList>
+                                                        <TabPanel value={0}>
+                                                            <Box sx={{border: '1px solid grey', borderStyle: 'solid none'}}>
+                                                                <Metrics 
+                                                                    title={"Metrics"}
+                                                                    headers={[["Coupling & Cohesion"], ["Dependencies", `V${this.props.selectedDecompositions[0][1] + 1}`, `V${this.props.selectedDecompositions[1][1] + 1}`]]}
+                                                                    rows={
+                                                                        Object.keys(this._getRelationshipTypes(this._getSelectedTab())).map((key) => {
+                                                                            return [
+                                                                                key, 
+                                                                                Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig(1), key).toFixed(2),
+                                                                                Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig(2), key).toFixed(2),
+                                                                            ];
+                                                                        })
+                                                                    }
+                                                                />
+                                                            </Box>
+                                                        </TabPanel>
+                                                        <TabPanel value={1}>
+                                                            <WeightedDiffRelationshipSelectionTable 
+                                                                graphData={[this.props.selectedDecompositions[0][0], this.props.selectedDecompositions[1][0]]}
+                                                                graphVersions={[this.props.selectedDecompositions[0][1], this.props.selectedDecompositions[1][1]]}
+                                                                diffGraph={this._getDiffGraph()}
+                                                                relationships={this.props.relationships}
+                                                                fetchWeightedDecomposition={this._fetchWeightedDiffGraph.bind(this)}
+                                                                setNewWeights={() => this.setState({newWeights: false})}
+                                                                clustering={false}
+                                                                setWeights={this._setWeights.bind(this)}
+                                                                // weights={(Object.keys(this.props.weights).length === 0) ? undefined : this.props.weights}
+                                                                weights={undefined}
+                                                            />
+                                                        </TabPanel>
+                                                    </TabsUnstyled>
                                                 </TableRow>
                                             </TableBody>
                                         </Table>
@@ -155,6 +288,14 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
                 }
             </>
         );
+    }
+
+    _setWeights(weights: any) {
+        this.props.setWeights({weights: weights});
+    }
+
+    _fetchWeightedDiffGraph(jsonGraph: any) {
+        this.props.fetchWeightedDiffGraph({jsonGraph: jsonGraph});
     }
 
     _selectDecompositionsToCompare(decompositionA: any, decompositionB: any) {
@@ -230,6 +371,10 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
         this.props.saveCytoscapeGraph({selectedTab: selectedTab, modifiedCytoscapeGraph: modifiedCytoscapeGraph});
     }
 
+    _getWeightedDiffGraph() {
+        return this.props.cytoscapeGraphs["weighted-diff-view"];
+    }
+
     _getDiffGraph() {
         return this.props.cytoscapeGraphs["diff-view"] || 
             {elements: new DiffGraphUtils().getDiffDecomposition(
@@ -273,7 +418,9 @@ const mapDispatchToProps = {
     addMove: addNewMoveAction.getReduxAction(),
     undoMove: undoMoveAction.getReduxAction(),
     resetAllMoves: resetChangeHistoryAction.getReduxAction(),
-    setSelectedDecompostions: setSelectedDecompositionsAction.getReduxAction()
+    setSelectedDecompostions: setSelectedDecompositionsAction.getReduxAction(),
+    fetchWeightedDiffGraph: fetchWeightedDiffDecompositionAction.getReduxAction(),
+    setWeights: setDiffWeightsAction.getReduxAction()
 }
 
 type TActionTypes = typeof mapDispatchToProps;

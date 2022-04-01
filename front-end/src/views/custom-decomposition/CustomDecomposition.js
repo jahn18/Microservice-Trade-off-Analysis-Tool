@@ -246,7 +246,18 @@ export class CustomDecomposition extends React.Component {
             first_row_y2_pos: 0
         }
         
-        cy.elements().filter((ele) => ele.data().element_type === "partition").map((node) => node.data().id).sort().forEach((partitionName, i) => {
+        cy.elements().filter((ele) => ele.data().element_type === "partition").map((node) => node.data().id)
+        .sort(function(x, y) {
+            let partitionX = x.split("partition")[1]
+            let partitionY = y.split("partition")[1]
+            if (x === "unobserved") {
+                return 1;
+            } else if (y === "unobserved") {
+                return -1; 
+            } else {
+                return parseInt(partitionX) - parseInt(partitionY);
+            }
+        }).forEach((partitionName, i) => {
             let partition = cy.getElementById(partitionName);
             if(i % partitions_per_row === 0) {
                 partition.shift({
@@ -453,6 +464,11 @@ export class CustomDecomposition extends React.Component {
             this.props.saveGraph(cy.json(), prevProps.selectedTab);
             this._onDecompositionChange();
         }
+
+        if (prevProps.clusterGraph !== this.props.clusterGraph) {
+            console.log('here')
+            this._onDecompositionChange();
+        }
         
         const newEdges = Utils.updateGraphEdges(this.props.relationshipTypes);
         // if (Object.keys(prevProps.relationshipTypes).map((key) => prevProps.relationshipTypes[key].minimumEdgeWeight) !== Object.keys(this.props.relationshipTypes).map((key) => this.props.relationshipTypes[key].minimumEdgeWeight)) {
@@ -525,7 +541,7 @@ export class CustomDecomposition extends React.Component {
 
     render() {
         return (
-            <div style={{height: '100%', width: '79%', position: 'fixed'}} ref={ref => (this.ref = ref)}></div>
+            <div style={{height: '100%', width: '79%', position: "fixed"}} ref={ref => (this.ref = ref)}></div>
         );
     }
 };
