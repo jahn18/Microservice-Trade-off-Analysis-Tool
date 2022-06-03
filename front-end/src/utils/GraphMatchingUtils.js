@@ -18,15 +18,14 @@ export class GraphMatchingUtils {
 
         let partitionMatching = []; 
         // Match the unobserved partitions accordingly from both decompositions
-        // if (partitionsOne.includes("unobserved") || partitionsTwo.includes("unobserved")) {
-        //     partitionMatching.push([partitionsOne.includes("unobserved") ? "unobserved" : undefined, partitionsTwo.includes("unobserved") ? "unobserved" : undefined]);
-        // }
+        if (partitionsOne.includes("unobserved") || partitionsTwo.includes("unobserved")) {
+            partitionMatching.push([partitionsOne.includes("unobserved") ? "unobserved" : undefined, partitionsTwo.includes("unobserved") ? "unobserved" : undefined]);
+        }
 
         matching.forEach((match) => {
-            // if (partitionsOne[match[0]] !== "unobserved" || partitionsTwo[match[1]] !== "unobserved") {
-            //     partitionMatching.push([partitionsOne[match[0]] === "unobserved" ? undefined : partitionsOne[match[0]], partitionsTwo[match[1]] === "unobserved" ? undefined : partitionsTwo[match[1]]]);
-            // }
-            partitionMatching.push([partitionsOne[match[0]], partitionsTwo[match[1]]]);
+            if (partitionsOne[match[0]] !== "unobserved" || partitionsTwo[match[1]] !== "unobserved") {
+                partitionMatching.push([partitionsOne[match[0]] === "unobserved" ? undefined : partitionsOne[match[0]], partitionsTwo[match[1]] === "unobserved" ? undefined : partitionsTwo[match[1]]]);
+            }
         }); 
 
         // partitionMatching matches the correct partition numbers once they are moved. 
@@ -46,50 +45,41 @@ export class GraphMatchingUtils {
         let similarityMatrix = [];
         let maxValue = 0;
 
+        const customSort = function (a, b) {
+            return (Number(a.match(/(\d+)/g)[0]) - Number((b.match(/(\d+)/g)[0])));
+        }
+
+        const unobservedSort = function (a, b) {
+            if (a === "unobserved") {
+                return 1 
+            } else if (b === "unobserved") {
+                return -1
+            }
+            return (Number(a.match(/(\d+)/g)[0]) - Number((b.match(/(\d+)/g)[0])));
+        }
+
         let partitionsOne = this._getAllPartitions(decompositionOne);
         let partitionsTwo = this._getAllPartitions(decompositionTwo);
 
-        const customSort_not_unobserved = function (a, b) {
-            if(a === "unobserved") {
-                return 1
-            } 
-            else if (b === "unobserved") {
-                return -1
-            }
-            return (Number(a.match(/(\d+)/g)[0]) - Number((b.match(/(\d+)/g)[0])));
-        }
-
-        const customSort_unobserved = function (a, b) {
-            if(a === "unobserved") {
-                return -1
-            } 
-            else if (b === "unobserved") {
-                return 1
-            }
-            return (Number(a.match(/(\d+)/g)[0]) - Number((b.match(/(\d+)/g)[0])));
-        }
-
-
         let allPartitions;
 
-        if (partitionsOne.includes("unobserved") && partitionsTwo.includes("unobserved")) {
-            partitionsOne = this._getAllPartitions(decompositionOne).sort(customSort_unobserved);
-            partitionsTwo = this._getAllPartitions(decompositionTwo).sort(customSort_unobserved);
-        //     const index = partitionsOne.indexOf("unobserved");
-        //     if (index > -1) {
-        //       partitionsOne.splice(index, 1);
-        //     }
-        } else {
-            partitionsOne = this._getAllPartitions(decompositionOne).sort(customSort_not_unobserved);
-            partitionsTwo = this._getAllPartitions(decompositionTwo).sort(customSort_not_unobserved);
+        if (partitionsOne.includes("unobserved")) {
+            const index = partitionsOne.indexOf("unobserved");
+            if (index > -1) {
+              partitionsOne.splice(index, 1);
+            }
+        } 
+
+        if (partitionsTwo.includes("unobserved")) {
+            const index = partitionsTwo.indexOf("unobserved");
+            if (index > -1) {
+              partitionsTwo.splice(index, 1);
+            }
         }
 
-        // if (partitionsTwo.includes("unobserved")) {
-        //     const index = partitionsTwo.indexOf("unobserved");
-        //     if (index > -1) {
-        //       partitionsTwo.splice(index, 1);
-        //     }
-        // }
+        partitionsOne = partitionsOne.sort(customSort);
+        partitionsTwo = partitionsTwo.sort(customSort)
+
 
         if (partitionsTwo.length > partitionsOne.length) {
             allPartitions = [...partitionsTwo];
@@ -118,7 +108,7 @@ export class GraphMatchingUtils {
             });
         });
 
-        return {similarityMatrix: similarityMatrix, maxValue: maxValue, partitionsOne: partitionsOne, partitionsTwo: partitionsTwo}; 
+        return {similarityMatrix: similarityMatrix, maxValue: maxValue, partitionsOne: this._getAllPartitions(decompositionOne).sort(unobservedSort), partitionsTwo: this._getAllPartitions(decompositionTwo).sort(unobservedSort)}; 
     }
 
     _getMaximumWeightedMatch(maxValue, similarityMatrix) {

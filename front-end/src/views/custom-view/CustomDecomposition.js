@@ -6,12 +6,14 @@ import 'bootstrap/dist/js/bootstrap.js';
 import nodeHtmlLabel from 'cytoscape-node-html-label';
 import cxtmenu from 'cytoscape-cxtmenu';
 import coseBilkent from 'cytoscape-cose-bilkent';
-import CompoundDragAndDrop from '../../components/DragAndDrop/CompoundDragAndDrop';
+import CompoundDragAndDrop from '../../cytoscape-plugins/DragAndDrop/CompoundDragAndDrop';
 import Utils from '../../utils';
 
 cytoscape.use( cxtmenu );
 cytoscape.use( nodeHtmlLabel );
 cytoscape.use( coseBilkent );
+
+var NUMBER_OF_CLUSTERS_PER_ROW = 5
 
 export class CustomDecomposition extends React.Component {
 
@@ -23,8 +25,9 @@ export class CustomDecomposition extends React.Component {
                 partition: 'partition',
                 common_node: 'common',
                 invisible_node: 'invisible',
-                moved_node: 'common*'
+                moved_node: 'common+'
             },
+            decomposition: null 
         }
 
         this.ref = React.createRef();
@@ -205,13 +208,15 @@ export class CustomDecomposition extends React.Component {
             }
         );
         cdnd.run();
-
-        if(this.props.decomposition.elements.nodes) {
+        
+        // Use the saved cytoscape state  
+        if(this.props.decomposition["saved"]) {
+            console.log(this.props.decomposition)
             cy.add(this.props.decomposition.elements.nodes).layout({name: 'preset'}).run()
             cy.pan(this.props.decomposition.pan);
             cy.zoom(this.props.decomposition.zoom);
-        } else {
-            cy.add(this.props.decomposition.elements);
+        } else { 
+            cy.add(this.props.decomposition.elements.nodes);
             cy.layout({
                 name: 'cose-bilkent',
                 nodeDimensionsIncludeLabels: true,
@@ -220,15 +225,16 @@ export class CustomDecomposition extends React.Component {
                 fit: true,
                 animate: false
             }).run();
-            this.adjustPartitionPositions(cy, 5);
+            this.adjustPartitionPositions(cy, NUMBER_OF_CLUSTERS_PER_ROW);
             cy.fit(cy.elements(), 100);
         }
 
-
         this.setState({
             cy: cy,
-            edges: []
+            edges: [],
         });
+
+        cy.fit(cy.elements(), 50);
     }
 
     unhighlightNodes() {
@@ -446,13 +452,15 @@ export class CustomDecomposition extends React.Component {
         const {
             cy
         } = this.state;
-
+        
+        // If the user undo moves 
         if (this.props.resetMoves) {
             this._onDeleteRowsFromChangeHistory(prevProps.selectedElements);
             this.props.clearChangeHistoryTable();
         }
-
-        if (prevProps.selectedElements !== this.props.selectedElements) {
+        
+        // If the user hovers over a move in the change history table 
+        if (JSON.stringify(prevProps.selectedElements.map((move) => {return move.movedNode.id()})) !== JSON.stringify(this.props.selectedElements.map((move) => {return move.movedNode.id()}))) {
             cy.elements().removeClass('deactivate').removeClass('highlight');
             cy.elements().filter((ele) => ele.hasClass('control')).remove();
             if (this.props.mouseOverChangeHistory) {
@@ -460,16 +468,18 @@ export class CustomDecomposition extends React.Component {
             }
         }
         
+        // If the user changes tabs, then load in a new decomposition
         if (prevProps.selectedTab !== this.props.selectedTab) {
             this.props.saveGraph(cy.json(), prevProps.selectedTab);
             this._onDecompositionChange();
         }
-
+        
+        // ** New function: ignore for now
         if (prevProps.clusterGraph !== this.props.clusterGraph) {
-            console.log('here')
             this._onDecompositionChange();
         }
         
+        // When the user toggles the edge slider, update the edges 
         const newEdges = Utils.updateGraphEdges(this.props.relationshipTypes);
         // if (Object.keys(prevProps.relationshipTypes).map((key) => prevProps.relationshipTypes[key].minimumEdgeWeight) !== Object.keys(this.props.relationshipTypes).map((key) => this.props.relationshipTypes[key].minimumEdgeWeight)) {
         if (newEdges.length !== this.state.edges.length) {
@@ -478,15 +488,25 @@ export class CustomDecomposition extends React.Component {
             this.setState({edges: newEdges});
         }
 
+        // If the user searches for a class  
         if(prevProps.searchedClassName !== this.props.searchedClassName) {
-            this._onSearchedClassName();
+            cy.elements().removeClass('deactivate').removeClass('highlight');
+            this._onSearchClassName();
         }
+
+        if (prevProps.clickedClassName !== this.props.clickedClassName) {
+            cy.fit(cy.elements().filter((ele) => {
+                return ele.id().toLowerCase() == (this.props.clickedClassName.toLowerCase()) && !ele.isEdge() || ele.data('element_type') === this.state.element_types.invisible_node;
+            }), 10);
+        }
+
     }
 
-    _onSearchedClassName() {
+    _onSearchClassName() {
+        let selectedElements = [];
         if(this.props.searchedClassName !== "") {
-            let selectedElements = this.state.cy.elements().filter((ele) => {
-                return ele.id().toLowerCase().startsWith(this.props.searchedClassName.toLowerCase()) && !ele.isEdge() || ele.data('element_type') === this.state.element_types.invisible_node;
+            selectedElements = this.state.cy.elements().filter((ele) => {
+                return ele.id().toLowerCase().includes(this.props.searchedClassName.toLowerCase().trim()) && !ele.isEdge() || ele.data('element_type') === this.state.element_types.invisible_node;
             });
 
             selectedElements.forEach((ele) => {
@@ -497,7 +517,18 @@ export class CustomDecomposition extends React.Component {
 
             let unselectedElements = this.state.cy.elements().difference(selectedElements);
             unselectedElements.addClass('deactivate');
+            if (selectedElements.length == 0) {
+                this.state.cy.fit(this.state.cy.elements(), 50);
+            } else {
+                this.state.cy.fit(selectedElements, 50);
+            }
+        } else {
+            this.state.cy.fit(this.state.cy.elements(), 50);
         }
+
+        this.props.updateSearchResults(selectedElements.filter((ele) => {
+                        return !(ele.data('element_type') == 'partition');
+                    }));
     }
 
     _onDecompositionChange() {
@@ -508,7 +539,7 @@ export class CustomDecomposition extends React.Component {
         } = this.state;
 
         cy.remove('node');
-        if(this.props.decomposition.elements.nodes) {
+        if(this.props.decomposition["saved"]) {
             let partitions = [];
             for(let i = 0; i < this.props.decomposition.elements.nodes.length; i++) {
                 if(this.props.decomposition.elements.nodes[i].data.element_type === element_types.partition) {
@@ -520,7 +551,7 @@ export class CustomDecomposition extends React.Component {
             cy.pan(this.props.decomposition.pan);
             cy.zoom(this.props.decomposition.zoom);
         } else {
-            cy.add(this.props.decomposition.elements);
+            cy.add(this.props.decomposition.elements.nodes);
             cy.layout({
                 name: 'cose-bilkent',
                 nodeDimensionsIncludeLabels: true,
@@ -529,7 +560,7 @@ export class CustomDecomposition extends React.Component {
                 fit: true,
                 animate: false
             }).run();
-            this.adjustPartitionPositions(cy, 5);
+            this.adjustPartitionPositions(cy, NUMBER_OF_CLUSTERS_PER_ROW);
             cy.fit(cy.elements(), 100);
         }
         cy.add(edges);

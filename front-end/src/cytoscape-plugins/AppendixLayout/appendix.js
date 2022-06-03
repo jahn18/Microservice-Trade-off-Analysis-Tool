@@ -385,7 +385,7 @@ AppendixLayout.prototype.reformat = function() {
     } 
     const getBoundingBoxOfCommonNodes = function(cy_partition_node) {
         let common_nodes = cy_partition_node.children().filter((ele) => {
-            return (ele.data('element_type') === 'common' || ele.data('element_type') === 'invisible' || ele.data('element_type') === 'common*');
+            return (ele.data('element_type') === 'common' || ele.data('element_type') === 'invisible' || ele.data('element_type') === 'common+');
         });
         
         let boundingBox = {

@@ -4,7 +4,7 @@ import { styles } from './ChangeHistoryStyles';
 import { connect } from "react-redux";
 import { IChangeHistoryUIState } from '../ChangeHistoryTypes';
 import { getSelectors } from "./ChangeHistorySelectors";
-import {ChangeHistoryTable} from "../../../../components/tables/ChangeHistoryTable/ChangeHistoryTable";
+import {ChangeHistoryTable} from "../../../../components/Tables/general/ChangeHistoryTable/ChangeHistoryTable";
 
 export interface ChangeHistoryProps extends WithStylesProps<typeof styles>, IChangeHistoryUIState, TActionTypes {
     selectedTab: string,

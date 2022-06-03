@@ -3,8 +3,7 @@ export default class Utils {
 
     /**
      *  Measures the coupling and cohesion for a given decomposition from a scale of 0->100%. 100%
-     *  indicates the current decomposition is extremely well defined and cohesive; 0% indicates
-     *  the partitions are extremely and dependent between each other.
+     *  indicates the current decomposition is cohesive; 0% indicates very high coupling
      *
      *  @param {Array<>} - A list of edge dependencies in the given graph.
      *                              The elements in this list should contain a dictionary indicating

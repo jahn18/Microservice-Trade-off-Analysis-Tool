@@ -8,7 +8,7 @@ import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import IconButton from '@material-ui/core/IconButton';
 import TableHead from '@material-ui/core/TableHead';
-import Utils from "../../../utils/utils";
+import Utils from "../../../../utils/utils";
 
 /**
  * A table that shows coupling and cohesion metrics for a given microservice decomposition (uses Normalized TurboMQ)

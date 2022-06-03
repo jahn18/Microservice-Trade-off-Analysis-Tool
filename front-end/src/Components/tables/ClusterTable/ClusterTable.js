@@ -8,7 +8,7 @@ import Checkbox from '@mui/material/Checkbox';
 
 
 export const ClusterTable = (props) => {    
-    const [stopWords, setStopWords] = React.useState(["H"])
+    const [stopWords, setStopWords] = React.useState([""])
     const [text, setText] = React.useState("")
 
     return (

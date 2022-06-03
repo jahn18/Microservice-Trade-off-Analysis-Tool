@@ -12,18 +12,20 @@ import Utils from "../../../../utils";
 import { addNewMoveAction, resetChangeHistoryAction, selectElementsAction, undoMoveAction } from "../../../change-history-table/src/ChangeHistoryActions";
 import { ChangeHistory } from "../../../change-history-table/src/ui/ChangeHistoryUI";
 import { ChangeHistoryService } from "../../../change-history-table/service/ChangeHistoryService";
-import { DiffDecomposition } from "../../../../components/Views/DiffView/DiffView";
-import TradeOffSelectionTable from "../../../../components/SelectionTables/TradeOffTable";
+import { DiffDecomposition } from "../../../../views/diff-view/DiffView";
+import SimilarityTable from "../../../../components/Tables/diff-view/SimilarityTable/SimilarityTable";
 import { DiffGraphUtils } from "../../../../utils/DiffGraphUtils";
 import { fetchWeightedDiffDecompositionAction, setDiffWeightsAction, setSelectedDecompositionsAction } from "../DiffViewAction";
 import { SearchBar } from "../../../../components/SearchBar/SearchBar";
+import { ClassSearchResults } from "../../../../components/ClassSearchResults/ClassSearchResults"
 import { styled } from '@mui/system';
 import TabsUnstyled from '@mui/base/TabsUnstyled';
 import TabPanelUnstyled from '@mui/base/TabPanelUnstyled';
 import TabsListUnstyled from '@mui/base/TabsListUnstyled';
 import { buttonUnstyledClasses } from '@mui/base/ButtonUnstyled';
 import TabUnstyled, { tabUnstyledClasses } from '@mui/base/TabUnstyled';
-import WeightedDiffRelationshipSelectionTable from "../../../../components/SelectionTables/WeightedDiffRelationshipTable";
+import WeightedDiffRelationshipSelectionTable from "../../../../components/Tables/diff-view/WeightsTable/WeightedDiffRelationshipTable";
+import Container from '@mui/material/Container';
 
 
 const Tab = styled(TabUnstyled)`
@@ -82,7 +84,6 @@ const TabsList = styled(TabsListUnstyled)`
 
 
 export interface DiffViewProps extends WithStylesProps<typeof styles>, IDiffViewUIState, TActionTypes {
-    // might want to use selectTabs here. 
     relationships: any,
     colors: any,
 }
@@ -91,13 +92,17 @@ interface DiffViewState {
     mouseOverRow: any,
     reset: boolean,
     searchedClassName: string,
-    clicked: boolean
+    searchResults: any,
+    clicked: boolean,
+    clickedClassName: string
 }
 
 class DiffViewBase extends React.PureComponent<DiffViewProps> {
     readonly state: DiffViewState = {
         mouseOverRow: [],
+        searchResults: [],
         reset: false,
+        clickedClassName: "",
         searchedClassName: "",
         clicked: false
     }
@@ -113,9 +118,9 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
                 {
                     (this.props.selectedDecompositions.length === 0) ?
                         <div style={{position: 'absolute', top: '50%', left: '50%', msTransform: "translateX(-50%) translateY(-50%)", WebkitTransform: "translate(-50%,-50%)", transform: 'translate(-50%,-50%)', maxHeight: '75%'}}>
-                            <TradeOffSelectionTable 
+                            <SimilarityTable
                                 updateSelectedDecompositions={this._setSelectedDecompostions.bind(this)}
-                                decompositions={[...new Set([...Object.keys(this.props.jsonGraph), ...Object.keys(this.props.cytoscapeGraphs)])].reduce((decompositions, key, index) => {return decompositions = {...decompositions, [key]: this._getCytoscapeGraph(key, index + 1)}}, {})}
+                                decompositions={[...new Set([...Object.keys(this.props.jsonGraph), ...Object.keys(this.props.cytoscapeGraphs)])].reduce((decompositions, key, index) => {return decompositions = {...decompositions, [key]: this._getCytoscapeGraph(key)}}, {})}
                                 keys={[...new Set([...Object.keys(this.props.jsonGraph), ...Object.keys(this.props.cytoscapeGraphs)])]}
                             /> 
                         </div> 
@@ -138,6 +143,8 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
                                     undoMove={this._undoMove.bind(this)}
                                     selectedElements={[...this._getSelectedElementsChangeHistory(), ...this.state.mouseOverRow]}
                                     mouseOverChangeHistory={this.state.mouseOverRow.length !== 0}
+                                    clickedClassName={this.state.clickedClassName}
+                                    updateSearchResults={this._updateSearchResults.bind(this)}
                                     resetMoves={this.state.reset}
                                     clearChangeHistoryTable={() => {
                                         this.setState({reset: false});
@@ -160,6 +167,8 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
                                         undoMove={this._undoMove.bind(this)}
                                         selectedElements={[...this._getSelectedElementsChangeHistory(), ...this.state.mouseOverRow]}
                                         mouseOverChangeHistory={this.state.mouseOverRow.length !== 0}
+                                        clickedClassName={this.state.clickedClassName}
+                                        updateSearchResults={this._updateSearchResults.bind(this)}
                                         resetMoves={this.state.reset}
                                         clearChangeHistoryTable={() => {
                                             this.setState({reset: false});
@@ -177,6 +186,8 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
                                         addMove={this._addMove.bind(this)}
                                         undoMove={this._undoMove.bind(this)}
                                         selectedElements={[...this._getSelectedElementsChangeHistory(), ...this.state.mouseOverRow]}
+                                        clickedClassName={this.state.clickedClassName}
+                                        updateSearchResults={this._updateSearchResults.bind(this)}
                                         mouseOverChangeHistory={this.state.mouseOverRow.length !== 0}
                                         resetMoves={this.state.reset}
                                         clearChangeHistoryTable={() => {
@@ -204,68 +215,68 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
                                     onClick={() => {
                                         this._resetAllMoves();
                                         this._setSelectedDecompostions([]);
+                                        this._updateSearchResults([]);
                                     }
                                 }>
-                                    Compare new 
+                                    Compare new
                                 </Button>
                             </Grid>
                             <Grid item xs={2.5}>
                                 <Box style={{width: "100%", height: "100vh", border: '1px solid grey'}}>
-                                    <TableContainer 
-                                        style={{
-                                            maxHeight: "100%"
-                                        }}
-                                    >
-                                        <Table stickyHeader size="small">
-                                            <TableBody >
-                                                <TableRow>
-                                                    <SearchBar 
-                                                        changeClassName={(className: string) => this.setState({searchedClassName: className})}
+                                    <Container>
+                                        <SearchBar 
+                                            changeClassName={(className: string) => this.setState({searchedClassName: className})}
+                                        />
+                                    </Container>
+                                    <Container sx={{whiteSpace: "nowrap", overflow: "auto", width: "95%", m: 2}}>
+                                        <ClassSearchResults
+                                            changeClickedClass={(className: string) => this.setState({clickedClassName: className})}
+                                            searchResults={this.state.searchResults}
+                                        />
+                                    </Container>
+                                    <Container sx={{whiteSpace: "nowrap", overflow: "auto", width: "95%", m: 2}}>
+                                        {/* TODO: add the ClassSearchResult here! */}
+                                    </Container>
+                                    <Container>
+                                        <TabsUnstyled defaultValue={0}>
+                                            <TabsList onChange={(tab: any) => this.setState({selectedTab: tab})}>
+                                                <Tab>Metrics</Tab>
+                                                {/* <Tab disabled={this.props.selectedTab !== "class-names"}>Cluster</Tab> */}
+                                                {/* <Tab>Automerge</Tab> */}
+                                            </TabsList>
+                                            <TabPanel value={0}>
+                                                <Box sx={{border: '1px solid grey', borderStyle: 'solid none'}}>
+                                                    <Metrics 
+                                                        title={"Metrics"}
+                                                        headers={[["Coupling & Cohesion"], ["Dependencies", `V${this.props.selectedDecompositions[0][1] + 1}`, `V${this.props.selectedDecompositions[1][1] + 1}`]]}
+                                                        rows={
+                                                            Object.keys(this._getRelationshipTypes(this._getSelectedTab())).map((key) => {
+                                                                return [
+                                                                    key, 
+                                                                    Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig(1), key).toFixed(2),
+                                                                    Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig(2), key).toFixed(2),
+                                                                ];
+                                                            })
+                                                        }
                                                     />
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TabsUnstyled defaultValue={0}>
-                                                        <TabsList onChange={(tab: any) => this.setState({selectedTab: tab})}>
-                                                            <Tab>Metrics</Tab>
-                                                            {/* <Tab disabled={this.props.selectedTab !== "class-names"}>Cluster</Tab> */}
-                                                            {/* <Tab>Automerge</Tab> */}
-                                                        </TabsList>
-                                                        <TabPanel value={0}>
-                                                            <Box sx={{border: '1px solid grey', borderStyle: 'solid none'}}>
-                                                                <Metrics 
-                                                                    title={"Metrics"}
-                                                                    headers={[["Coupling & Cohesion"], ["Dependencies", `V${this.props.selectedDecompositions[0][1] + 1}`, `V${this.props.selectedDecompositions[1][1] + 1}`]]}
-                                                                    rows={
-                                                                        Object.keys(this._getRelationshipTypes(this._getSelectedTab())).map((key) => {
-                                                                            return [
-                                                                                key, 
-                                                                                Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig(1), key).toFixed(2),
-                                                                                Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig(2), key).toFixed(2),
-                                                                            ];
-                                                                        })
-                                                                    }
-                                                                />
-                                                            </Box>
-                                                        </TabPanel>
-                                                        <TabPanel value={1}>
-                                                            <WeightedDiffRelationshipSelectionTable 
-                                                                graphData={[this.props.selectedDecompositions[0][0], this.props.selectedDecompositions[1][0]]}
-                                                                graphVersions={[this.props.selectedDecompositions[0][1], this.props.selectedDecompositions[1][1]]}
-                                                                diffGraph={this._getDiffGraph()}
-                                                                relationships={this.props.relationships}
-                                                                fetchWeightedDecomposition={this._fetchWeightedDiffGraph.bind(this)}
-                                                                setNewWeights={() => this.setState({newWeights: false})}
-                                                                clustering={false}
-                                                                setWeights={this._setWeights.bind(this)}
-                                                                // weights={(Object.keys(this.props.weights).length === 0) ? undefined : this.props.weights}
-                                                                weights={undefined}
-                                                            />
-                                                        </TabPanel>
-                                                    </TabsUnstyled>
-                                                </TableRow>
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
+                                                </Box>
+                                            </TabPanel>
+                                            <TabPanel value={1}>
+                                                <WeightedDiffRelationshipSelectionTable 
+                                                    graphData={[this.props.selectedDecompositions[0][0], this.props.selectedDecompositions[1][0]]}
+                                                    graphVersions={[this.props.selectedDecompositions[0][1], this.props.selectedDecompositions[1][1]]}
+                                                    diffGraph={this._getDiffGraph()}
+                                                    relationships={this.props.relationships}
+                                                    fetchWeightedDecomposition={this._fetchWeightedDiffGraph.bind(this)}
+                                                    setNewWeights={() => this.setState({newWeights: false})}
+                                                    clustering={false}
+                                                    setWeights={this._setWeights.bind(this)}
+                                                    // weights={(Object.keys(this.props.weights).length === 0) ? undefined : this.props.weights}
+                                                    weights={undefined}
+                                                />
+                                            </TabPanel>
+                                        </TabsUnstyled>
+                                    </Container>
                                     <ChangeHistory 
                                         selectedTab={this._getSelectedTab()}
                                         formatMoveOperationContent={new ChangeHistoryService().formatMoveOperationDiffView}
@@ -307,9 +318,9 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
     }
 
     _getDecompositionConfig(decompositionVersion: number) {
-        let cytoscapeElements: any = this._getDiffGraph();
+        let cytoscapeGraph: any = this._getDiffGraph();
 
-        let elements = (cytoscapeElements.elements.nodes) ? cytoscapeElements.elements.nodes : cytoscapeElements.elements;
+        let elements = cytoscapeGraph.elements.nodes;
 
         const numOfPartitions = this._getTotalNumOfPartitions(elements);
 
@@ -320,7 +331,7 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
             }
         }
 
-        let movedElements = elements.filter((ele: any) => ele.data.element_type === "common*").map((ele: any) => ele.data.label); 
+        let movedElements = elements.filter((ele: any) => ele.data.element_type === "common+").map((ele: any) => ele.data.label); 
 
         let decomposition = [];
 
@@ -328,7 +339,7 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
             let partition: any = []; 
             elements.forEach((ele: any) => {
                 if(ele.data.partition === `partition${i}`) {
-                    if(ele.data.element_type === "common" || ele.data.element_type === "common*") {
+                    if(ele.data.element_type === "common" || ele.data.element_type === "common+") {
                         partition.push(ele.data.label);
                     } else if (ele.data.element_type === "diff" 
                         && !movedElements.includes(ele.data.label)
@@ -376,19 +387,26 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
     }
 
     _getDiffGraph() {
-        return this.props.cytoscapeGraphs["diff-view"] || 
-            {elements: new DiffGraphUtils().getDiffDecomposition(
-                this._getCytoscapeGraph(this.props.selectedDecompositions[0][0], this.props.selectedDecompositions[0][1]),
-                this._getCytoscapeGraph(this.props.selectedDecompositions[1][0], this.props.selectedDecompositions[1][1]),
+        if (this.props.cytoscapeGraphs["diff-view"]) {
+            return {saved: true, ...this.props.cytoscapeGraphs["diff-view"]} 
+        } else {
+            return {elements: {nodes: new DiffGraphUtils().getDiffDecomposition(
+                this._getCytoscapeGraph(this.props.selectedDecompositions[0][0]),
+                this._getCytoscapeGraph(this.props.selectedDecompositions[1][0]),
                 this.props.colors[this.props.selectedDecompositions[0][0]],
                 this.props.colors[this.props.selectedDecompositions[1][0]],
                 this.props.selectedDecompositions[0][1] + 1,
                 this.props.selectedDecompositions[1][1] + 1
-            ).getCytoscapeData()};
+            ).getCytoscapeData()}, saved: false};
+        }
     }
 
-    _getCytoscapeGraph(selectedTab: string, version = 1) {
-        return this.props.cytoscapeGraphs[selectedTab] || {elements: new JSONGraphParserUtils().getDecomposition(this.props.jsonGraph[selectedTab].decomposition, version).getCytoscapeData()};
+    _getCytoscapeGraph(selectedTab: string) {
+        if (this.props.cytoscapeGraphs[selectedTab]) {
+            return {...this.props.cytoscapeGraphs[selectedTab], saved: true};  
+        } else {
+            return {elements: {nodes: new JSONGraphParserUtils().getDecomposition(this.props.jsonGraph[selectedTab].decomposition).getCytoscapeData()}, saved: false};
+        }
     }
 
     _getRelationshipTypes(selectedTab: string) {
@@ -399,6 +417,10 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
         this.props.undoMove({selectedTab: this._getSelectedTab(), moveOperation: moveOperation});
     }
 
+    _updateSearchResults(cytoscapeNodes : any) {
+        this.setState({searchResults: cytoscapeNodes});
+    }
+
     _addMove(sourceNode: any, currPartitionNode: any, newPartitionNode: any, diffNode?: any) {
         this.props.addMove({selectedTab: this._getSelectedTab(), sourceNode: sourceNode, currPartitionNode: currPartitionNode, newPartitionNode: newPartitionNode, diffNode: diffNode});
     }
@@ -406,6 +428,8 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
     _resetAllMoves() {
         this.props.resetAllMoves({selectedTab: this._getSelectedTab()});
     }
+
+
 
 }
 

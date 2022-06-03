@@ -12,9 +12,9 @@ import Utils from "../../../../utils";
 import { addNewMoveAction, selectElementsAction, undoMoveAction, resetChangeHistoryAction } from "../../../change-history-table/src/ChangeHistoryActions";
 import { ChangeHistory } from "../../../change-history-table/src/ui/ChangeHistoryUI";
 import { ChangeHistoryService } from "../../../change-history-table/service/ChangeHistoryService";
-import { CustomDecomposition } from "../../../../views/custom-decomposition/CustomDecomposition";
+import { CustomDecomposition } from "../../../../views/custom-view/CustomDecomposition";
 import { resetCytoscapeGraphAction, saveCytoscapeGraphAction, updateRelationshipTypeAction } from "../../../custom-view/src/CustomViewActions";
-import WeightedRelationshipSelectionTable from "../../../../components/SelectionTables/WeightedRelationshipTable";
+import WeightedRelationshipSelectionTable from "../../../../components/Tables/weighted-view/WeightedRelationshipTable";
 import { SearchBar } from "../../../../components/SearchBar/SearchBar";
 
 export interface WeightedViewProps extends WithStylesProps<typeof styles>, IWeightedViewUIState, TActionTypes {
@@ -190,7 +190,7 @@ class WeightedViewBase extends React.PureComponent<WeightedViewProps> {
             let partition: any[] = []; 
             elements.forEach((ele: any) => {
                 if (ele.data.partition === `partition${i}`) {
-                    if (ele.data.element_type === "common" || ele.data.element_type === "common*") {
+                    if (ele.data.element_type === "common" || ele.data.element_type === "common+") {
                         partition.push(ele.data.label);
                     } 
                 }
@@ -203,7 +203,7 @@ class WeightedViewBase extends React.PureComponent<WeightedViewProps> {
         let partition: any[] = []; 
         elements.forEach((ele: any) => {
             if (ele.data.partition === 'unobserved') {
-                if (ele.data.element_type === "common" || ele.data.element_type === "common*") {
+                if (ele.data.element_type === "common" || ele.data.element_type === "common+") {
                     partition.push(ele.data.label);
                 } 
             }
@@ -238,7 +238,7 @@ class WeightedViewBase extends React.PureComponent<WeightedViewProps> {
     }
 
     _getCytoscapeGraph(selectedTab: string) {
-        return this.props.cytoscapeGraphs[selectedTab] || {elements: new JSONGraphParserUtils().getDecomposition(this.props.jsonGraph[selectedTab].decomposition, 1).getCytoscapeData()};
+        return this.props.cytoscapeGraphs[selectedTab] || {elements: {nodes: new JSONGraphParserUtils().getDecomposition(this.props.jsonGraph[selectedTab].decomposition).getCytoscapeData()}};
     }
 
     _getRelationshipTypes(selectedTab: string) {

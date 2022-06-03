@@ -29,7 +29,7 @@ export const WeightedViewService = {
 				if (isError) {
 					throw new Error(json.error);
 				}
-				return {elements: new JSONGraphParserUtils().getDecomposition(json, Object.keys(jsonGraph).length + 1).getCytoscapeData()};
+				return {elements: {nodes: new JSONGraphParserUtils().getDecomposition(json, Object.keys(jsonGraph).length + 1).getCytoscapeData()}};
 			});
 	}
 }

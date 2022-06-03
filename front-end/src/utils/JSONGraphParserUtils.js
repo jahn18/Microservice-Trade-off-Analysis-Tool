@@ -74,10 +74,10 @@ export class JSONGraphParserUtils {
      * Parses the decomposition given in the JSON graph 
      * 
      * @param {*} jsonGraph the JSON graph inputted into the tool
-     * @param {number} version the version number of the decomposition 
+     * @param {number} version the version number of the decomposition (used for the diff-view) 
      * @returns {Decomposition}
      */
-    getDecomposition(jsonGraph, version) {
+    getDecomposition(jsonGraph, version = 0) {
         let classNodeList = [];
         let partitionList = [];
         

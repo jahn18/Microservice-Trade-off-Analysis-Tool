@@ -1,8 +1,8 @@
-import React from "react";
+import React, { version } from "react";
 import cytoscape from 'cytoscape';
-import Utils from '../../../utils';
-import CompoundDragAndDrop from '../../DragAndDrop';
-import AppendixLayout from '../../AppendixLayout';
+import Utils from '../../utils';
+import CompoundDragAndDrop from '../../cytoscape-plugins/DragAndDrop';
+import AppendixLayout from '../../cytoscape-plugins/AppendixLayout';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.js';
@@ -27,9 +27,7 @@ export class DiffDecomposition extends React.Component {
             // consideredRelationshipEdges = Array.from(new Set(consideredRelationshipEdges.concat(this.props.consideredWeightedRelationships)));
         }
 
-        console.log(this.props.weightedDiffMoves);
-
-        let cytoscapeElements = (this.props.decomposition.elements.nodes) ? this.props.decomposition.elements.nodes : this.props.decomposition.elements;
+        let cytoscapeElements = this.props.decomposition.elements.nodes;
 
         this.state = {
             consideredRelationshipEdges: consideredRelationshipEdges,
@@ -47,7 +45,7 @@ export class DiffDecomposition extends React.Component {
                 diff_node: 'diff', 
                 common_node: 'common',
                 invisible_node: 'invisible',
-                moved_node: 'common*',
+                moved_node: 'common+',
             },
             openTable: {
                 metrics: false,
@@ -179,12 +177,12 @@ export class DiffDecomposition extends React.Component {
         });
 
         let relationshipTypes = this.props.relationshipTypes;
-        if(this.props.decomposition.elements.nodes) {
+        if(this.props.decomposition["saved"]) {
             cy.add(this.props.decomposition.elements.nodes).layout({name: 'preset'}).run()
             cy.pan(this.props.decomposition.pan);
             cy.zoom(this.props.decomposition.zoom);
         } else {
-            cy.add(this.props.decomposition.elements);
+            cy.add(this.props.decomposition.elements.nodes);
             let options = {
                 num_of_versions: 2,
                 partitions_per_row: 5,
@@ -532,7 +530,8 @@ export class DiffDecomposition extends React.Component {
                     background_color: 'grey',
                     partition: targetNode.id(),
                     prev_partition: prev_partition,
-                    showMinusSign: false
+                    showMinusSign: false,
+                    version: 0
                 },
                 position: position 
             });
@@ -643,7 +642,7 @@ export class DiffDecomposition extends React.Component {
             this.props.clearChangeHistoryTable();
         }
 
-        if (prevProps.selectedElements !== this.props.selectedElements) {
+        if (JSON.stringify(prevProps.selectedElements.map((move) => {return move.movedNode.id()})) !== JSON.stringify(this.props.selectedElements.map((move) => {return move.movedNode.id()}))) {
             cy.elements().removeClass('deactivate');
             cy.edges().remove();
             if (this.props.mouseOverChangeHistory) {
@@ -654,7 +653,6 @@ export class DiffDecomposition extends React.Component {
         }
 
         if (prevProps.weightedDiffMoves !== this.props.weightedDiffMoves) {
-            console.log(this.props.weightedDiffMoves)
             this.props.weightedDiffMoves["moves"].forEach((move) => {
                 this.onMovedNode(
                     {
@@ -714,7 +712,7 @@ export class DiffDecomposition extends React.Component {
             // } 
             // const getBoundingBoxOfCommonNodes = function(cy_partition_node) {
             //     let common_nodes = cy_partition_node.children().filter((ele) => {
-            //         return (ele.data('element_type') === 'common' || ele.data('element_type') === 'invisible' || ele.data('element_type') === 'common*');
+            //         return (ele.data('element_type') === 'common' || ele.data('element_type') === 'invisible' || ele.data('element_type') === 'common+');
             //     });
                 
             //     let boundingBox = {
@@ -838,16 +836,26 @@ export class DiffDecomposition extends React.Component {
         }
 
         if(prevProps.searchedClassName !== this.props.searchedClassName) {
-            this._onSearchedClassName();
+            cy.elements().removeClass('deactivate').removeClass('highlight');
+            this._onSearchClassName();
+        }
+
+        if (prevProps.clickedClassName !== this.props.clickedClassName) {
+            cy.fit(cy.elements().filter((ele) => {
+                return ele.id().toLowerCase() == (this.props.clickedClassName.toLowerCase()) && !ele.isEdge();
+            }), 50);
         }
     }
 
-    _onSearchedClassName() {
-        if(this.props.searchedClassName !== "") {
-            let selectedElements = this.state.cy.elements().filter((ele) => {
-                return (ele.data("label") && ele.data().label.toLowerCase().startsWith(this.props.searchedClassName.toLowerCase()) && !ele.isEdge()) || ele.data('element_type') === this.state.element_types.invisible_node;
-            });
+    _onSearchClassName() {
+        let selectedElements = [];
+        let displaySearchResults = [];
 
+        if(this.props.searchedClassName !== "") {
+            selectedElements = this.state.cy.elements().filter((ele) => {
+                return (ele.data("label") && ele.data().label.toLowerCase().includes(this.props.searchedClassName.toLowerCase().trim()) && !ele.isEdge()) || ele.data('element_type') === this.state.element_types.invisible_node;
+            });
+        
             selectedElements.forEach((ele) => {
                 if (!ele.isParent()) {
                     selectedElements = selectedElements.union(ele.parent());
@@ -859,7 +867,34 @@ export class DiffDecomposition extends React.Component {
 
             let unselectedElements = this.state.cy.elements().difference(selectedElements);
             unselectedElements.addClass('deactivate');
+            
+            displaySearchResults = selectedElements.filter((ele) => {
+               return !(ele.data('element_type') == 'partition' || ele.data('element_type') == 'invisible' || ele.data('id').toLowerCase().includes('appendix'));
+           })
+           .map((ele) => {
+                {
+                    if (ele.data("version") === 0) {
+                        return ele;
+                    } else {
+                        let copy_ele = ele.copy(); 
+                        copy_ele.data().label = `V${this.props.selectedDecompositions[ele.data("version") - 1][1] + 1}-${ele.data("label")}`;
+                        return copy_ele;
+                    }
+                }}
+           )
+
+           console.log(displaySearchResults)
+
+            if (selectedElements.length == 0) {
+                this.state.cy.fit(this.state.cy.elements(), 50);
+            } else {
+                this.state.cy.fit(displaySearchResults, 50);
+            }
+        } else {
+            this.state.cy.fit(this.state.cy.elements(), 50);
         }
+
+        this.props.updateSearchResults(displaySearchResults);
     }
 
     componentWillUnmount() {

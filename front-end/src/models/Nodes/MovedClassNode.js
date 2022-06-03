@@ -9,7 +9,7 @@ import { CytoscapeNode } from "./CytoscapeNode";
 export class MovedClassNode extends CytoscapeNode {
     constructor(id, label, newParent, prevType, prevParent) {
         super(id, label);
-        this._type = "common*";
+        this._type = "common+";
         this._parent = newParent;
         this._background_color = "grey";
         this._colored = false;

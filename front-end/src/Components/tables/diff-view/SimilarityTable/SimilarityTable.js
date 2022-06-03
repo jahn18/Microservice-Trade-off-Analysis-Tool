@@ -8,9 +8,9 @@ import Button from '@material-ui/core/Button';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Typography from '@material-ui/core/Typography';
-import { GraphMatchingUtils } from '../../utils/GraphMatchingUtils';
+import { GraphMatchingUtils } from '../../../../utils/GraphMatchingUtils';
 
-export default function TradeOffSelectionTable(props) {
+export default function SimilarityTable(props) {
 
     const getSimilarityValue = (matching, similarityMatrix) => {
         let sum = 0;

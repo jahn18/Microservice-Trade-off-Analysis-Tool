@@ -118,7 +118,7 @@ CompoundDragAndDrop.prototype.run = function () {
         const node = e.target;
 
         if (!options.canMoveNode.includes(node.data("element_type"))) {
-            if (node.data("element_type") === "common*") {
+            if (node.data("element_type") === "common+") {
                 options.onMouseOver(node);
             } else {
                 options.onMouseOut();
@@ -147,7 +147,7 @@ CompoundDragAndDrop.prototype.run = function () {
                     partition: null,
                     parent: null,
                     realNodeId: node.id(),
-                    isMovedGhostNode: (potentialMovingNode.data('element_type') === 'common*') ? true : false
+                    isMovedGhostNode: (potentialMovingNode.data('element_type') === 'common+') ? true : false
                 },
                 position: getPositionCopy(node.position()),
                 classes: "l1"
@@ -156,7 +156,7 @@ CompoundDragAndDrop.prototype.run = function () {
     });
 
     cy.on('mouseout', (e) => {
-        if (e.target.data && (e.target.data("element_type") !== "common" && e.target.data("element_type") !== "common*" && e.target.data("element_type") !== "ghost")) {
+        if (e.target.data && (e.target.data("element_type") !== "common" && e.target.data("element_type") !== "common+" && e.target.data("element_type") !== "ghost")) {
             options.onMouseOut();
         }
     })
@@ -229,7 +229,7 @@ CompoundDragAndDrop.prototype.run = function () {
         if (chosenParent.length > 0 && chosenParent.data('element_type') === 'partition' && event.target.data('element_type') !== 'partition') {
             // if (chosenParent.length > 0 && !canBeDropTarget(event.target)) {
             // Just move the node within the partition itself if the a user moves it. 
-            if ((potentialMovingNode.data('element_type') === 'common*'
+            if ((potentialMovingNode.data('element_type') === 'common+'
                 || potentialMovingNode.data('element_type') === 'common')
                 && potentialMovingNode.data('partition') === chosenParent.id()) {
                 potentialMovingNode.shift({
