@@ -120,37 +120,65 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
                         <div style={{position: 'absolute', top: '50%', left: '50%', msTransform: "translateX(-50%) translateY(-50%)", WebkitTransform: "translate(-50%,-50%)", transform: 'translate(-50%,-50%)', maxHeight: '75%'}}>
                             <SimilarityTable
                                 updateSelectedDecompositions={this._setSelectedDecompostions.bind(this)}
-                                decompositions={[...new Set([...Object.keys(this.props.jsonGraph), ...Object.keys(this.props.cytoscapeGraphs)])].reduce((decompositions, key, index) => {return decompositions = {...decompositions, [key]: this._getCytoscapeGraph(key)}}, {})}
-                                keys={[...new Set([...Object.keys(this.props.jsonGraph), ...Object.keys(this.props.cytoscapeGraphs)])]}
+                                // ** UNCOMMENT IF YOU WANT TO INCLUDE WEIGHTED VIEW IN THE DIFF VIEW **
+                                // decompositions={[...new Set([...Object.keys(this.props.jsonGraph), ...Object.keys(this.props.cytoscapeGraphs)])].reduce((decompositions, key, index) => {return decompositions = {...decompositions, [key]: this._getCytoscapeGraph(key)}}, {})}
+                                // keys={[...new Set([...Object.keys(this.props.jsonGraph), ...Object.keys(this.props.cytoscapeGraphs)])]} 
+                                decompositions={[...new Set([...Object.keys(this.props.jsonGraph)])].reduce((decompositions, key, index) => {return decompositions = {...decompositions, [key]: this._getCytoscapeGraph(key)}}, {})}
+                                keys={[...new Set([...Object.keys(this.props.jsonGraph)])]}
                             /> 
                         </div> 
                     :
-                        <div>
+                        <div style={{height: "100%"}}>
                        
-                        <Grid container direction={'row'} style={{position: "fixed", display: "flex"}}>
+                        <Grid container direction={'row'} style={{height: "100%", width: "100%", overflow: "auto"}}>
                             <Grid item xs={9.5}>
-                                <DiffDecomposition
-                                    graphData={this.props.jsonGraph} 
-                                    selectedDecompositions={this.props.selectedDecompositions}
-                                    selectedTab={this._getSelectedTab()}
-                                    relationshipTypes={this._getRelationshipTypes(this._getSelectedTab())} 
-                                    colors={this.props.colors} 
-                                    weightedViewDecomposition={undefined} 
-                                    decomposition={this._getDiffGraph()}
-                                    weightedDiffMoves={this._getWeightedDiffGraph()}
-                                    saveGraph={this._saveCytoscapeGraph.bind(this)}
-                                    addMove={this._addMove.bind(this)}
-                                    undoMove={this._undoMove.bind(this)}
-                                    selectedElements={[...this._getSelectedElementsChangeHistory(), ...this.state.mouseOverRow]}
-                                    mouseOverChangeHistory={this.state.mouseOverRow.length !== 0}
-                                    clickedClassName={this.state.clickedClassName}
-                                    updateSearchResults={this._updateSearchResults.bind(this)}
-                                    resetMoves={this.state.reset}
-                                    clearChangeHistoryTable={() => {
-                                        this.setState({reset: false});
-                                    }}
-                                    searchedClassName={this.state.searchedClassName}
-                                /> 
+                                <Box style={{width: "100%", height: "100%", border: '1px solid grey'}}>
+                                    <DiffDecomposition
+                                        graphData={this.props.jsonGraph} 
+                                        selectedDecompositions={this.props.selectedDecompositions}
+                                        selectedTab={this._getSelectedTab()}
+                                        relationshipTypes={this._getRelationshipTypes(this._getSelectedTab())} 
+                                        colors={this.props.colors} 
+                                        weightedViewDecomposition={undefined} 
+                                        decomposition={this._getDiffGraph()}
+                                        weightedDiffMoves={this._getWeightedDiffGraph()}
+                                        saveGraph={this._saveCytoscapeGraph.bind(this)}
+                                        addMove={this._addMove.bind(this)}
+                                        undoMove={this._undoMove.bind(this)}
+                                        selectedElements={[...this._getSelectedElementsChangeHistory(), ...this.state.mouseOverRow]}
+                                        mouseOverChangeHistory={this.state.mouseOverRow.length !== 0}
+                                        clickedClassName={this.state.clickedClassName}
+                                        updateSearchResults={this._updateSearchResults.bind(this)}
+                                        resetMoves={this.state.reset}
+                                        clearChangeHistoryTable={() => {
+                                            this.setState({reset: false});
+                                        }}
+                                        searchedClassName={this.state.searchedClassName}
+                                    /> 
+                                    <Typography style={{marginTop: 10, marginLeft: 10, display: 'flex', alignSelf: "flex-start", position: "fixed"}} variant="h5"> 
+                                        <div style={{marginLeft: '5px', marginRight: '8px', color: this.props.colors[this.props.selectedDecompositions[0][0]]}}>
+                                            {`V${this.props.selectedDecompositions[0][1] + 1}`}
+                                        </div>
+                                        <div style={{marginRight: "3px"}}>
+                                            {'vs.'}
+                                        </div>
+                                        <div style={{color: this.props.colors[this.props.selectedDecompositions[1][0]]}}>
+                                            {`V${this.props.selectedDecompositions[1][1] + 1}`}
+                                        </div>
+                                        <Button variant="outlined" color="primary"
+                                                style={{
+                                                    marginLeft: 15
+                                                }}
+                                                onClick={() => {
+                                                    this._resetAllMoves();
+                                                    this._setSelectedDecompostions([]);
+                                                    this._updateSearchResults([]);
+                                                }
+                                            }>
+                                            Compare new
+                                        </Button>
+                                    </Typography>
+                                </Box>
                                 {/* {!this.props.cytoscapeGraphs["weighted-diff-view"] ?
                                     <DiffDecomposition
                                         graphData={this.props.jsonGraph} 
@@ -196,48 +224,21 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
                                         searchedClassName={this.state.searchedClassName}
                                     /> 
                                 } */}
-                                <Typography style={{marginTop: 10, marginLeft: 27.5, display: 'flex'}} variant="h5"> 
-                                    <div style={{marginRight: '8px', color: this.props.colors[this.props.selectedDecompositions[0][0]]}}>
-                                        {`V${this.props.selectedDecompositions[0][1] + 1}`}
-                                    </div>
-                                    <div style={{marginRight: "3px"}}>
-                                        {'vs.'}
-                                    </div>
-                                    <div style={{color: this.props.colors[this.props.selectedDecompositions[1][0]]}}>
-                                        {`V${this.props.selectedDecompositions[1][1] + 1}`}
-                                    </div>
-                                </Typography>
-                                <Button variant="outlined" color="primary"
-                                    style={{
-                                        marginTop: 10,
-                                        marginLeft: 10
-                                    }}
-                                    onClick={() => {
-                                        this._resetAllMoves();
-                                        this._setSelectedDecompostions([]);
-                                        this._updateSearchResults([]);
-                                    }
-                                }>
-                                    Compare new
-                                </Button>
                             </Grid>
                             <Grid item xs={2.5}>
-                                <Box style={{width: "100%", height: "100vh", border: '1px solid grey'}}>
-                                    <Container>
+                                <Grid container direction="row" />
+                                    <Grid item>
                                         <SearchBar 
                                             changeClassName={(className: string) => this.setState({searchedClassName: className})}
                                         />
-                                    </Container>
-                                    <Container sx={{whiteSpace: "nowrap", overflow: "auto", width: "95%", m: 2}}>
+                                    </Grid>
+                                    <Grid item sx={{whiteSpace: "nowrap", overflow: "auto", width: "95%", m: 2}}>
                                         <ClassSearchResults
                                             changeClickedClass={(className: string) => this.setState({clickedClassName: className})}
                                             searchResults={this.state.searchResults}
                                         />
-                                    </Container>
-                                    <Container sx={{whiteSpace: "nowrap", overflow: "auto", width: "95%", m: 2}}>
-                                        {/* TODO: add the ClassSearchResult here! */}
-                                    </Container>
-                                    <Container>
+                                    </Grid>
+                                    <Grid item>
                                         <TabsUnstyled defaultValue={0}>
                                             <TabsList onChange={(tab: any) => this.setState({selectedTab: tab})}>
                                                 <Tab>Metrics</Tab>
@@ -276,23 +277,25 @@ class DiffViewBase extends React.PureComponent<DiffViewProps> {
                                                 />
                                             </TabPanel>
                                         </TabsUnstyled>
-                                    </Container>
-                                    <ChangeHistory 
-                                        selectedTab={this._getSelectedTab()}
-                                        formatMoveOperationContent={new ChangeHistoryService().formatMoveOperationDiffView}
-                                        onSelectedElements={(elementList: any) => {
-                                            this._setSelectedElementsChangeHistory(elementList);
-                                        } }
-                                        resetChangeHistory={() => {
-                                            this._getSelectedElementsChangeHistory().forEach((moveOperation: any) => {
-                                                this._undoMove(moveOperation);
-                                            });
-                                            this.setState({reset: true});
-                                        } }
-                                        onMouseOver={(ele: any) => { this.setState({ mouseOverRow: [ele] }); } }
-                                        onMouseOut={() => { this.setState({ mouseOverRow: [] }); } } 
-                                    />
-                                </Box>
+                                    </Grid>
+                                    <Grid item>
+                                        <ChangeHistory 
+                                            selectedTab={this._getSelectedTab()}
+                                            formatMoveOperationContent={new ChangeHistoryService().formatMoveOperationDiffView}
+                                            onSelectedElements={(elementList: any) => {
+                                                this._setSelectedElementsChangeHistory(elementList);
+                                            } }
+                                            resetChangeHistory={() => {
+                                                this._getSelectedElementsChangeHistory().forEach((moveOperation: any) => {
+                                                    this._undoMove(moveOperation);
+                                                });
+                                                this.setState({reset: true});
+                                            } }
+                                            onMouseOver={(ele: any) => { this.setState({ mouseOverRow: [ele] }); } }
+                                            onMouseOut={() => { this.setState({ mouseOverRow: [] }); } } 
+                                            maxHeight={"46vh"}
+                                        />
+                                    </Grid>
                             </Grid>
                         </Grid>
                     </div>

@@ -55,6 +55,9 @@ export class JSONGraphParserUtils {
         const sigmoid = (z) => {
             return 1 / (1 + Math.exp(-z));
         }
+        if (sd == 0) {
+            sd = 1;
+        }
         return edges.map((edge) => new CytoscapeEdge(edge.source, edge.target, sigmoid((parseFloat(edge.weight) - mean) / sd).toFixed(2), color));
     }
 

@@ -55,18 +55,19 @@ AppendixLayout.prototype.run = function() {
     const addAppendices = function() {
         let appendices = [];
         for(let i = 0; i < partitions.length; i++) {
+            let partition_num = partitions[i].id().match('[0-9]');
             for (let j = 1; j <= options.num_of_versions; j++) {
                 cy.add([
                     {
                         data: {
-                            id: `partition${i}_appendix${j}`, 
+                            id: `partition${partition_num}_appendix${j}`, 
                             background_color: 'grey',
                             colored: true,
                             element_type: 'appendix',
                             width: options.width,
                             height: options.height,
-                            parent: `partition${i}`,
-                            partition: `partition${i}`,
+                            parent: `partition${partition_num}`,
+                            partition: `partition${partition_num}`,
                             version: j,
                             showMinusSign: false,
                         } 
@@ -78,7 +79,7 @@ AppendixLayout.prototype.run = function() {
                     let ele = cy_graph_json.elements.nodes[l];
                     if(ele.data.element_type === `diff`
                     && ele.data.version === j 
-                    && ele.data.parent === `partition${i}`) {
+                    && ele.data.parent === `partition${partition_num}`) {
                         diff_nodes.push(ele);
                     }
                 }
@@ -87,26 +88,26 @@ AppendixLayout.prototype.run = function() {
                 if(diff_nodes.length !== 0) {
                     for(let k = 0; k < diff_nodes.length; k++) {
                         let data = diff_nodes[k].data;
-                        data.parent = `partition${i}_appendix${j}`;
+                        data.parent = `partition${partition_num}_appendix${j}`;
                         cy.add([{ data: data }]);
                     }
                 } else {
                     cy.add([
                         {
                             data: {
-                                id: `invisible_node_partition${i}_appendix${j}`,
+                                id: `invisible_node_partition${partition_num}_appendix${j}`,
                                 label: `invisible_node${j}`,
                                 element_type: 'invisible',
                                 partition: `partition${i}`,
                                 background_color: 'grey',
                                 colored: false,
                                 showMinusSign: false, 
-                                parent: `partition${i}_appendix${j}`
+                                parent: `partition${partition_num}_appendix${j}`
                             },
                         } 
                     ]);
                 }
-                appendices.push(cy.getElementById(`partition${i}_appendix${j}`));
+                appendices.push(cy.getElementById(`partition${partition_num}_appendix${j}`));
             }
         }
         return appendices;
@@ -142,8 +143,9 @@ AppendixLayout.prototype.run = function() {
     const getAppendicesInfo = function() {
         let info = {};
         for(let i = 0; i < partitions.length; i++) {
+            let partition_num = partitions[i].id().match('[0-9]');
             let partition_appendices = cy.filter((ele) => {
-                return ele.data('parent') === `partition${i}` && ele.data('element_type') === 'appendix';
+                return ele.data('parent') === `partition${partition_num}` && ele.data('element_type') === 'appendix';
             })
             let total_width = 0;
             for(let j = 0; j < partition_appendices.length; j++) {
@@ -151,7 +153,7 @@ AppendixLayout.prototype.run = function() {
                 partition_appendices[j].data().width = partition_appendices[j].width();
             }
 
-            info[`partition${i}`] = {
+            info[`partition${partition_num}`] = {
                 total_width: total_width,
                 largest_height: cy.collection(partition_appendices).max((ele) => {return ele.boundingBox().h})
             }
@@ -228,10 +230,11 @@ AppendixLayout.prototype.run = function() {
     // Now shift all partitions and position them accordingly to the appendix view.
     const shiftAppendices = function(appendix_info) {
         for(let i = 0; i < partitions.length; i++) {
-            let boundingBox = getBoundingBoxOfCommonNodes(cy.getElementById(`partition${i}`));
-            let last_appendix_x_pos = boundingBox['center_point'].x + ( appendix_info[`partition${i}`].total_width / 2);
+            let partition_num = partitions[i].id().match('[0-9]');
+            let boundingBox = getBoundingBoxOfCommonNodes(cy.getElementById(`partition${partition_num}`));
+            let last_appendix_x_pos = boundingBox['center_point'].x + ( appendix_info[`partition${partition_num}`].total_width / 2);
             for(let j = options.num_of_versions; j > 0; j--) {
-                let appendix = cy.getElementById(`partition${i}_appendix${j}`);
+                let appendix = cy.getElementById(`partition${partition_num}_appendix${j}`);
                 appendix.shift({
                     x: last_appendix_x_pos - appendix.boundingBox().x2,
                     y: (boundingBox.y2 - appendix.boundingBox().y1) + 50
@@ -276,7 +279,7 @@ AppendixLayout.prototype.run = function() {
         }
 
         for(let i = 0; i < partitions.length; i++ ) {
-            let partition = cy.getElementById(`partition${i}`);
+            let partition = cy.getElementById(partitions[i].id());
             if(i % partitions_per_row === 0) {
                 partition.shift({
                     x: previous_partition_position.first_row_x1_pos - partition.boundingBox().x1,
@@ -367,8 +370,9 @@ AppendixLayout.prototype.reformat = function() {
     const getAppendicesInfo = function() {
         let info = {};
         for(let i = 0; i < partitions.length; i++) {
+            let partition_num = partitions[i].id().match('[0-9]');
             let partition_appendices = cy.filter((ele) => {
-                return ele.data('parent') === `partition${i}` && ele.data('element_type') === 'appendix';
+                return ele.data('parent') === `partition${partition_num}` && ele.data('element_type') === 'appendix';
             })
             let total_width = 0;
             for(let j = 0; j < partition_appendices.length; j++) {
@@ -376,7 +380,7 @@ AppendixLayout.prototype.reformat = function() {
                 partition_appendices[j].data().width = partition_appendices[j].width();
             }
 
-            info[`partition${i}`] = {
+            info[`partition${partition_num}`] = {
                 total_width: total_width,
                 largest_height: cy.collection(partition_appendices).max((ele) => {return ele.boundingBox().h})
             }
@@ -454,10 +458,11 @@ AppendixLayout.prototype.reformat = function() {
 
     const shiftAppendices = function(appendix_info) {
         for(let i = 0; i < partitions.length; i++) {
-            let boundingBox = getBoundingBoxOfCommonNodes(cy.getElementById(`partition${i}`));
-            let last_appendix_x_pos = boundingBox['center_point'].x + ( appendix_info[`partition${i}`].total_width / 2);
+            let partition_num = partitions[i].id().match('[0-9]');
+            let boundingBox = getBoundingBoxOfCommonNodes(cy.getElementById(`partition${partition_num}`));
+            let last_appendix_x_pos = boundingBox['center_point'].x + ( appendix_info[`partition${partition_num}`].total_width / 2);
             for(let j = options.num_of_versions; j > 0; j--) {
-                let appendix = cy.getElementById(`partition${i}_appendix${j}`);
+                let appendix = cy.getElementById(`partition${partition_num}_appendix${j}`);
                 appendix.shift({
                     x: last_appendix_x_pos - appendix.boundingBox().x2,
                     y: (boundingBox.y2 - appendix.boundingBox().y1) + 50
@@ -478,7 +483,8 @@ AppendixLayout.prototype.reformat = function() {
         }
 
         for(let i = 0; i < partitions.length; i++ ) {
-            let partition = cy.getElementById(`partition${i}`);
+            let partition_num = partitions[i].id().match('[0-9]');
+            let partition = cy.getElementById(`partition${partition_num}`);
             if(i % partitions_per_row === 0) {
                 partition.shift({
                     x: previous_partition_position.first_row_x1_pos - partition.boundingBox().x1,

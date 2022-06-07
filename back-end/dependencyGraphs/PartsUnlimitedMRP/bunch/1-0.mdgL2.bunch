@@ -1,0 +1,2 @@
+SS(ShipmentRecord.ss) = ShipmentController, ShipmentRepository, ShipmentRecord, DeliveryAddress, PhoneInfo, ShipmentEventInfo, ShipmentDetails, QuoteRepository, QuoteController, Quote, QuoteDetails, QuoteItemInfo, DealerRepository, DealerController, DealerInfo, Dealer, OrderUpdateInfo, OrderStatus, OrderEventInfo, OrderController, ConflictingRequestException, OrderRepository, BadRequestException, OrderDetails, Order
+SS(database.CatalogItem.ss) = CatalogRepository, CatalogController, CatalogItem, database.CatalogItem

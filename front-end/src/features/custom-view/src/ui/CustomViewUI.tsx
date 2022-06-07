@@ -105,111 +105,115 @@ class CustomViewBase extends React.PureComponent<CustomViewProps> {
 
     render() {
         return (
-            <div>
-                <Grid container direction={'row'} style={{position: "fixed"}}>
+            <div style={{height: "100%"}}>
+                <Grid container direction="row" sx={{height: "100%", width: "100%", overflow: "auto"}}>
                     <Grid item xs={9.5}>
-                        <CustomDecomposition 
-                            decomposition={this._getCytoscapeGraph(this._getSelectedTab())}
-                            selectedTab={this._getSelectedTab()}
-                            relationshipTypes={this._getRelationshipTypes(this._getSelectedTab())}
-                            saveGraph={this._saveCytoscapeGraph.bind(this)}
-                            addMove={this._addMove.bind(this)}
-                            undoMove={this._undoMove.bind(this)}
-                            selectedElements={[...this._getSelectedElementsChangeHistory(), ...this.state.mouseOverRow]}
-                            updateSearchResults={this._updateSearchResults.bind(this)}
-                            clickedClassName={this.state.clickedClassName}
-                            mouseOverChangeHistory={this.state.mouseOverRow.length !== 0}
-                            resetMoves={this.state.reset}
-                            clusterGraph={this.props.cytoscapeGraphs[this._getSelectedTab()] === undefined}
-                            clearChangeHistoryTable={() => {
-                                this.setState({reset: false});
-                            }}
-                            resetDecomposition={{elements: new JSONGraphParserUtils().getDecomposition(this.props.jsonGraph[this._getSelectedTab()].decomposition, 1).getCytoscapeData()}}
-                            searchedClassName={this.state.searchedClassName}
-                        />
-                    </Grid>
-                    <Grid item xs={2.5}>
-                        <Box style={{width: "100%", height: "100vh", border: '1px solid grey', overflowX: "scroll"}}>
-                            <Container>
-                                <SearchBar 
-                                    changeClassName={(className: string) => this.setState({searchedClassName: className})}
-                                />
-                            </Container>
-                            <Container sx={{whiteSpace: "nowrap", overflow: "auto", width: "95%", m: 2}}>
-                                <ClassSearchResults
-                                    changeClickedClass={(className: string) => this.setState({clickedClassName: className})}
-                                    searchResults={this.state.searchResults}
-                                />
-                            </Container>
-                            <Container>
-                                <TabsUnstyled defaultValue={0}>
-                                    <TabsList onChange={(tab: any) => this.setState({selectedTab: tab})}>
-                                        <Tab>Metrics</Tab>
-                                        {/* <Tab disabled={this.props.selectedTab !== "class-names"}>Cluster</Tab> */}
-                                        {/* <Tab>Cluster</Tab> */}
-                                    </TabsList>
-                                        <TabPanel value={0}>
-                                            <Box sx={{border: '1px solid grey', borderStyle: 'solid none'}}>
-                                                <Metrics 
-                                                    title={"Metrics + Edge Filter"}
-                                                    headers={[["Coupling & Cohesion"], ["Dependencies", "Values", "Filter"]]}
-                                                    rows={
-                                                        Object.keys(this._getRelationshipTypes(this._getSelectedTab())).map((key) => {
-                                                            return [
-                                                                key, 
-                                                                Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig(), key),
-                                                                <Slider 
-                                                                    size="small"
-                                                                    aria-labelledby="discrete-slider"
-                                                                    valueLabelDisplay="auto"
-                                                                    value={this._getRelationshipTypes(this._getSelectedTab())[key].minimumEdgeWeight}
-                                                                    step={10}
-                                                                    marks={true}
-                                                                    defaultValue={0}
-                                                                    min={0}
-                                                                    max={100}
-                                                                    style={{
-                                                                        width: '100%',
-                                                                        color: this.props.colors[key]
-                                                                    }}
-                                                                    onChange={(event, weight) => {
-                                                                        const relationshipType = this._getRelationshipTypes(this._getSelectedTab());
-                                                                        relationshipType[key].minimumEdgeWeight = weight; 
-                                                                        this._updateRelationshipType(this._getSelectedTab(), relationshipType)
-                                                                    }}
-                                                                />
-                                                            ];
-                                                        })
-                                                    }
-                                                />
-                                            </Box>
-                                        </TabPanel>
-                                        {/* <TabPanel value={1}>
-                                            <Box sx={{border: '1px solid grey', borderStyle: 'solid none'}}>
-                                                <ClusterTable 
-                                                    fetchGraph={this._fetchGraph.bind(this)}
-                                                    clusterGraph={() => this.setState({clusterGraph: true})}
-                                                />
-                                            </Box>
-                                        </TabPanel> */}
-                                </TabsUnstyled>
-                            </Container>
-                            <ChangeHistory 
+                        <Box style={{width: "100%", height: "100%", border: '1px solid grey'}}>
+                            <CustomDecomposition 
+                                decomposition={this._getCytoscapeGraph(this._getSelectedTab())}
                                 selectedTab={this._getSelectedTab()}
-                                formatMoveOperationContent={new ChangeHistoryService().printMoveOperationIndividualView}
-                                onSelectedElements={(elementList: any) => {
-                                    this._setSelectedElementsChangeHistory(elementList);
-                                } }
-                                resetChangeHistory={() => {
-                                    this._getSelectedElementsChangeHistory().forEach((moveOperation: any) => {
-                                        this._undoMove(moveOperation);
-                                    });
-                                    this.setState({reset: true});
-                                } }
-                                onMouseOver={(ele: any) => { this.setState({ mouseOverRow: [ele] }); } }
-                                onMouseOut={() => { this.setState({ mouseOverRow: [] }); } } 
+                                relationshipTypes={this._getRelationshipTypes(this._getSelectedTab())}
+                                saveGraph={this._saveCytoscapeGraph.bind(this)}
+                                addMove={this._addMove.bind(this)}
+                                undoMove={this._undoMove.bind(this)}
+                                selectedElements={[...this._getSelectedElementsChangeHistory(), ...this.state.mouseOverRow]}
+                                updateSearchResults={this._updateSearchResults.bind(this)}
+                                clickedClassName={this.state.clickedClassName}
+                                mouseOverChangeHistory={this.state.mouseOverRow.length !== 0}
+                                resetMoves={this.state.reset}
+                                clusterGraph={this.props.cytoscapeGraphs[this._getSelectedTab()] === undefined}
+                                clearChangeHistoryTable={() => {
+                                    this.setState({reset: false});
+                                }}
+                                resetDecomposition={{elements: new JSONGraphParserUtils().getDecomposition(this.props.jsonGraph[this._getSelectedTab()].decomposition, 1).getCytoscapeData()}}
+                                searchedClassName={this.state.searchedClassName}
                             />
                         </Box>
+                    </Grid>
+                    <Grid item xs={2.5} zeroMinWidth>
+                            <Grid container direction="row"/>
+                                <Grid item>
+                                    <SearchBar 
+                                        changeClassName={(className: string) => this.setState({searchedClassName: className})}
+                                    />
+                                </Grid>
+                                <Grid item sx={{whiteSpace: "nowrap", overflow: "auto", width: "90%", m: 2}}>
+                                    <ClassSearchResults
+                                        changeClickedClass={(className: string) => this.setState({clickedClassName: className})}
+                                        searchResults={this.state.searchResults}
+                                    />
+                                </Grid>
+                                <Grid item>
+                                    <TabsUnstyled defaultValue={0}>
+                                        <TabsList onChange={(tab: any) => this.setState({selectedTab: tab})}>
+                                            <Tab>Metrics</Tab>
+                                            {/* <Tab disabled={this.props.selectedTab !== "class-names"}>Cluster</Tab> */}
+                                            {/* <Tab>Cluster</Tab> */}
+                                        </TabsList>
+                                            <TabPanel value={0}>
+                                                <Box sx={{border: '1px solid grey', borderStyle: 'solid none'}}>
+                                                    <Metrics 
+                                                        title={"Metrics + Edge Filter"}
+                                                        headers={[["Coupling & Cohesion"], ["Dependencies", "Values", "Filter"]]}
+                                                        rows={
+                                                            Object.keys(this._getRelationshipTypes(this._getSelectedTab())).map((key) => {
+                                                                return [
+                                                                    key, 
+                                                                    Utils.calculateNormalizedTurboMQ(this._getRelationshipTypes(this._getSelectedTab())[key]["cytoscapeEdges"], this._getDecompositionConfig(), key).toFixed(2),
+                                                                    <Slider 
+                                                                        size="small"
+                                                                        aria-labelledby="discrete-slider"
+                                                                        valueLabelDisplay="auto"
+                                                                        value={this._getRelationshipTypes(this._getSelectedTab())[key].minimumEdgeWeight}
+                                                                        step={10}
+                                                                        marks={true}
+                                                                        defaultValue={0}
+                                                                        min={0}
+                                                                        max={100}
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            color: this.props.colors[key]
+                                                                        }}
+                                                                        onChange={(event, weight) => {
+                                                                            const relationshipType = this._getRelationshipTypes(this._getSelectedTab());
+                                                                            relationshipType[key].minimumEdgeWeight = weight; 
+                                                                            this._updateRelationshipType(this._getSelectedTab(), relationshipType)
+                                                                        }}
+                                                                    />
+                                                                ];
+                                                            })
+                                                        }
+                                                    />
+                                                </Box>
+                                            </TabPanel>
+                                            {/* <TabPanel value={1}>
+                                                <Box sx={{border: '1px solid grey', borderStyle: 'solid none'}}>
+                                                    <ClusterTable 
+                                                        fetchGraph={this._fetchGraph.bind(this)}
+                                                        clusterGraph={() => this.setState({clusterGraph: true})}
+                                                    />
+                                                </Box>
+                                            </TabPanel> */}
+                                    </TabsUnstyled>
+                                </Grid>
+                                <Grid item>
+                                    <ChangeHistory 
+                                        selectedTab={this._getSelectedTab()}
+                                        formatMoveOperationContent={new ChangeHistoryService().printMoveOperationIndividualView}
+                                        onSelectedElements={(elementList: any) => {
+                                            this._setSelectedElementsChangeHistory(elementList);
+                                        } }
+                                        resetChangeHistory={() => {
+                                            this._getSelectedElementsChangeHistory().forEach((moveOperation: any) => {
+                                                this._undoMove(moveOperation);
+                                            });
+                                            this.setState({reset: true});
+                                        } }
+                                        onMouseOver={(ele: any) => { this.setState({ mouseOverRow: [ele] }); } }
+                                        onMouseOut={() => { this.setState({ mouseOverRow: [] }); } } 
+                                        maxHeight={"38vh"}
+                                    />
+                                </Grid>
                     </Grid>
                 </Grid>
             </div>

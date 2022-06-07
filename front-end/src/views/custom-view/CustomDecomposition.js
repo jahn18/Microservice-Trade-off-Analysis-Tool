@@ -211,7 +211,6 @@ export class CustomDecomposition extends React.Component {
         
         // Use the saved cytoscape state  
         if(this.props.decomposition["saved"]) {
-            console.log(this.props.decomposition)
             cy.add(this.props.decomposition.elements.nodes).layout({name: 'preset'}).run()
             cy.pan(this.props.decomposition.pan);
             cy.zoom(this.props.decomposition.zoom);
@@ -496,7 +495,7 @@ export class CustomDecomposition extends React.Component {
 
         if (prevProps.clickedClassName !== this.props.clickedClassName) {
             cy.fit(cy.elements().filter((ele) => {
-                return ele.id().toLowerCase() == (this.props.clickedClassName.toLowerCase()) && !ele.isEdge() || ele.data('element_type') === this.state.element_types.invisible_node;
+                return ele.id().toLowerCase() == (this.props.clickedClassName.toLowerCase()) && !ele.isEdge() && ele.data('element_type') !== this.state.element_types.invisible_node;
             }), 10);
         }
 
@@ -506,7 +505,7 @@ export class CustomDecomposition extends React.Component {
         let selectedElements = [];
         if(this.props.searchedClassName !== "") {
             selectedElements = this.state.cy.elements().filter((ele) => {
-                return ele.id().toLowerCase().includes(this.props.searchedClassName.toLowerCase().trim()) && !ele.isEdge() || ele.data('element_type') === this.state.element_types.invisible_node;
+                return ele.id().toLowerCase().includes(this.props.searchedClassName.toLowerCase().trim()) && !ele.isEdge() && ele.data('element_type') !== this.state.element_types.invisible_node;
             });
 
             selectedElements.forEach((ele) => {
@@ -527,8 +526,8 @@ export class CustomDecomposition extends React.Component {
         }
 
         this.props.updateSearchResults(selectedElements.filter((ele) => {
-                        return !(ele.data('element_type') == 'partition');
-                    }));
+                return !(ele.data('element_type') == this.state.element_types.partition);
+        }));
     }
 
     _onDecompositionChange() {
@@ -572,7 +571,7 @@ export class CustomDecomposition extends React.Component {
 
     render() {
         return (
-            <div style={{height: '100%', width: '79%', position: "fixed"}} ref={ref => (this.ref = ref)}></div>
+            <div style={{width: "78.3%", height: "100%", position: "fixed"}} ref={ref => (this.ref = ref)}></div>
         );
     }
 };

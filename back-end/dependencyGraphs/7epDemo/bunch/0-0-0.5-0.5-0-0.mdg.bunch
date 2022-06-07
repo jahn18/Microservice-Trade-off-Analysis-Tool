@@ -1,0 +1,7 @@
+SS(LoginREST.ss) = RESTCookieSessionFilter, AirportCodeMapping, ConnectionManager, DateParam, AppConfig, ServiceRegister, LoginREST, Util, KeyGenerator, MongoConstants
+SS(CustomerServiceImpl.ss) = CustomerREST, CustomerService, CustomerServiceImpl, AddressInfo, CustomerInfo
+SS(AcmeAirConstants.ss) = AcmeAirApp, AcmeAirConfiguration, AcmeAirConstants
+SS(FlightService.ss) = FlightServiceImpl, BookingsREST, FlightsREST, FlightService
+SS(LoaderREST.ss) = LoaderREST, Loader, CustomerLoader, SessionLoader, BookingLoader, FlightLoader
+SS(AuthServiceImpl.ss) = AuthServiceImpl, AuthService
+SS(BookingServiceImpl.ss) = BookingService, BookingServiceImpl

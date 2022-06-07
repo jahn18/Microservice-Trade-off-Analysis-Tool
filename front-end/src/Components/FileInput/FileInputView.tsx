@@ -46,10 +46,14 @@ export class FileInputView extends React.Component<IFileInputViewProps, IFileInp
                                 <input
                                     type="file"
                                     id="json-file" 
-                                    accept=".json" 
+                                    accept="application/JSON" 
                                     onChange={ (e: any) => {
-                                        this.props.onFileUpload(e.target.files[0])
-                                        this.setState({graphData: JSON.parse(e.target.files[0])});
+                                        this.props.onFileUpload(e.target.files[0]);
+                                        const fileReader = new FileReader();
+                                        fileReader.readAsText(e.target.files[0], "UTF-8");
+                                        fileReader.onload = (f: any) => {
+                                            this.setState({graphData: JSON.parse(f.target.result)});
+                                        };
                                     }}
                                 />
                             </TableCell>

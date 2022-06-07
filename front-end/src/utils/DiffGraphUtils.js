@@ -35,13 +35,19 @@ export class DiffGraphUtils {
             let partitionTwo = cytoscapeElementsTwo.filter((ele) => ele.data.parent && ele.data.parent === match[1] && ele.data.element_type !== "invisible").map((ele) => ele.data.id);
 
             let commonClassNodes = this._getCommonClassNodes(partitionOne, partitionTwo, `partition${index}`);
-            // There are no common nodes between the matched partitions, then add an invisible node. 
-            if (commonClassNodes.length === 0) {
-                commonClassNodes.push(new InvisibleClassNode(`invisible_node_partition${index}`, `invisible_node${index}`, `partition${index}`));
+            let diffClassNodes = this._getDiffClassNodes(partitionOne, partitionTwo, diffNodeOneColor, diffNodeTwoColor, `partition${index}`);
+            
+            // If the common boundary and the diff node boundary is not empty then create a matched partition 
+            if (diffClassNodes.length > 0 || commonClassNodes.length > 0) {
+                // There are no common nodes between the matched partitions, then add an invisible node. 
+                if (commonClassNodes.length === 0) {
+                    commonClassNodes.push(new InvisibleClassNode(`invisible_node_partition${index}`, `invisible_node${index}`, `partition${index}`));
+                }
+                classNodeList.push(commonClassNodes.concat(diffClassNodes));
+                matchedPartitionList.push(new MatchedPartitionNode(`partition${index}`, index, versionOne, versionTwo, partitionLabelOne, partitionLabelTwo))
             }
-            classNodeList.push(commonClassNodes.concat(this._getDiffClassNodes(partitionOne, partitionTwo, diffNodeOneColor, diffNodeTwoColor, `partition${index}`)));
-            matchedPartitionList.push(new MatchedPartitionNode(`partition${index}`, index, versionOne, versionTwo, partitionLabelOne, partitionLabelTwo))
         });
+
         return new Decomposition(classNodeList, matchedPartitionList); 
     }
 

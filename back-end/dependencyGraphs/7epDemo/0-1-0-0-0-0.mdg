@@ -1,0 +1,9 @@
+ConfigService ConfigurationException 9
+MetricRegistryCollection RegistryService 4
+MetricRegistryCollection GarbageCollectorMetrics 3
+JvmMetricSet BufferPoolMetrics 8
+JvmMetricSet FileDescriptorMetrics 3
+JvmMetricSet GarbageCollectorMetrics 9
+JvmMetricSet MemoryUsageMetrics 71
+JvmMetricSet ThreadStateMetrics 25
+BufferPoolMetrics MemoryUsageMetrics 3

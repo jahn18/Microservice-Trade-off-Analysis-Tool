@@ -1,0 +1,597 @@
+{
+  "Dynamic - Mono2Micro": {
+    "links": [
+      {
+        "source": "DealerController",
+        "target": "DealerRepository",
+        "weight": "1"
+      },
+      {
+        "source": "DealerRepository",
+        "target": "Dealer",
+        "weight": "7"
+      },
+      {
+        "source": "DealerRepository",
+        "target": "DealerInfo",
+        "weight": "1"
+      },
+      {
+        "source": "Dealer",
+        "target": "DealerInfo",
+        "weight": "29"
+      },
+      {
+        "source": "CatalogController",
+        "target": "CatalogRepository",
+        "weight": "1"
+      },
+      {
+        "source": "CatalogRepository",
+        "target": "database.CatalogItem",
+        "weight": "5"
+      },
+      {
+        "source": "database.CatalogItem",
+        "target": "CatalogItem",
+        "weight": "17`"
+      },
+      {
+        "source": "QuoteController",
+        "target": "QuoteRepository",
+        "weight": "1"
+      },
+      {
+        "source": "QuoteRepository",
+        "target": "QuoteDetails",
+        "weight": "9"
+      },
+      {
+        "source": "QuoteRepository",
+        "target": "Quote",
+        "weight": "5"
+      },
+      {
+        "source": "QuoteDetails",
+        "target": "QuoteItemInfo",
+        "weight": "8"
+      },
+      {
+        "source": "Quote",
+        "target": "QuoteItemInfo",
+        "weight": "7"
+      },
+      {
+        "source": "QuoteDetails",
+        "target": "Quote",
+        "weight": "54"
+      },
+      {
+        "source": "OrderDetails",
+        "target": "Order",
+        "weight": "46"
+      },
+      {
+        "source": "OrderController",
+        "target": "OrderRepository",
+        "weight": "1"
+      },
+      {
+        "source": "OrderController",
+        "target": "BadRequestException",
+        "weight": "1"
+      },
+      {
+        "source": "OrderController",
+        "target": "ConflictingRequestException",
+        "weight": "1"
+      },
+      {
+        "source": "OrderRepository",
+        "target": "OrderDetails",
+        "weight": "11"
+      },
+      {
+        "source": "OrderRepository",
+        "target": "Order",
+        "weight": "8"
+      },
+      {
+        "source": "ShipmentController",
+        "target": "ShipmentRepository",
+        "weight": "1"
+      },
+      {
+        "source": "ShipmentRepository",
+        "target": "ShipmentDetails",
+        "weight": "10"
+      },
+      {
+        "source": "ShipmentRepository",
+        "target": "ShipmentRecord",
+        "weight": "4"
+      },
+      {
+        "source": "ShipmentDetails",
+        "target": "ShipmentRecord",
+        "weight": "37"
+      },
+      {
+        "source": "ShipmentRecord",
+        "target": "DeliveryAddress",
+        "weight": "2"
+      },
+      {
+        "source": "ShipmentRecord",
+        "target": "ShipmentEventInfo",
+        "weight": "4"
+      },
+      {
+        "source": "ShipmentRecord",
+        "target": "PhoneInfo",
+        "weight": "1"
+      },
+      {
+        "source": "ShipmentRecord",
+        "target": "OrderStatus",
+        "weight": "1"
+      },
+      {
+        "source": "Order",
+        "target": "OrderEventInfo",
+        "weight": "1"
+      },
+      {
+        "source": "Order",
+        "target": "OrderStatus",
+        "weight": "1"
+      },
+      {
+        "source": "OrderUpdateInfo",
+        "target": "OrderStatus",
+        "weight": "1"
+      },
+      {
+        "source": "OrderUpdateInfo",
+        "target": "OrderEventInfo",
+        "weight": "1"
+      },
+      {
+        "source": "QuoteRepository",
+        "target": "BadRequestException",
+        "weight": "1"
+      },
+      {
+        "source": "QuoteRepository",
+        "target": "ConflictingRequestException",
+        "weight": "1"
+      },
+      {
+        "source": "OrderRepository",
+        "target": "BadRequestException",
+        "weight": "1"
+      },
+      {
+        "source": "OrderRepository",
+        "target": "ConflictingRequestException",
+        "weight": "1"
+      },
+      {
+        "source": "ShipmentRepository",
+        "target": "BadRequestException",
+        "weight": "1"
+      },
+      {
+        "source": "ShipmentRepository",
+        "target": "ConflictingRequestException",
+        "weight": "1"
+      }
+    ],
+    "decomposition": {
+      "partition0" : [
+        {
+          "id": "DealerController"
+        },
+        {
+          "id": "DealerRepository"
+        },
+        {
+          "id": "Dealer"
+        },
+        {
+          "id": "DealerInfo"
+        }
+      ],
+      "partition1": [
+        {
+          "id": "CatalogController"
+        },
+        {
+          "id": "CatalogRepository"
+        },
+        {
+          "id": "database.CatalogItem"
+        },
+        {
+          "id": "CatalogItem"
+        }
+      ],
+      "partition2": [
+        {
+          "id": "QuoteController"
+        },
+        {
+          "id": "QuoteRepository"
+        },
+        {
+          "id": "QuoteDetails"
+        },
+        {
+          "id": "Quote"
+        },
+        {
+          "id": "QuoteItemInfo"
+        },
+        {
+          "id": "Utility"
+        },
+        {
+          "id": "Filter"
+        }
+      ],
+      "partition3": [
+        {
+          "id": "OrderController"
+        },
+        {
+          "id": "OrderRepository"
+        },
+        {
+          "id": "OrderDetails"
+        },
+        {
+          "id": "Order"
+        },
+        {
+          "id": "OrderEventInfo"
+        }
+      ],
+      "partition4": [
+        {
+          "id": "ShipmentController"
+        },
+        {
+          "id": "ShipmentRepository"
+        },
+        {
+          "id": "ShipmentDetails"
+        },
+        {
+          "id": "ShipmentRecord"
+        },
+        {
+          "id": "DeliveryAddress"
+        },
+        {
+          "id": "ShipmentEventInfo"
+        },
+        {
+          "id": "PhoneInfo"
+        }
+      ],
+      "partition5": [
+        {
+          "id": "BadRequestException"
+        },
+        {
+          "id": "ConflictingRequestException"
+        },
+        {
+          "id": "OrderUpdateInfo"
+        }
+      ],
+      "partition6": [
+        {
+          "id": "Delivery"
+        },
+        {
+          "id": "OrderStatus"
+        }
+      ],
+      "unobserved": []
+    }
+  },
+  "Dynamic - FoSci": {
+    "links": [
+      {
+        "source": "DealerController",
+        "target": "DealerRepository",
+        "weight": "1"
+      },
+      {
+        "source": "DealerRepository",
+        "target": "Dealer",
+        "weight": "7"
+      },
+      {
+        "source": "DealerRepository",
+        "target": "DealerInfo",
+        "weight": "1"
+      },
+      {
+        "source": "Dealer",
+        "target": "DealerInfo",
+        "weight": "29"
+      },
+      {
+        "source": "CatalogController",
+        "target": "CatalogRepository",
+        "weight": "1"
+      },
+      {
+        "source": "CatalogRepository",
+        "target": "database.CatalogItem",
+        "weight": "5"
+      },
+      {
+        "source": "database.CatalogItem",
+        "target": "CatalogItem",
+        "weight": "17`"
+      },
+      {
+        "source": "QuoteController",
+        "target": "QuoteRepository",
+        "weight": "1"
+      },
+      {
+        "source": "QuoteRepository",
+        "target": "QuoteDetails",
+        "weight": "9"
+      },
+      {
+        "source": "QuoteRepository",
+        "target": "Quote",
+        "weight": "5"
+      },
+      {
+        "source": "QuoteDetails",
+        "target": "QuoteItemInfo",
+        "weight": "8"
+      },
+      {
+        "source": "Quote",
+        "target": "QuoteItemInfo",
+        "weight": "7"
+      },
+      {
+        "source": "QuoteDetails",
+        "target": "Quote",
+        "weight": "54"
+      },
+      {
+        "source": "OrderDetails",
+        "target": "Order",
+        "weight": "46"
+      },
+      {
+        "source": "OrderController",
+        "target": "OrderRepository",
+        "weight": "1"
+      },
+      {
+        "source": "OrderRepository",
+        "target": "OrderDetails",
+        "weight": "11"
+      },
+      {
+        "source": "OrderRepository",
+        "target": "Order",
+        "weight": "8"
+      },
+      {
+        "source": "ShipmentController",
+        "target": "ShipmentRepository",
+        "weight": "1"
+      },
+      {
+        "source": "ShipmentRepository",
+        "target": "ShipmentDetails",
+        "weight": "10"
+      },
+      {
+        "source": "ShipmentRepository",
+        "target": "ShipmentRecord",
+        "weight": "4"
+      },
+      {
+        "source": "ShipmentDetails",
+        "target": "ShipmentRecord",
+        "weight": "37"
+      },
+      {
+        "source": "ShipmentRecord",
+        "target": "DeliveryAddress",
+        "weight": "2"
+      },
+      {
+        "source": "ShipmentRecord",
+        "target": "ShipmentEventInfo",
+        "weight": "4"
+      },
+      {
+        "source": "ShipmentRecord",
+        "target": "PhoneInfo",
+        "weight": "1"
+      },
+      {
+        "source": "ShipmentRecord",
+        "target": "OrderStatus",
+        "weight": "1"
+      },
+      {
+        "source": "Order",
+        "target": "OrderEventInfo",
+        "weight": "1"
+      },
+      {
+        "source": "Order",
+        "target": "OrderStatus",
+        "weight": "1"
+      },
+      {
+        "source": "OrderUpdateInfo",
+        "target": "OrderStatus",
+        "weight": "1"
+      },
+      {
+        "source": "OrderUpdateInfo",
+        "target": "OrderEventInfo",
+        "weight": "1"
+      },
+      {
+        "source": "QuoteRepository",
+        "target": "BadRequestException",
+        "weight": "1"
+      },
+      {
+        "source": "QuoteRepository",
+        "target": "ConflictingRequestException",
+        "weight": "1"
+      },
+      {
+        "source": "OrderRepository",
+        "target": "BadRequestException",
+        "weight": "1"
+      },
+      {
+        "source": "OrderRepository",
+        "target": "ConflictingRequestException",
+        "weight": "1"
+      },
+      {
+        "source": "ShipmentRepository",
+        "target": "BadRequestException",
+        "weight": "1"
+      },
+      {
+        "source": "ShipmentRepository",
+        "target": "ConflictingRequestException",
+        "weight": "1"
+      }
+    ],
+    "decomposition": {
+      "partition0" : [
+        {
+          "id": "DealerController"
+        },
+        {
+          "id": "DealerRepository"
+        },
+        {
+          "id": "Dealer"
+        },
+        {
+          "id": "DealerInfo"
+        }
+      ],
+      "partition1": [
+        {
+          "id": "CatalogController"
+        },
+        {
+          "id": "CatalogRepository"
+        },
+        {
+          "id": "database.CatalogItem"
+        },
+        {
+          "id": "CatalogItem"
+        }
+      ],
+      "partition2": [
+        {
+          "id": "QuoteController"
+        },
+        {
+          "id": "QuoteRepository"
+        },
+        {
+          "id": "QuoteDetails"
+        },
+        {
+          "id": "Quote"
+        }
+      ],
+      "partition3": [
+        {
+          "id": "OrderController"
+        },
+        {
+          "id": "OrderRepository"
+        },
+        {
+          "id": "OrderDetails"
+        },
+        {
+          "id": "Order"
+        },
+        {
+          "id": "OrderEventInfo"
+        },
+        {
+          "id": "OrderUpdateInfo"
+        }
+      ],
+      "partition4": [
+        {
+          "id": "ShipmentController"
+        },
+        {
+          "id": "ShipmentRepository"
+        },
+        {
+          "id": "ShipmentDetails"
+        },
+        {
+          "id": "ShipmentRecord"
+        },
+        {
+          "id": "DeliveryAddress"
+        },
+        {
+          "id": "ShipmentEventInfo"
+        }
+      ],
+      "partition5": [
+        {
+          "id": "Delivery"
+        },
+        {
+          "id": "OrderStatus"
+        },
+        {
+          "id": "PhoneInfo"
+        },
+        {
+          "id": "BadRequestException"
+        },
+        {
+          "id": "ConflictingRequestException"
+        },
+        {
+          "id": "OrderStatus"
+        },
+        {
+          "id": "Utility"
+        },
+        {
+          "id": "Filter"
+        },
+        {
+          "id": "QuoteItemInfo"
+        }
+      ],
+      "unobserved": []
+    }
+  }
+}

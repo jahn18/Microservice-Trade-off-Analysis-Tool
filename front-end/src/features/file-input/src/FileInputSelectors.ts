@@ -7,6 +7,8 @@ export const getJSONGraph = (state: any) => getPluginState(state).jsonGraph;
 
 export const getError = (state: any) => getPluginState(state).error;
 
+export const getWeightedViewState = (state: any) => getPluginState(state).enableWeightedView;
+
 const FileInputViewSelectors: ISelector[] = [];
 
 export default FileInputViewSelectors;

@@ -9,6 +9,7 @@ import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import IconButton from '@material-ui/core/IconButton';
 import TableHead from '@material-ui/core/TableHead';
 import Utils from "../../../../utils/utils";
+import { TableContainer } from "@mui/material";
 
 /**
  * A table that shows coupling and cohesion metrics for a given microservice decomposition (uses Normalized TurboMQ)
@@ -45,41 +46,30 @@ export const MetricTable = (props) => {
     )
 
     return (
-        <Table size="small">
-            <TableBody>
-                {/* <TableRow>
-                    <TableCell style={{'font-weight': 'bold'}}> */}
-                        {/* <IconButton 
-                            size="small" 
-                            onClick={() => setTableState(!tableState)}
-                        >
-                            {tableState ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                        </IconButton> */}
-                        {/* {props.title} */}
-                    {/* </TableCell>
-                </TableRow> */}
-                <TableRow>
-                    <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} >
-                        {/* <Collapse in={tableState} timeout="auto" unmountOnExit> */}
-                            <Table size="small">
-                                <TableHead>
-                                    {props.headers.map((headerRow) => 
-                                        <TableRow>
-                                            {headerRow.map((header) => 
-                                                <TableCell> 
-                                                    {header}
-                                                </TableCell>
-                                            )}
-                                        </TableRow>        
+        <TableContainer>
+            <Table size="small">
+                <TableBody>
+                    <TableRow>
+                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} >
+                                <Table size="small">
+                                    <TableHead>
+                                        {props.headers.map((headerRow) => 
+                                            <TableRow>
+                                                {headerRow.map((header) => 
+                                                    <TableCell> 
+                                                        {header}
+                                                    </TableCell>
+                                                )}
+                                            </TableRow>        
 
-                                    )}
-                                </TableHead>
-                                {relationshipTypeTable}
-                            </Table>
-                        {/* </Collapse> */}
-                    </TableCell>
-                </TableRow>
-            </TableBody>
-        </Table>
+                                        )}
+                                    </TableHead>
+                                    {relationshipTypeTable}
+                                </Table>
+                        </TableCell>
+                    </TableRow>
+                </TableBody>
+            </Table>
+        </TableContainer>
     )
 }

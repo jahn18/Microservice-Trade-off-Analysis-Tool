@@ -562,7 +562,7 @@ export class DiffDecomposition extends React.Component {
                             x: sourceNode.parent().position().x,
                             y: appendices[0].boundingBox().y1 - 55,
                         }
-                    }]); 
+                    }]);
                     cy.getElementById(`invisible_node_${sourceNode.parent().id()}`).addClass('hide');
                 }
             } else {
@@ -853,7 +853,7 @@ export class DiffDecomposition extends React.Component {
 
         if(this.props.searchedClassName !== "") {
             selectedElements = this.state.cy.elements().filter((ele) => {
-                return (ele.data("label") && ele.data().label.toLowerCase().includes(this.props.searchedClassName.toLowerCase().trim()) && !ele.isEdge()) || ele.data('element_type') === this.state.element_types.invisible_node;
+                return (ele.data("label") && ele.data().label.toLowerCase().includes(this.props.searchedClassName.toLowerCase().trim()) && !ele.isEdge() && ele.data('element_type') !== this.state.element_types.invisible_node && ele.data('element_type') !== this.state.element_types.appendix);
             });
         
             selectedElements.forEach((ele) => {
@@ -864,12 +864,11 @@ export class DiffDecomposition extends React.Component {
                     }
                 }
             });
-
             let unselectedElements = this.state.cy.elements().difference(selectedElements);
             unselectedElements.addClass('deactivate');
-            
-            displaySearchResults = selectedElements.filter((ele) => {
-               return !(ele.data('element_type') == 'partition' || ele.data('element_type') == 'invisible' || ele.data('id').toLowerCase().includes('appendix'));
+
+            selectedElements = selectedElements.filter((ele) => {
+               return !(ele.data('element_type') == this.state.element_types.partition || ele.data('element_type') == this.state.element_types.invisible_node || ele.data('element_type') == this.state.element_types.appendix);
            })
            .map((ele) => {
                 {
@@ -883,12 +882,22 @@ export class DiffDecomposition extends React.Component {
                 }}
            )
 
-           console.log(displaySearchResults)
+           selectedElements.map((ele) => {
+                if (ele.length !== null) {
+                    for (let i = 0; i < ele.length; i++) {
+                        displaySearchResults.push(ele[i]);
+                    }
+                } else {
+                    displaySearchResults.push(ele);
+                }
+           });
 
-            if (selectedElements.length == 0) {
+
+            if (displaySearchResults.length == 0) {
                 this.state.cy.fit(this.state.cy.elements(), 50);
             } else {
-                this.state.cy.fit(displaySearchResults, 50);
+                this.state.cy.fit(this.state.cy.collection(displaySearchResults), 50);
+
             }
         } else {
             this.state.cy.fit(this.state.cy.elements(), 50);
@@ -903,11 +912,7 @@ export class DiffDecomposition extends React.Component {
 
     render() {
         return (
-            <div>
-                <div className="custom-graph-container">
-                    <div style={{height: '100%', width: '79%', position: 'fixed'}} ref={ref => (this.ref = ref)}></div>
-                </div>
-            </div>
+            <div style={{width: "78.3%", height: "100%", position: "fixed"}} ref={ref => (this.ref = ref)}></div>
         );
     }
 };

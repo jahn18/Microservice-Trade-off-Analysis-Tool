@@ -1,7 +1,3 @@
-SS(Quote.ss) = DealersRepository, DealerController, MockQuoteRepository, Delivery, Quote, QuoteItemInfo, QuoteDetails, MongoQuoteRepository
-SS(MongoOrderRepository.ss) = Order, MockOrderRepository, OrderStatus, OrderUpdateInfo, OrderEventInfo, OrderDetails, MongoOrderRepository
-SS(DealerInfo.ss) = MongoDealersRepository, Dealer, MockDealersRepository, DealerInfo
-SS(CatalogItem.ss) = CatalogController, CatalogItemsRepository, CatalogItem, MongoCatalogItemsRepository, MockCatalogItemsRepository
-SS(MongoShipmentRepository.ss) = ShipmentEventInfo, ShipmentRecord, DeliveryAddress, PhoneInfo, MockShipmentRepository, ShipmentRepository, ShipmentController, MongoShipmentRepository, ShipmentDetails, MongoOperationsWithRetry
-SS(RepositoryFactory.ss) = ConflictingRequestException, BadRequestException, OrderRepository, OrderController, RepositoryFactory, QuoteRepository, QuoteController
-SS(OrderingConfiguration.ss) = MongoDBProperties, OrderingConfiguration, PingController, OrderingServiceProperties
+SS(ShipmentController.ss) = ShipmentController, ShipmentRecord
+SS(CatalogItem.ss) = CatalogController, CatalogItem
+SS(Order.ss) = Order, OrderController

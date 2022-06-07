@@ -13,6 +13,7 @@ export interface ChangeHistoryProps extends WithStylesProps<typeof styles>, ICha
     resetChangeHistory: Function,
     onMouseOver: Function,
     onMouseOut: Function
+    maxHeight: String 
 }
 
 class ChangeHistoryBase extends React.PureComponent<ChangeHistoryProps> {
@@ -26,6 +27,7 @@ class ChangeHistoryBase extends React.PureComponent<ChangeHistoryProps> {
                 onMouseOver={this.props.onMouseOver.bind(this)}
                 onMouseOut={this.props.onMouseOut.bind(this)}
                 resetChangeHistory={this.props.resetChangeHistory.bind(this)}
+                maxHeight={this.props.maxHeight}
             />
         )
     }

@@ -13,7 +13,7 @@ export const setJSONGraphInputAction = new Action<IFileInputViewStoreState,
         } catch (e) {
             yield put(setJSONGraphInputFailedAction.getReduxAction()({error: (e as Error).message}));
         }
-    })
+    });
 
 export const setJSONGraphInputSuccessAction = new Action<IFileInputViewStoreState,
     {file: any}
@@ -29,7 +29,7 @@ export const setJSONGraphInputFailedAction = new Action<IFileInputViewStoreState
     .addReducer((state, action) => ({
         ...state,
         error: action.payload.error
-    }))
+    }));
 
 export const getDemoJSONGraphAction = new Action<IFileInputViewStoreState,
     {projectName: string}
@@ -65,6 +65,14 @@ export const clearErrorAction = new Action<IFileInputViewStoreState>(`${FileInpu
         error: undefined,
     }));
 
+export const toggleWeightedViewAction = new Action<IFileInputViewStoreState,
+    {toggleWeightedView: boolean}
+>(`${FileInputAlias}.TOGGLE_WEIGHTED_VIEW`)
+    .addReducer((state, action) => ({
+        ...state,
+        enableWeightedView: action.payload.toggleWeightedView
+    })); 
+
 const FileInputViewActions: IActionList = {
     setJSONGraphInputAction,
     setJSONGraphInputSuccessAction,
@@ -72,7 +80,8 @@ const FileInputViewActions: IActionList = {
     clearErrorAction,
     getDemoJSONGraphAction,
     getDemoJSONGraphSuccessAction,
-    getDemoJSONGraphFailedAction
+    getDemoJSONGraphFailedAction,
+    toggleWeightedViewAction
 }
 
 export default FileInputViewActions;

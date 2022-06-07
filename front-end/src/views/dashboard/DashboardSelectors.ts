@@ -4,6 +4,7 @@ import * as NavigationSelectors from "../../features/navigation/src/NavigationSe
 export const getSelectors = (state: any) => {
     return {
         jsonGraph: FileInputSelectors.getJSONGraph(state),
-        selectedTab: NavigationSelectors.getSelectedTab(state)
+        selectedTab: NavigationSelectors.getSelectedTab(state),
+        enableWeightedView: FileInputSelectors.getWeightedViewState(state)
     }
 }

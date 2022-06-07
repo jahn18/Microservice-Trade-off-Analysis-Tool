@@ -5,7 +5,7 @@ import Checkbox from '@material-ui/core/Checkbox';
 import Tooltip from '@material-ui/core/Tooltip';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody'
-import { Typography } from "@mui/material";
+import { Typography, Container, Box } from "@mui/material";
 import { TableContainer, TableHead } from "@mui/material";
 import IconButton from '@material-ui/core/IconButton';
 import UndoIcon from '@material-ui/icons/Undo';
@@ -22,6 +22,7 @@ import UndoIcon from '@material-ui/icons/Undo';
  * @param {(allMoveOperations[i], allSelectedElements) => void} props.onMouseOut [function]: what to do when the user moves their mouse away from each row. 
  * @param {(allMoveOperations[i], allSelectedElements) => string | number} props.formatMoveOperationContent the content that should be printed in each row using the info given each move operation. 
  * @param {(allSelectedElements) => void} props.onSelectedElements function to deal with elements when they are selected.
+ * @param {String} props.maxHeight 
  */
 export const ChangeHistoryTable = (props) => {
     const changeSelectedEles = (isSelected, newSelectedEle) => {
@@ -78,8 +79,6 @@ export const ChangeHistoryTable = (props) => {
     }
 
     return (
-        <>
-        <TableContainer sx={{marginTop: `${margin}%`}}>
             <Table stickyHeader aria-label="change-history-table" size="small">
                 <TableHead>
                     <TableRow>
@@ -107,28 +106,15 @@ export const ChangeHistoryTable = (props) => {
                         )}
                     </TableRow>
                 </TableHead>
+                <TableBody>
+                    <TableRow>
+                        <TableCell style={{ paddingBottom: 0, paddingTop: 0}} >
+                            <Table size="small">
+                                {changeHistoryList}
+                            </Table>
+                        </TableCell>
+                    </TableRow>
+                </TableBody>
             </Table>
-        </TableContainer>
-        <TableContainer
-                style={{
-                    // border: '1px solid grey',
-                    maxHeight: "48%",
-                }}
-            >
-                <Table stickyHeader aria-label="change-history-table" size="small">
-                    <TableBody>
-                        <TableRow>
-                            <TableCell style={{ paddingBottom: 0, paddingTop: 0}} >
-                                {/* <Collapse in={tableState} timeout="auto" unmountOnExit> */}
-                                    <Table size="small">
-                                        {changeHistoryList}
-                                    </Table>
-                                {/* </Collapse> */}
-                            </TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Table>
-            </TableContainer>
-        </>
     );
 }

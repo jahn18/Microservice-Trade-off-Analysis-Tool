@@ -245,7 +245,7 @@ CompoundDragAndDrop.prototype.run = function () {
             }
         }
         // No parent was chosen here, so create a new partition for the new node. 
-        else if (chosenParent.length === 0 && overlappingCompoundNodes.length === 0 && isChild(potentialMovingNode)) {
+        else if (chosenParent.length === 0 && overlappingCompoundNodes.length === 0 && isChild(potentialMovingNode) && !potentialMovingNode.data().showMinusSign) {
             const numOfPartitions = getNumOfPartitions();
             let partition = new PartitionNode(`partition${numOfPartitions}`, `P${numOfPartitions + 1}`).getCytoscapeData();
             partition['position'] = {

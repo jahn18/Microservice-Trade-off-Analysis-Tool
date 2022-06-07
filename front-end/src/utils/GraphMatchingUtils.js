@@ -12,7 +12,7 @@ export class GraphMatchingUtils {
      * @returns the matching of all partitions, the cost matrix, and the similiarity matrix. 
      */
     matchPartitions(decompositionOne, decompositionTwo) {
-        let {similarityMatrix, maxValue, partitionsOne, partitionsTwo} = this._constructSimilarityMatrix(decompositionOne, decompositionTwo);
+        let {similarityMatrix, maxValue, partitionsOne, partitionsTwo} = this._constructSimilarityMatrix(decompositionOne.elements.nodes, decompositionTwo.elements.nodes);
         
         let matching = this._getMaximumWeightedMatch(maxValue, similarityMatrix);
 
@@ -34,13 +34,12 @@ export class GraphMatchingUtils {
 
     _getAllPartitions(decomposition) {
         // depends on the format being used: if elements.nodes then cytoscape format, but if decompostion.elements its used the JSON loaded decomposition format. 
-        let cytoscapeElements = (decomposition.elements.nodes) ? decomposition.elements.nodes : decomposition.elements;
-        return cytoscapeElements.filter((ele) => ele.data.element_type === "partition").map((node) => node.data.id);
+        return decomposition.filter((ele) => ele.data.element_type === "partition").map((node) => node.data.id);
     }
 
     _constructSimilarityMatrix(decompositionOne, decompositionTwo) {
-        let cytoscapeElementsOne = (decompositionOne.elements.nodes) ? decompositionOne.elements.nodes : decompositionOne.elements;
-        let cytoscapeElementsTwo = (decompositionTwo.elements.nodes) ? decompositionTwo.elements.nodes : decompositionTwo.elements;
+        let cytoscapeElementsOne = decompositionOne;
+        let cytoscapeElementsTwo = decompositionTwo;
 
         let similarityMatrix = [];
         let maxValue = 0;
@@ -86,9 +85,6 @@ export class GraphMatchingUtils {
         } else {
             allPartitions = [...partitionsOne];
         }
-        
-        //Add the unobserved node if it hasn't been added already
-        // allPartitions = [...new Set(allPartitions)].sort(customSort);
 
         allPartitions.forEach((partitionOne, i) => {
             similarityMatrix[i] = []

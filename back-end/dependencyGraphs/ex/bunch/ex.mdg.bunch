@@ -1,0 +1,4 @@
+SS(GitType.ss) = GitDetails, GitService, GitType, GitSemaphore
+SS(CWLTool.ss) = CWLToolRunner, CWLTool
+SS(WorkflowNotFoundException.ss) = WorkflowRepository, QueuedWorkflowRepository, WorkflowService, WorkflowController, WorkflowNotFoundException, WorkflowJSONController, Workflow, MultipleWorkflowsException, WorkflowPermalinkController, WorkflowOverview, QueuedWorkflow, ROBundleNotFoundException, ROBundleService, RepresentationNotFoundException, WorkflowForm, WorkflowFormValidator
+SS(RDFDotWriter.ss) = ModelDotWriter, RDFDotWriter

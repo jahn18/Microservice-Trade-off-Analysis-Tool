@@ -10,6 +10,14 @@ import TableRow from '@material-ui/core/TableRow';
 import Typography from '@material-ui/core/Typography';
 import { GraphMatchingUtils } from '../../../../utils/GraphMatchingUtils';
 
+
+/**
+ * 
+ * @param {Function} props.updateSelectedDecomposition - updates current list of decompositions to compare
+ * @param {List} props.decompositions - a list of all decompositions
+ * @param {List} props.keys - a list of all tabs used in the tool  
+ * @returns 
+ */
 export default function SimilarityTable(props) {
 
     const getSimilarityValue = (matching, similarityMatrix) => {
@@ -17,7 +25,7 @@ export default function SimilarityTable(props) {
         matching.forEach(match => {
             sum += similarityMatrix[match[0]][match[1]];
         });
-        return sum / similarityMatrix.length;
+        return sum;
     }
 
     let tableHeader = [
@@ -55,10 +63,17 @@ export default function SimilarityTable(props) {
                                     props.decompositions[keyA],
                                     props.decompositions[keyB]
                                 );
+
+                                // Bug Fix: Similarity metric should only normalize using non-empty partitions  
+                                let nonEmptyPartitionsOne = [...new Set(props.decompositions[keyA].elements.nodes.filter((ele) => {return (ele.data.parent !== undefined && ele.data.parent !== "unobserved" && ele.data.element_type !== "invisible")}).map((ele) => ele.data.parent))];
+                                let nonEmptyPartitionsTwo = [...new Set(props.decompositions[keyB].elements.nodes.filter((ele) => {return (ele.data.parent !== undefined && ele.data.parent !== "unobserved" && ele.data.element_type !== "invisible")}).map((ele) => ele.data.parent))];
+                                
+                                let normalizeValue = Math.max(nonEmptyPartitionsOne.length, nonEmptyPartitionsTwo.length) 
+
                                 return (
                                     <TableCell key={`similarity-value-${keyB}`}>
                                         <Button variant="text" onClick={() => props.updateSelectedDecompositions([[keyA, indexA], [keyB, indexB]])}>
-                                            {(getSimilarityValue(matchedPartitions.matching, matchedPartitions.similarityMatrix) * 100).toFixed(2)}
+                                            {(getSimilarityValue(matchedPartitions.matching, matchedPartitions.similarityMatrix) / normalizeValue * 100).toFixed(2)}
                                         </Button>
                                     </TableCell>
                                 );

@@ -1,0 +1,2 @@
+SS(Order.ss) = ShipmentController, Order, OrderController, ShipmentRecord
+SS(CatalogController.ss) = CatalogController, CatalogItem
