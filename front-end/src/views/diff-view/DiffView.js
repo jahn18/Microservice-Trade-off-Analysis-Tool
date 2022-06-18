@@ -868,7 +868,7 @@ export class DiffDecomposition extends React.Component {
             unselectedElements.addClass('deactivate');
 
             selectedElements = selectedElements.filter((ele) => {
-               return !(ele.data('element_type') == this.state.element_types.partition || ele.data('element_type') == this.state.element_types.invisible_node || ele.data('element_type') == this.state.element_types.appendix);
+               return (ele.data('element_type') !== this.state.element_types.partition && ele.data('element_type') !== this.state.element_types.invisible_node && ele.data('element_type') !== this.state.element_types.appendix);
            })
            .map((ele) => {
                 {
