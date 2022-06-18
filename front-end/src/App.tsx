@@ -17,6 +17,8 @@ import { CustomView } from './features/custom-view/src/CustomView';
 import { ChangeHistory } from './features/change-history-table/src/ChangeHistory';
 import { DiffView } from './features/diff-view/src/DiffView';
 import { FileInputView } from './features/file-input/src/FileInputView';
+import { DiffSelectorView } from './features/diff-selector/src/DiffSelectorView';
+import { DiffSelectorUI } from "./features/diff-selector/src/ui/DiffSelectorUI";
 import { FileInput } from './features/file-input/src/ui/FileInputUI';
 import { WeightedView } from './features/weighted-view/src/WeightedView';
 
@@ -41,7 +43,8 @@ class App extends React.Component<typeof mapDispatchToProps> {
     this.props.addPlugin(ChangeHistory);
     this.props.addPlugin(DiffView);
     this.props.addPlugin(FileInputView);
-    this.props.addPlugin(WeightedView)
+    this.props.addPlugin(DiffSelectorView);
+    this.props.addPlugin(WeightedView);
   }
 
   render() {
@@ -51,8 +54,9 @@ class App extends React.Component<typeof mapDispatchToProps> {
           <StyletronProvider value={engine} debugAfterHydration>
             <BaseProvider theme={LightTheme}>
                 <Switch>
-                  <Route exact path="/" component={FileInput}/>
+                  <Route exact path="/fileInput" component={FileInput}/>
                   <Route exact path="/tool" component={DashboardView} />
+                  <Route exact path="/" component={DiffSelectorUI} />
                   {/* <Route exact path="/diff-view" component={DiffViewUI} /> */}
                 </Switch>
             </BaseProvider>

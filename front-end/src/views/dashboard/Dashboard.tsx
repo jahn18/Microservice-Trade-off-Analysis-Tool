@@ -6,7 +6,7 @@ import { CustomView } from "../../features/custom-view/src/ui/CustomViewUI";
 import { Navigation } from "../../features/navigation/src/ui/NavigationUI";
 import { addPlugin } from "../../store/Plugin";
 import { styles } from "./DashboardViewStyles";
-import { Container, Grid} from '@mui/material';
+import { Container, Grid, Paper } from '@mui/material';
 import Box from '@material-ui/core/Box';
 import { JSONGraphParserUtils } from "../../utils/JSONGraphParserUtils";
 import { getSelectors } from "./DashboardSelectors";
@@ -16,7 +16,7 @@ import { WeightedView as WeightedViewUI } from '../../features/weighted-view/src
 interface IDashboardViewUIState {
     jsonGraph: any
     selectedTab: string
-    enableWeightedView: boolean
+    diffSelect: boolean
 }
 
 export interface DashboardViewProps extends WithStylesProps<typeof styles>, IDashboardViewUIState, RouteComponentProps, TActionTypes {
@@ -29,60 +29,39 @@ export class DashboardViewBase extends React.PureComponent<DashboardViewProps> {
         return (
             <div style={{position: "absolute", margin: 0, height: "93.5%", width: "100%"}}>
                 <Navigation 
-                    tabs={(this.props.enableWeightedView) ? 
+                    tabs={(this.props.diffSelect) ?
                         {
-                            ...Object.keys(this.props.jsonGraph).reduce((tabs, key, index) => { return tabs = {...tabs, [key]: `  V${index + 1} (by ${key})  `}}, {}),
-                            ...{"weighted-view": "Weighted-view"}
-                        } : {
-                            ...Object.keys(this.props.jsonGraph).reduce((tabs, key, index) => { return tabs = {...tabs, [key]: `  V${index + 1} (by ${key})  `}}, {}),
+                            ...Object.keys(this.props.jsonGraph).reduce((tabs, key, index) => { return tabs = {...tabs, [key]: `  V${index + 1} (${key}) `}}, {}),
                             ...{"diff-view": "Diff-view"}
+                        } : {
+                            ...Object.keys(this.props.jsonGraph).reduce((tabs, key, index) => { return tabs = {...tabs, [key]: `  V${index + 1} (${key})  `}}, {}),
+                            ...{"diff-view": "Diff-view"},
+                            ...{"weighted-view" : "Weighted-View"}
                         }
                     } 
                     colors={this._getColors()}
                 />
                 <>
-                {this.props.selectedTab !== "diff-view" && this.props.selectedTab !== "weighted-view" &&
-                    <CustomView 
-                        relationships={new JSONGraphParserUtils().getEdges(this.props.jsonGraph, this._getColors())}
-                        colors={this._getColors()}
-                    />
-                }
-                {this.props.selectedTab === "diff-view" && 
-                    <DiffViewUI 
-                        relationships={new JSONGraphParserUtils().getEdges(this.props.jsonGraph, this._getColors())}
-                        colors={this._getColors()}
-                    />
-                }
-                {this.props.selectedTab === "weighted-view" && 
-                    <WeightedViewUI
-                        relationships={new JSONGraphParserUtils().getEdges(this.props.jsonGraph, this._getColors())}
-                        colors={this._getColors()}
-                    />
-                }
+                    {this.props.selectedTab !== "diff-view" && this.props.selectedTab !== "weighted-view" &&
+                        <CustomView 
+                            relationships={new JSONGraphParserUtils().getEdges(this.props.jsonGraph, this._getColors())}
+                            colors={this._getColors()}
+                        />
+                    }
+                    {this.props.selectedTab === "diff-view" && 
+                        <DiffViewUI 
+                            relationships={new JSONGraphParserUtils().getEdges(this.props.jsonGraph, this._getColors())}
+                            colors={this._getColors()}
+                        />
+                    }
+                    {this.props.selectedTab === "weighted-view" && 
+                        <WeightedViewUI
+                            relationships={new JSONGraphParserUtils().getEdges(this.props.jsonGraph, this._getColors())}
+                            colors={this._getColors()}
+                        />
+                    }
                 </>
-                    {/* <Grid item xs={12} md={12}>
-                        <>
-                            {this.props.selectedTab !== "diff-view" && this.props.selectedTab !== "weighted-view" &&
-                                <CustomView 
-                                    relationships={new JSONGraphParserUtils().getEdges(this.props.jsonGraph, this._getColors())}
-                                    colors={this._getColors()}
-                                />
-                            }
-                            {this.props.selectedTab === "diff-view" && 
-                                <DiffViewUI 
-                                    relationships={new JSONGraphParserUtils().getEdges(this.props.jsonGraph, this._getColors())}
-                                    colors={this._getColors()}
-                                />
-                            }
-                            {this.props.selectedTab === "weighted-view" && 
-                                <WeightedViewUI
-                                    relationships={new JSONGraphParserUtils().getEdges(this.props.jsonGraph, this._getColors())}
-                                    colors={this._getColors()}
-                                />
-                            }
-                        </>
-                    </Grid> */}
-            </div >
+        </div>
         )
     }
 

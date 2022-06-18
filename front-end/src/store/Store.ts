@@ -4,7 +4,7 @@ import { applyMiddleware, combineReducers, createStore } from 'redux'
 import createSagaMiddleware, { Saga } from 'redux-saga';
 import { put, select, takeEvery } from 'redux-saga/effects';
 import { IActionPayload, IPlugin, IPluginStoreState, pluginReducer, PLUGIN_ADD } from './Plugin';
-import { saveInputFile} from './localStorage';
+import { saveInputFile, saveToolState} from './localStorage';
 
 export default class Store {
     public static sagaMiddleware = createSagaMiddleware();
@@ -17,6 +17,7 @@ export default class Store {
         store.getState().plugin.replaceReducer = store.replaceReducer.bind(store);
 
         store.subscribe(() => {
+            saveToolState(store.getState());
             saveInputFile(store.getState());
         });
 

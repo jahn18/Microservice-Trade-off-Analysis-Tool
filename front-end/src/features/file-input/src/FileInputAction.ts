@@ -65,13 +65,6 @@ export const clearErrorAction = new Action<IFileInputViewStoreState>(`${FileInpu
         error: undefined,
     }));
 
-export const toggleWeightedViewAction = new Action<IFileInputViewStoreState,
-    {toggleWeightedView: boolean}
->(`${FileInputAlias}.TOGGLE_WEIGHTED_VIEW`)
-    .addReducer((state, action) => ({
-        ...state,
-        enableWeightedView: action.payload.toggleWeightedView
-    })); 
 
 const FileInputViewActions: IActionList = {
     setJSONGraphInputAction,
@@ -81,7 +74,6 @@ const FileInputViewActions: IActionList = {
     getDemoJSONGraphAction,
     getDemoJSONGraphSuccessAction,
     getDemoJSONGraphFailedAction,
-    toggleWeightedViewAction
 }
 
 export default FileInputViewActions;
